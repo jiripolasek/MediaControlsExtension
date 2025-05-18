@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "MediaCommandsExtension (Package)": {
+      "commandName": "MsixPackage",
+      "doNotLaunchApp": true
+    },
+    "MediaCommandsExtension (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

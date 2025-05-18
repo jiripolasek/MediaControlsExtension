@@ -1,0 +1,119 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<RootNamespace>JPSoftworks.MediaControlsExtension</RootNamespace>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+
+		<WindowsSdkPackageVersion>10.0.22621.57</WindowsSdkPackageVersion>
+		<TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
+		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<Nullable>enable</Nullable>
+		<LangVersion>preview</LangVersion>
+		<DebugType>embedded</DebugType>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+		<AssemblyName>JPSoftworks.MediaControlsExtension</AssemblyName>
+		<Company>Jiri Polasek</Company>
+		<Copyright>(c) Jiri Polasek</Copyright>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Product>Media Controls Command Palette</Product>
+		<AssemblyTitle>Media Controls Command Palette</AssemblyTitle>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+		<Content Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+		<EmbeddedResource Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+		<None Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+		<Page Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="Assets\SplashScreen.scale-200.png" />
+		<Content Include="Assets\LockScreenLogo.scale-200.png" />
+		<Content Include="Assets\Square150x150Logo.scale-200.png" />
+		<Content Include="Assets\Square44x44Logo.scale-200.png" />
+		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
+		<Content Include="Resources\app.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Manifest Include="$(ApplicationManifest)" />
+	</ItemGroup>
+
+	<!--
+    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
+    Tools extension to be activated for this project even if the Windows App SDK Nuget
+    package has not yet been restored.
+  -->
+	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+		<ProjectCapability Include="Msix" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="AudioSwitcher.AudioApi" NoWarn="NU1701" />
+		<PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" NoWarn="NU1701" />
+		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit" />
+		<PackageReference Include="Microsoft.CommandPalette.Extensions" />
+		<PackageReference Include="Microsoft.Windows.CsWinRT" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" />
+		<PackageReference Include="Microsoft.Web.WebView2" />
+		<PackageReference Include="Serilog" />
+		<PackageReference Include="Serilog.Sinks.File" />
+		<PackageReference Include="System.Text.Json" />
+		<PackageReference Include="Shmuelie.WinRTServer" />
+	</ItemGroup>
+
+	<!--
+    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
+    Explorer "Package and Publish" context menu entry to be enabled for this project even if
+    the Windows App SDK Nuget package has not yet been restored.
+  -->
+	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<IsAotCompatible>false</IsAotCompatible>
+		<CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
+		<CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
+		<!-- Suppress DynamicallyAccessedMemberTypes.PublicParameterlessConstructor in fallback code path of Windows SDK projection -->
+		<WarningsNotAsErrors>IL2081</WarningsNotAsErrors>
+
+		<PublishTrimmed>false</PublishTrimmed>
+		<PublishSingleFile>true</PublishSingleFile>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
+		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi" />
+		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PRIResource Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Resources\Strings.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Strings.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Resources\Strings.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+</Project>
