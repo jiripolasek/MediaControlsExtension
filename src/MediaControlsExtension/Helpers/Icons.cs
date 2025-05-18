@@ -24,7 +24,7 @@ internal static class Icons
 
     public static readonly IconInfo ToggleMute = IconHelpers.FromRelativePath(@"Assets\Icons\Muted_Color.svg");
 
-    public static readonly IconInfo MainIcon = IconHelpers.FromRelativePath(@"Assets\StoreLogo.png");
+    public static readonly IconInfo MainIcon = IconHelpers.FromRelativePaths(@"Assets\StoreLogo.light.png", @"Assets\StoreLogo.png");
 
     public static readonly IconInfo Music = new IconInfo("\uEC4F");
     public static readonly IconInfo Video = new IconInfo("\uE714");

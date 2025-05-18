@@ -20,14 +20,13 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
     private IFallbackCommandItem[]? _fallbackCommands;
     private IFallbackCommandItem? _playPauseFallback;
-
     private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
 
     public MediaControlsExtensionCommandsProvider()
     {
         this.Id = "JPSoftworks.CmdPal.MediaControls";
         this.DisplayName = Strings.Name!;
-        this.Icon = IconHelpers.FromRelativePath("Assets\\StoreLogo.png");
+        this.Icon = Icons.MainIcon;
         this.Settings = this._settingsManager.Settings;
 
         var mediaControlsExtensionPage = new MediaControlsExtensionPage(this._settingsManager);
