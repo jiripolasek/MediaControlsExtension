@@ -27,14 +27,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
-		<Content Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
-		<EmbeddedResource Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
-		<None Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
-		<Page Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Include="Assets\SplashScreen.scale-200.png" />
 		<Content Include="Assets\LockScreenLogo.scale-200.png" />
 		<Content Include="Assets\Square150x150Logo.scale-200.png" />
@@ -97,10 +89,6 @@
 	<ItemGroup>
 		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi" />
 		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PRIResource Remove="Assets\Icons\SkipPrevious_LightTheme.svg\**" />
 	</ItemGroup>
 
 	<ItemGroup>
