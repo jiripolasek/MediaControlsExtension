@@ -3,6 +3,7 @@
 		<OutputType>WinExe</OutputType>
 		<RootNamespace>JPSoftworks.MediaControlsExtension</RootNamespace>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AppxManifest>$(ProjectDir)Package.appxmanifest</AppxManifest>
 
 		<WindowsSdkPackageVersion>10.0.22621.57</WindowsSdkPackageVersion>
 		<TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
@@ -116,4 +117,16 @@
 			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<Target Name="UpdateVersionFromManifest" BeforeTargets="BeforeBuild">
+		<XmlPeek XmlInputPath="$(AppxManifest)" Query="/appx:Package/appx:Identity/@Version" Namespaces="&lt;Namespace Prefix='appx' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10'/&gt;">
+			<Output TaskParameter="Result" PropertyName="appxManifestVersion" />
+		</XmlPeek>
+
+		<Message Importance="High" Text="Set project version to match Appx manifest: $(appxManifestVersion)" />
+
+		<PropertyGroup>
+			<Version>$(appxManifestVersion)</Version>
+		</PropertyGroup>
+	</Target>
 </Project>
