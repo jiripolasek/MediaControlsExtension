@@ -7,6 +7,14 @@
 
 This extension allows you to control audio and video playback using [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview).
 
+## Installation
+
+> **Note:** This extension requires [Microsoft PowerToys](https://apps.microsoft.com/detail/9N3BQ81G19K7) to be installed.
+
+### Microsoft Store installation (recommended)
+
+<a href="https://apps.microsoft.com/detail/9NDDQK5VVLNB"><img alt="alt_text" width="240px" src="https://get.microsoft.com/images/en-us%20dark.svg" /></a>
+
 ## Licence
 
 Apache 2.0
