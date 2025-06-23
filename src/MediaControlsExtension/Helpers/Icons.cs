@@ -24,6 +24,12 @@ internal static class Icons
 
     public static readonly IconInfo ToggleMute = IconHelpers.FromRelativePath(@"Assets\Icons\Muted_Color.svg");
 
+    public static readonly IconInfo Volume_Mute = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Mute.svg");
+    public static readonly IconInfo Volume_Low = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Low.svg");
+    public static readonly IconInfo Volume_Max = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Max.svg");
+    public static readonly IconInfo Volume_Mid = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Mid.svg");
+    public static readonly IconInfo Volume_Unmute = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Unmute.svg");
+
     public static readonly IconInfo MainIcon = IconHelpers.FromRelativePaths(@"Assets\Square40x40-lightunplated.png", @"Assets\Square40x40-unplated.png");
 
     public static readonly IconInfo Music = new IconInfo("\uEC4F");

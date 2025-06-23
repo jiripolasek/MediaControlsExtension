@@ -61,11 +61,38 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Mute.
+        /// </summary>
+        internal static string Command_Mute {
+            get {
+                return ResourceManager.GetString("Command_Mute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mute system volume.
+        /// </summary>
+        internal static string Command_Mute_Subtitle {
+            get {
+                return ResourceManager.GetString("Command_Mute_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Next Track.
         /// </summary>
         internal static string Command_NextTrack {
             get {
                 return ResourceManager.GetString("Command_NextTrack", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skip to the next track in the active media session.
+        /// </summary>
+        internal static string Command_NextTrack_Subtitle {
+            get {
+                return ResourceManager.GetString("Command_NextTrack_Subtitle", resourceCulture);
             }
         }
         
@@ -84,6 +111,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         internal static string Command_PreviousTrack {
             get {
                 return ResourceManager.GetString("Command_PreviousTrack", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Returns to the previous track in the active media session.
+        /// </summary>
+        internal static string Command_PreviousTrack_Subtitle {
+            get {
+                return ResourceManager.GetString("Command_PreviousTrack_Subtitle", resourceCulture);
             }
         }
         
@@ -124,6 +160,33 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unmute.
+        /// </summary>
+        internal static string Command_Unmute {
+            get {
+                return ResourceManager.GetString("Command_Unmute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unmute system volume.
+        /// </summary>
+        internal static string Command_Unmute_Subtitle {
+            get {
+                return ResourceManager.GetString("Command_Unmute_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Manage playback and switch between media apps with ease.
+        /// </summary>
+        internal static string MediaControls_Subtitle {
+            get {
+                return ResourceManager.GetString("MediaControls_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Media controls.
         /// </summary>
         internal static string Name {
@@ -138,6 +201,42 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         internal static string Open {
             get {
                 return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disabled.
+        /// </summary>
+        internal static string Settings_GlobalCommands_Option_Disabled {
+            get {
+                return ResourceManager.GetString("Settings_GlobalCommands_Option_Disabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enabled.
+        /// </summary>
+        internal static string Settings_GlobalCommands_Option_Enabled {
+            get {
+                return ResourceManager.GetString("Settings_GlobalCommands_Option_Enabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Controls additional media controls commands in the global search.
+        /// </summary>
+        internal static string Settings_GlobalCommands_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_GlobalCommands_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Global Commands.
+        /// </summary>
+        internal static string Settings_GlobalCommands_Title {
+            get {
+                return ResourceManager.GetString("Settings_GlobalCommands_Title", resourceCulture);
             }
         }
         

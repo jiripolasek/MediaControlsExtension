@@ -4,6 +4,7 @@
 // 
 // ------------------------------------------------------------
 
+using Windows.Foundation;
 using Windows.Media.Control;
 using JPSoftworks.MediaControlsExtension.Resources;
 using Microsoft.CommandPalette.Extensions;
@@ -13,7 +14,7 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class PlayPauseMediaCommand : AsyncInvokableMediaCommand
 {
-    public PlayPauseMediaCommand(GlobalSystemMediaTransportControlsSessionManager sessionManager) : base(sessionManager)
+    public PlayPauseMediaCommand(IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> sessionManager) : base(sessionManager)
     {
         // FallbackPlayCommandItem is using this command to update the name
         // so we can't override the Name property and we've to allow to set it to empty string

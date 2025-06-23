@@ -4,6 +4,7 @@
 // 
 // ------------------------------------------------------------
 
+using Windows.Foundation;
 using Windows.Media.Control;
 using JPSoftworks.MediaControlsExtension.Resources;
 using Microsoft.CommandPalette.Extensions;
@@ -13,11 +14,11 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class NextTrackInvokableMediaCommand : AsyncInvokableMediaCommand
 {
-    public override IconInfo Icon => Icons.SkipNextTrack;
-    public override string Name => Strings.Command_NextTrack!;
-
-    public NextTrackInvokableMediaCommand(GlobalSystemMediaTransportControlsSessionManager manager) : base(manager)
+    public NextTrackInvokableMediaCommand(IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> manager) : base(manager)
     {
+        // FallbackSkipTrackCommandItem is using this command to update the name
+        this.Name = Strings.Command_NextTrack!;
+        this.Icon = Icons.SkipNextTrack;
     }
 
     protected override async Task<ICommandResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager sessionManager)

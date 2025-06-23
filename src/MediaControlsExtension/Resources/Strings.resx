@@ -159,4 +159,37 @@
   <data name="Tags_Playing" xml:space="preserve">
     <value>Playing</value>
   </data>
+  <data name="Command_Mute" xml:space="preserve">
+    <value>Mute</value>
+  </data>
+  <data name="Command_Unmute" xml:space="preserve">
+    <value>Unmute</value>
+  </data>
+  <data name="Command_Mute_Subtitle" xml:space="preserve">
+    <value>Mute system volume</value>
+  </data>
+  <data name="Command_Unmute_Subtitle" xml:space="preserve">
+    <value>Unmute system volume</value>
+  </data>
+  <data name="Command_NextTrack_Subtitle" xml:space="preserve">
+    <value>Skip to the next track in the active media session</value>
+  </data>
+  <data name="Command_PreviousTrack_Subtitle" xml:space="preserve">
+    <value>Returns to the previous track in the active media session</value>
+  </data>
+  <data name="MediaControls_Subtitle" xml:space="preserve">
+    <value>Manage playback and switch between media apps with ease</value>
+  </data>
+  <data name="Settings_GlobalCommands_Title" xml:space="preserve">
+    <value>Global Commands</value>
+  </data>
+  <data name="Settings_GlobalCommands_Subtitle" xml:space="preserve">
+    <value>Controls additional media controls commands in the global search</value>
+  </data>
+  <data name="Settings_GlobalCommands_Option_Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Settings_GlobalCommands_Option_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
 </root>

@@ -136,16 +136,17 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
         try
         {
+            var getManagerRequest = GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             this._sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync()!;
             this._sessionManager.SessionsChanged += this.SessionManagerOnSessionsChanged;
             this._sessionManager.CurrentSessionChanged += this.SessionManagerOnCurrentSessionChanged;
 
-            this._playPauseCommand = new ListItem(new PlayPauseMediaCommand(this._sessionManager!))
+            this._playPauseCommand = new ListItem(new PlayPauseMediaCommand(getManagerRequest!))
             {
                 Title = Strings.TogglePlayPause!, Subtitle = Strings.TogglePlayPause_Comments!
             };
-            this._nextTrackCommand = new ListItem(new NextTrackInvokableMediaCommand(this._sessionManager!));
-            this._prevTrackCommand = new ListItem(new PreviousTrackInvokableMediaCommand(this._sessionManager!));
+            this._nextTrackCommand = new ListItem(new NextTrackInvokableMediaCommand(getManagerRequest!));
+            this._prevTrackCommand = new ListItem(new PreviousTrackInvokableMediaCommand(getManagerRequest!));
             this._muteCommand = new ListItem(new ToggleMuteMediaInvokableCommand());
             this._commandsForNoSession = [this._muteCommand];
             this._isInitialized = true;

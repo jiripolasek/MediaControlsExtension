@@ -9,6 +9,7 @@ using JPSoftworks.MediaControlsExtension.Pages;
 using JPSoftworks.MediaControlsExtension.Resources;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
+using Windows.Foundation;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension;
@@ -17,10 +18,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 {
     private readonly SettingsManager _settingsManager = new();
     private readonly ICommandItem[] _commands;
-
-    private IFallbackCommandItem[]? _fallbackCommands;
-    private IFallbackCommandItem? _playPauseFallback;
-    private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
+    private readonly IFallbackCommandItem[]? _fallbackCommands;
+    private readonly IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> _sessionManagerTask;
 
     public MediaControlsExtensionCommandsProvider()
     {
@@ -30,43 +29,28 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this.Settings = this._settingsManager.Settings;
 
         var mediaControlsExtensionPage = new MediaControlsExtensionPage(this._settingsManager);
+        this._sessionManagerTask = GlobalSystemMediaTransportControlsSessionManager.RequestAsync()!;
 
         this._commands =
         [
             new CommandItem(mediaControlsExtensionPage)
             {
                 Title = this.DisplayName,
-                Subtitle = "Manage playback and switch between media apps with ease",
+                Subtitle = Strings.MediaControls_Subtitle!,
                 MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)]
             },
         ];
 
-        this._fallbackCommands = [];
-
-        _ = this.InitializeAsync();
+        this._fallbackCommands = [
+            new FallbackPlayCommandItem(new PlayPauseMediaCommand(this._sessionManagerTask!), Strings.TogglePlayPause!, this._settingsManager),
+            new FallbackUnmuteCommandItem(this._settingsManager),
+            new FallbackMuteCommandItem(this._settingsManager),
+            new FallbackSkipTrackCommandItem(this._sessionManagerTask, this._settingsManager),
+            new FallbackPreviousTrackCommandItem(this._sessionManagerTask, this._settingsManager)
+        ];
     }
 
-    private async Task InitializeAsync()
-    {
-        this._sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync()!;
+    public override ICommandItem[] TopLevelCommands() => this._commands;
 
-        this._playPauseFallback = new FallbackPlayCommandItem(new PlayPauseMediaCommand(this._sessionManager!), Strings.TogglePlayPause!)
-        {
-            Subtitle = Strings.TogglePlayPause_Comments!
-        };
-
-        this._fallbackCommands = [this._playPauseFallback];
-
-        this.RaiseItemsChanged();
-    }
-
-    public override ICommandItem[] TopLevelCommands()
-    {
-        return this._commands;
-    }
-
-    public override IFallbackCommandItem[]? FallbackCommands()
-    {
-        return this._fallbackCommands;
-    }
+    public override IFallbackCommandItem[]? FallbackCommands() => this._fallbackCommands;
 }
