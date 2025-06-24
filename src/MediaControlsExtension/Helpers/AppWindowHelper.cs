@@ -19,7 +19,7 @@ internal static class AppWindowHelper
     /// Attempts to bring the window with the specified AppUserModelID to the front.
     /// Returns true if successful; false if no matching window was found.
     /// </summary>
-    public static bool TryBringToFront(string appUserModelId)
+    public static bool TryBringToFront(string appUserModelId, string mediaTitle)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(appUserModelId);
 
@@ -28,6 +28,15 @@ internal static class AppWindowHelper
             var appEntries = AppInfo.GetFromAppUserModelId(appUserModelId)!.Package?.GetAppListEntries();
             if (appEntries is { Count: > 0 } && appEntries[0] is { } appEntry)
             {
+                if (appEntry.IsPwaAsync() && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
+                {
+                    var pwaWindowFound = PwaWindowManager.SwitchToPwaWindow(appEntry.DisplayInfo.DisplayName, mediaTitle);
+                    if (pwaWindowFound)
+                    {
+                        return true;
+                    }
+                }
+
                 _ = appEntry.LaunchAsync();
                 return true;
             }

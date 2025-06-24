@@ -121,7 +121,7 @@ internal sealed partial class MediaSourceListItem : ListItem, IDisposable
 
         try
         {
-            AppWindowHelper.TryBringToFront(this._mediaSource.Session.SourceAppUserModelId);
+            AppWindowHelper.TryBringToFront(this._mediaSource.Session.SourceAppUserModelId, this._mediaSource.Name);
         }
         catch (Exception ex)
         {
