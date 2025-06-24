@@ -13,9 +13,10 @@ This extension supports popular applications, including:
 - Spotify
 - foobar2000
 - VLC UWP
-- Windows Media Player
-- Browsers - Microsoft Edge & Google Chrome
-- YouTube and other web players
+- Media Player
+- Microsoft Edge, Google Chrome and other web browsers
+- Netflix, Disney+, HBO Max, SkyShowtime, Amazon Prime Video and other video players
+- YouTube, SoundCloud and other web players
 - and many more
 
 With intuitive commands for shuffle, loop, and quick player switching, it’s the perfect companion for anyone who juggles multiple media sources while working.
