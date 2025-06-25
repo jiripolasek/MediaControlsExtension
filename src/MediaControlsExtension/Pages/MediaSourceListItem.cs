@@ -116,12 +116,12 @@ internal sealed partial class MediaSourceListItem : ListItem, IDisposable
 
     private void BringToFront()
     {
-        if (this._mediaSource.Session.SourceAppUserModelId == null)
+        if (this._mediaSource.AppInfo == null)
             return;
 
         try
         {
-            AppWindowHelper.TryBringToFront(this._mediaSource.Session.SourceAppUserModelId, this._mediaSource.Name);
+            AppWindowHelper.TryBringToFront(this._mediaSource.AppInfo, this._mediaSource.Name);
         }
         catch (Exception ex)
         {

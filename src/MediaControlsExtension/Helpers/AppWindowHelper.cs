@@ -4,8 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using System.Runtime.InteropServices;
-using JPSoftworks.MediaControlsExtension.Interop;
 using Windows.ApplicationModel;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
@@ -19,32 +17,45 @@ internal static class AppWindowHelper
     /// Attempts to bring the window with the specified AppUserModelID to the front.
     /// Returns true if successful; false if no matching window was found.
     /// </summary>
-    public static bool TryBringToFront(string appUserModelId, string mediaTitle)
+    public static bool TryBringToFront(object app, string mediaTitle)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(appUserModelId);
+        ArgumentNullException.ThrowIfNull(app);
 
         try
         {
-            var appEntries = AppInfo.GetFromAppUserModelId(appUserModelId)!.Package?.GetAppListEntries();
-            if (appEntries is { Count: > 0 } && appEntries[0] is { } appEntry)
+            switch (app)
             {
-                if (appEntry.IsPwaAsync() && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
-                {
-                    var pwaWindowFound = PwaWindowManager.SwitchToPwaWindow(appEntry.DisplayInfo.DisplayName, mediaTitle);
-                    if (pwaWindowFound)
+                case AppInfo appInfo:
                     {
+                        var appEntries = appInfo.Package?.GetAppListEntries();
+                        if (appEntries is not { Count: > 0 })
+                        {
+                            return false;
+                        }
+
+                        // 1) app can be a PWA app, then we have to find the PWA window manually by matching titles,
+                        //    because LaunchAsync() will start a new instance of the PWA app instead switching to the existing one
+                        foreach (var appEntry in appEntries)
+                        {
+                            if (appEntry.IsPwaAsync() && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
+                            {
+                                var pwaWindowFound = PwaWindowManager.SwitchToPwaWindow(appEntry.DisplayInfo.DisplayName, mediaTitle);
+                                if (pwaWindowFound)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        // 2) start packaged app and hope it will switch to the existing instance
+                        _ = appEntries[0]?.LaunchAsync();
+
                         return true;
                     }
-                }
-
-                _ = appEntry.LaunchAsync();
-                return true;
+                case DesktopAppInfo desktopAppInfo:
+                    DesktopWindowManager.SwitchToDesktopAppWindow(desktopAppInfo.Path, mediaTitle);
+                    break;
             }
-            return false;
-        }
-        catch (COMException ex) when ((uint)ex.ErrorCode == (uint)HRESULT.ERROR_NOT_FOUND)
-        {
-            // nope
         }
         catch (Exception ex)
         {

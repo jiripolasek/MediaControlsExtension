@@ -77,6 +77,8 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     public IRandomAccessStream? Thumbnail { get; private set; }
 
+    public object? AppInfo { get; private set; }
+
     public MediaPlaybackType PlaybackType
     {
         get;
@@ -150,7 +152,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     {
         try
         {
-            this.UpdateAppDisplayInfo(session);
+            this.AppInfo = this.UpdateAppDisplayInfo(session);
         }
         catch (Exception ex)
         {
@@ -191,30 +193,29 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         }
     }
 
-    private void UpdateAppDisplayInfo(GlobalSystemMediaTransportControlsSession session)
+    private object? UpdateAppDisplayInfo(GlobalSystemMediaTransportControlsSession session)
     {
-        if (string.IsNullOrWhiteSpace(session.SourceAppUserModelId))
-        {
-            this.ApplicationName = null;
-            this.ApplicationIconPath = null;
-        }
-        else
+        if (!string.IsNullOrWhiteSpace(session.SourceAppUserModelId))
         {
             var appDisplayInfo = ModernAppHelper.Get(session.SourceAppUserModelId)?.DisplayInfo;
             if (appDisplayInfo != null)
             {
                 this.ApplicationName = appDisplayInfo.DisplayName ?? "";
                 this.ApplicationIconPath = PackageIconHelper.GetBestIconPath(session.SourceAppUserModelId);
+                return appDisplayInfo;
             }
-            else
+
+            var desktopApp = DesktopAppHelper.GetExecutable(session.SourceAppUserModelId);
+            if (desktopApp is not null)
             {
-                var desktopApp = DesktopAppHelper.GetExecutable(session.SourceAppUserModelId);
-                if (desktopApp is not null)
-                {
-                    this.ApplicationIconPath = desktopApp.Path + ",0";
-                    this.ApplicationName = desktopApp.DisplayName;
-                }
+                this.ApplicationIconPath = desktopApp.Path + ",0";
+                this.ApplicationName = desktopApp.DisplayName;
+                return desktopApp;
             }
         }
+
+        this.ApplicationName = null;
+        this.ApplicationIconPath = null;
+        return null;
     }
 }

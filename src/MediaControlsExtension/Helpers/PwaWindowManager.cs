@@ -9,55 +9,8 @@ using System.Runtime.InteropServices;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal static partial class PwaWindowManager
+internal static class PwaWindowManager
 {
-    [LibraryImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
-
-    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowTextW", StringMarshalling = StringMarshalling.Utf16)]
-    private static unsafe partial int GetWindowText(IntPtr hWnd, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] buffer, int nMaxCount);
-
-    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowTextLengthW", StringMarshalling = StringMarshalling.Utf16)]
-    private static partial int GetWindowTextLength(IntPtr hWnd);
-
-    [LibraryImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool IsWindowVisible(IntPtr hWnd);
-
-    [LibraryImport("user32.dll", SetLastError = true)]
-    private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    [LibraryImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool SetForegroundWindow(IntPtr hWnd);
-
-    [LibraryImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [LibraryImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool IsIconic(IntPtr hWnd);
-
-    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetClassNameW")]
-    private static partial int GetClassName(IntPtr hWnd, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] lpClassName, int nMaxCount);
-
-    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
-    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-    private const int SW_RESTORE = 9;
-    private const int SW_SHOW = 5;
-
-    internal sealed class WindowInfo
-    {
-        public IntPtr Handle { get; set; }
-        public string Title { get; set; } = "";
-        public uint ProcessId { get; set; }
-        public string? ProcessName { get; set; }
-        public string? ClassName { get; set; }
-    }
-
     /// <summary>
     /// Find and switch to a PWA window by app name and optionally page title
     /// </summary>
@@ -68,7 +21,7 @@ internal static partial class PwaWindowManager
         var pwaWindow = FindPwaWindow(appName, pageTitle);
         if (pwaWindow != null)
         {
-            return BringWindowToFront(pwaWindow.Handle);
+            return WindowManager.BringWindowToFront(pwaWindow.Handle);
         }
         return false;
     }
@@ -97,9 +50,9 @@ internal static partial class PwaWindowManager
     /// </summary>
     /// <param name="appName">The PWA app name</param>
     /// <param name="pageTitle">Optional: specific page title to match</param>
-    public static WindowInfo? FindPwaWindow(string appName, string? pageTitle = null)
+    private static WindowInfo? FindPwaWindow(string appName, string? pageTitle = null)
     {
-        var windows = GetAllWindows();
+        var windows = WindowManager.GetAllWindows();
 
         var browserProcessNames = new[] { "msedge", "chrome", "msedgewebview2" };
         var browserWindows = windows.Where(w => browserProcessNames.Contains(w.ProcessName, StringComparer.OrdinalIgnoreCase)).ToList();
@@ -157,7 +110,7 @@ internal static partial class PwaWindowManager
     /// <summary>
     /// Extract page title from PWA window title (format: "App name - Page title")
     /// </summary>
-    public static string ExtractPageTitleFromWindowTitle(string windowTitle)
+    private static string ExtractPageTitleFromWindowTitle(string windowTitle)
     {
         if (string.IsNullOrEmpty(windowTitle))
             return string.Empty;
@@ -172,11 +125,52 @@ internal static partial class PwaWindowManager
         // If no separator found, return empty
         return string.Empty;
     }
+}
+
+internal static partial class WindowManager
+{
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowTextW", StringMarshalling = StringMarshalling.Utf16)]
+    private static unsafe partial int GetWindowText(IntPtr hWnd, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] buffer, int nMaxCount);
+
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetWindowTextLengthW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int GetWindowTextLength(IntPtr hWnd);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsWindowVisible(IntPtr hWnd);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsIconic(IntPtr hWnd);
+
+    [LibraryImport("user32.dll", SetLastError = true, EntryPoint = "GetClassNameW")]
+    private static partial int GetClassName(IntPtr hWnd, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] lpClassName, int nMaxCount);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    private const int SW_RESTORE = 9;
+    private const int SW_SHOW = 5;
 
     /// <summary>
     /// Get all visible windows
     /// </summary>
-    private static List<WindowInfo> GetAllWindows()
+    internal static List<WindowInfo> GetAllWindows()
     {
         var windows = new List<WindowInfo>();
 
@@ -218,10 +212,12 @@ internal static partial class PwaWindowManager
         {
             var process = Process.GetProcessById((int)processId);
             info.ProcessName = process.ProcessName;
+            info.MainModulePath = process.MainModule?.FileName;
         }
         catch
         {
             info.ProcessName = "";
+            info.MainModulePath = "";
         }
 
         var classNameBuffer = new char[256];
@@ -234,7 +230,7 @@ internal static partial class PwaWindowManager
     /// <summary>
     /// Bring window to front
     /// </summary>
-    private static bool BringWindowToFront(IntPtr hWnd)
+    public static bool BringWindowToFront(IntPtr hWnd)
     {
         if (IsIconic(hWnd))
         {
@@ -245,4 +241,16 @@ internal static partial class PwaWindowManager
         SetForegroundWindow(hWnd);
         return true;
     }
+}
+
+
+
+internal sealed class WindowInfo
+{
+    public IntPtr Handle { get; set; }
+    public string Title { get; set; } = "";
+    public uint ProcessId { get; set; }
+    public string? ProcessName { get; set; }
+    public string? ClassName { get; set; }
+    public string? MainModulePath { get; set; }
 }
