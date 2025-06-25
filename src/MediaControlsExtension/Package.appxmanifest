@@ -12,7 +12,7 @@
   <Identity
     Name="JiriPolasek.MediaControlsForCmdPal"
     Publisher="CN=735F2779-478E-4220-AA28-465CBADFF852"
-    Version="0.1.0.0" />
+    Version="0.4.0.0" />
   <!-- When you're ready to publish your extension, you'll need to change the
        Publisher= to match your own identity -->
 
