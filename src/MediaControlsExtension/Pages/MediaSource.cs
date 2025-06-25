@@ -77,7 +77,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     public IRandomAccessStream? Thumbnail { get; private set; }
 
-    public object? AppInfo { get; private set; }
+    public IAppInfo? AppInfo { get; private set; }
 
     public MediaPlaybackType PlaybackType
     {
@@ -152,7 +152,9 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     {
         try
         {
-            this.AppInfo = this.UpdateAppDisplayInfo(session);
+            this.AppInfo = UpdateAppDisplayInfo(session);
+            this.ApplicationName = this.AppInfo.DisplayName ?? "";
+            this.ApplicationIconPath = this.AppInfo.IconPath;
         }
         catch (Exception ex)
         {
@@ -193,29 +195,29 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         }
     }
 
-    private object? UpdateAppDisplayInfo(GlobalSystemMediaTransportControlsSession session)
+    private static IAppInfo UpdateAppDisplayInfo(GlobalSystemMediaTransportControlsSession session)
     {
-        if (!string.IsNullOrWhiteSpace(session.SourceAppUserModelId))
+        if (string.IsNullOrWhiteSpace(session.SourceAppUserModelId))
         {
-            var appDisplayInfo = ModernAppHelper.Get(session.SourceAppUserModelId)?.DisplayInfo;
+            return EmptyAppInfo.Instance;
+        }
+
+        var appInfo = ModernAppHelper.Get(session.SourceAppUserModelId);
+        if (appInfo != null)
+        {
+            var appDisplayInfo = appInfo.DisplayInfo;
             if (appDisplayInfo != null)
             {
-                this.ApplicationName = appDisplayInfo.DisplayName ?? "";
-                this.ApplicationIconPath = PackageIconHelper.GetBestIconPath(session.SourceAppUserModelId);
-                return appDisplayInfo;
-            }
-
-            var desktopApp = DesktopAppHelper.GetExecutable(session.SourceAppUserModelId);
-            if (desktopApp is not null)
-            {
-                this.ApplicationIconPath = desktopApp.Path + ",0";
-                this.ApplicationName = desktopApp.DisplayName;
-                return desktopApp;
+                return new ModernAppInfo(appInfo, PackageIconHelper.GetBestIconPath(session.SourceAppUserModelId));
             }
         }
 
-        this.ApplicationName = null;
-        this.ApplicationIconPath = null;
-        return null;
+        var desktopApp = DesktopAppHelper.GetExecutable(session.SourceAppUserModelId);
+        if (desktopApp is not null)
+        {
+            return desktopApp;
+        }
+
+        return EmptyAppInfo.Instance;
     }
 }

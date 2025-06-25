@@ -6,24 +6,8 @@
 
 using System.Runtime.InteropServices;
 using JPSoftworks.MediaControlsExtension.Interop;
-using Windows.ApplicationModel;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
-
-internal static class ModernAppHelper
-{
-    public static AppInfo? Get(string appUserModelId)
-    {
-        try
-        {
-            return AppInfo.GetFromAppUserModelId(appUserModelId);
-        }
-        catch (COMException ex) when ((uint)ex.ErrorCode == (uint)HRESULT.ERROR_NOT_FOUND)
-        {
-            return null;
-        }
-    }
-}
 
 internal static class DesktopAppHelper
 {
@@ -42,7 +26,7 @@ internal static class DesktopAppHelper
             string path = shellItem.GetString(ref PropertyKeys.PKEY_Link_TargetParsingPath);
 
             return !string.IsNullOrWhiteSpace(path) && File.Exists(path)
-                ? new DesktopAppInfo(displayName, path, appId)
+                ? new DesktopAppInfo(displayName, path, appId, path + ",0")
                 : null;
         }
         catch (COMException ex) when ((uint)ex.ErrorCode == (uint)HRESULT.ERROR_NOT_FOUND)
