@@ -53,7 +53,7 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
     public FallbackSkipTrackCommandItem(
         IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager)
-        : base(new NoOpCommand(), string.Empty)
+        : base(new NoOpCommand(), Strings.Command_NextTrack)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new NextTrackInvokableMediaCommand(getSessionManagerOperation) { Name = "" };
@@ -81,7 +81,7 @@ internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommand
     public FallbackPreviousTrackCommandItem(
         IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager)
-        : base(new NoOpCommand(), string.Empty)
+        : base(new NoOpCommand(), Strings.Command_PreviousTrack)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new PreviousTrackInvokableMediaCommand(getSessionManagerOperation) { Name = "" };
@@ -107,7 +107,7 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem
         new("vol", "Volume Mute"),
     ]);
 
-    public FallbackMuteCommandItem(SettingsManager settingsManager) : base(new NoOpCommand(), "")
+    public FallbackMuteCommandItem(SettingsManager settingsManager) : base(new NoOpCommand(), Strings.Command_Mute)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new SetMuteMediaInvokableCommand(true) { Name = "" };
@@ -132,7 +132,7 @@ internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem
         new("vol", "Volume Unmute"),
     ]);
 
-    public FallbackUnmuteCommandItem(SettingsManager settingsManager) : base(new NoOpCommand(), "")
+    public FallbackUnmuteCommandItem(SettingsManager settingsManager) : base(new NoOpCommand(), Strings.Command_Unmute)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new SetMuteMediaInvokableCommand(false) { Name = "" };
