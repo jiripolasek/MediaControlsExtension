@@ -192,4 +192,25 @@
   <data name="Settings_GlobalCommands_Option_Disabled" xml:space="preserve">
     <value>Disabled</value>
   </data>
+  <data name="Settings_KeepOpen_Title" xml:space="preserve">
+    <value>Keep Open</value>
+  </data>
+  <data name="Settings_KeepOpen_Subtitle" xml:space="preserve">
+    <value>Prevent Command Palette from closing after invoking a media command, so you can easily make another one</value>
+  </data>
+  <data name="Command_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Command_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Command_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Command_NextApp" xml:space="preserve">
+    <value>Next Application</value>
+  </data>
+  <data name="Command_PreviousApp" xml:space="preserve">
+    <value>Previous Application</value>
+  </data>
 </root>

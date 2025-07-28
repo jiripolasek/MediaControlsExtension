@@ -17,6 +17,7 @@
 		<LangVersion>preview</LangVersion>
 		<DebugType>embedded</DebugType>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<ImplicitUsings>enable</ImplicitUsings>
 
 		<AssemblyName>JPSoftworks.MediaControlsExtension</AssemblyName>
 		<Company>Jiri Polasek</Company>

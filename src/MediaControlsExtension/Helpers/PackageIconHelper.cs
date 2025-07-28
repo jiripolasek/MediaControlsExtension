@@ -81,7 +81,9 @@ internal static class PackageIconHelper
     private static string? GetLogoBasePath(Package package)
     {
         if (string.IsNullOrWhiteSpace(package.InstalledLocation?.Path))
+        {
             return null;
+        }
 
         var manifestPath = Path.Combine(package.InstalledLocation.Path, "AppxManifest.xml");
         if (!File.Exists(manifestPath))

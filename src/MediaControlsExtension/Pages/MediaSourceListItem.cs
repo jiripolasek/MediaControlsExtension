@@ -4,24 +4,99 @@
 // 
 // ------------------------------------------------------------
 
-using JPSoftworks.MediaControlsExtension.Resources;
-using Microsoft.CommandPalette.Extensions;
-using Microsoft.CommandPalette.Extensions.Toolkit;
+using System.Text;
 using Windows.Media;
-using Windows.System;
 
 namespace JPSoftworks.MediaControlsExtension.Pages;
 
-internal sealed partial class MediaSourceListItem : ListItem, IDisposable
+internal partial class ListItemBase : ListItem
 {
-    private readonly MediaSource _mediaSource;
+    public override string Title
+    {
+        get => base.Title;
+        set
+        {
+            if (base.Title != value)
+            {
+                base.Title = value;
+            }
+        }
+    }
+
+    public override string Subtitle
+    {
+        get => base.Subtitle;
+        set
+        {
+            if (base.Subtitle != value)
+            {
+                base.Subtitle = value;
+            }
+        }
+    }
+
+    public override ITag[] Tags
+    {
+        get => base.Tags;
+        set
+        {
+            if (base.Tags != value)
+            {
+                base.Tags = value;
+            }
+        }
+    }
+
+    public override IIconInfo? Icon
+    {
+        get => base.Icon;
+        set
+        {
+            if(ReferenceEquals(base.Icon, value))
+            {
+                return;
+            }
+
+            if (base.Icon == value || (base.Icon?.Dark?.Icon == value?.Dark?.Icon && base.Icon?.Light?.Icon == value?.Light?.Icon))
+            {
+                return;
+            }
+
+            base.Icon = value;
+        }
+    }
+
+    protected ListItemBase(ICommand command) : base(command)
+    {
+    }
+
+    protected ListItemBase(ICommandItem command) : base(command)
+    {
+    }
+}
+
+internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
+{
+    private static readonly Tag PlayingTag = new() { Text = Strings.Tags_Playing!, Icon = Icons.PlaySolid, Foreground = new(true, new(0, 255, 0, 128)), Background = new(true, new(0, 255, 00, 40)) };
+
     private readonly SettingsManager _settingsManager;
     private readonly ThrottledAction _throttledAction;
+    private readonly PlayPauseSpecificMediaCommand _command;
 
-    public MediaSourceListItem(MediaSource mediaSource, SettingsManager settingsManager, ICommand command) : base(command)
+    private NiceIconInfo? _lastIcon;
+    private MediaSource _mediaSource;
+    private bool _disposed;
+
+    public MediaSourceListItem(
+        MediaService mediaService,
+        MediaSource mediaSource,
+        SettingsManager settingsManager,
+        YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
     {
+        ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(mediaSource);
         ArgumentNullException.ThrowIfNull(settingsManager);
+        ArgumentNullException.ThrowIfNull(yetAnotherHelper);
 
         this._mediaSource = mediaSource;
         this._settingsManager = settingsManager;
@@ -29,189 +104,102 @@ internal sealed partial class MediaSourceListItem : ListItem, IDisposable
         this._mediaSource.PropChanged += this.MediaSourceOnPropChanged;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
 
-        this._throttledAction = new ThrottledAction(100, () => this.Update(this._mediaSource));
+        this._throttledAction = new(100, () => this.Update(this._mediaSource));
 
         this.Title = Strings.Command_PlayPause!;
         this.Icon = Icons.PlayPause;
 
-        this.Update(this._mediaSource);
+        this.Command = this._command = new(mediaService, mediaSource, settingsManager, yetAnotherHelper);
 
-        // keyboard shortcuts follow Windows Media Player shortcuts
         this.MoreCommands =
         [
-            new CommandContextItem(Strings.Command_SwitchToApplication!, name: Strings.Command_SwitchToApplication!, action: this.BringToFront) { RequestedShortcut = new KeyChord(VirtualKeyModifiers.Control, (int)VirtualKey.G, 0), Icon = Icons.SwitchApps},
-            new CommandContextItem(Strings.Command_NextTrack!, action: this.NextTrack) { RequestedShortcut = new KeyChord(VirtualKeyModifiers.Control, (int)VirtualKey.F, 0), Icon = Icons.NextTrackOutline},
-            new CommandContextItem(Strings.Command_PreviousTrack!, action: this.PreviousTrack) { RequestedShortcut = new KeyChord(VirtualKeyModifiers.Control, (int)VirtualKey.B, 0), Icon = Icons.PreviousTrackOutline},
-            new CommandContextItem(Strings.Command_ToggleRepeat!, action: this.ToggleRepeat) { RequestedShortcut = new KeyChord(VirtualKeyModifiers.Control, (int)VirtualKey.T, 0), Icon = Icons.ToggleRepeat},
-            new CommandContextItem(Strings.Command_ToggleShuffle!, action: this.ToggleShuffle) { RequestedShortcut = new KeyChord(VirtualKeyModifiers.Control, (int)VirtualKey.H, 0), Icon = Icons.ToggleShuffle},
+            new CommandContextItem(new BringAssociatedAppToFrontCommand(mediaSource)) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
+            new CommandContextItem(new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
+            new CommandContextItem(new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
+            new CommandContextItem(new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
+            new CommandContextItem(new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
+
+        this.Update(this._mediaSource);
     }
-
-    private async void ToggleShuffle()
-    {
-        try
-        {
-            var isShuffleActive = this._mediaSource.Session.GetPlaybackInfo()?.IsShuffleActive == true;
-            await this._mediaSource.Session.TryChangeShuffleActiveAsync(!isShuffleActive)!;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-    private async void ToggleRepeat()
-    {
-        try
-        {
-            var currentRepeatMode = this._mediaSource.Session.GetPlaybackInfo()?.AutoRepeatMode;
-            if (currentRepeatMode == null)
-                return;
-
-            var nextRepeatModel = (currentRepeatMode.Value + 1 % 3);
-            await this._mediaSource.Session.TryChangeAutoRepeatModeAsync(nextRepeatModel)!;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-    private async void NextTrack()
-    {
-        try
-        {
-            await this._mediaSource.Session.TrySkipNextAsync()!;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-    private async void PreviousTrack()
-    {
-        try
-        {
-            await this._mediaSource.Session.TrySkipPreviousAsync()!;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-            this._mediaSource.PropChanged -= this.MediaSourceOnPropChanged;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-    private void BringToFront()
-    {
-        if (this._mediaSource.AppInfo == null)
-            return;
-
-        try
-        {
-            AppWindowHelper.TryBringToFront(this._mediaSource.AppInfo, this._mediaSource.Name);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-        }
-    }
-
-
-    private void SettingsOnSettingsChanged(object sender, Settings args)
-    {
-        this._throttledAction.Invoke();
-    }
-
-    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)
-    {
-        this._throttledAction.Invoke();
-    }
-
 
     private void Update(MediaSource mediaSource)
     {
+        ArgumentNullException.ThrowIfNull(mediaSource);
+
+        try
+        {
+            this.UpdateCore(mediaSource);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex);
+        }
+    }
+
+    private void UpdateCore(MediaSource mediaSource)
+    {
         this.Title = (mediaSource.IsPlaying ? "▶️ " : "") + mediaSource.Name;
-        this.Subtitle = BuildSubtitle(mediaSource);
-        this.Icon = SetIconSource(mediaSource, this._settingsManager.ShowThumbnails);
+        this.Subtitle  = BuildSubtitle(mediaSource);
+        this._command.Name = mediaSource.IsPlaying ? Strings.Command_Pause : Strings.Command_Play;
         this.Tags = BuildTags();
+
+        var iconBuildTask = BuildIcon(mediaSource, this._settingsManager.ShowThumbnails);
+        if (this._lastIcon != iconBuildTask)
+        {
+            this._lastIcon = iconBuildTask;
+            this.Icon = iconBuildTask.IconInfo;
+        }
 
         return;
 
-        static IconInfo SetIconSource(MediaSource mediaSource, bool showThumbnail)
+        static NiceIconInfo BuildIcon(MediaSource mediaSource, bool showThumbnail)
         {
-            if (showThumbnail && mediaSource.Thumbnail != null)
+            if (showThumbnail && mediaSource.ThumbnailInfo?.Stream != null)
             {
-                return IconInfo.FromStream(mediaSource.Thumbnail);
+                return new(mediaSource.ThumbnailInfo!);
             }
 
             if (mediaSource.ApplicationIconPath != null)
             {
-                return new IconInfo(mediaSource.ApplicationIconPath);
+                return new(mediaSource.ApplicationIconPath);
             }
 
-            return GetIconForPlaybackType(mediaSource.PlaybackType);
+            return new(GetFallbackIconForPlaybackType(mediaSource.PlaybackType));
         }
 
         static string BuildSubtitle(MediaSource mediaSource)
         {
-            var temp = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(mediaSource.Artist))
-            {
-                temp.Add(mediaSource.Artist);
-            }
-
-            if (!string.IsNullOrWhiteSpace(mediaSource.ApplicationName))
-            {
-                temp.Add(mediaSource.ApplicationName);
-            }
+            var subtitleBuilder = new StringBuilder();
+            subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.Artist);
+            subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.ApplicationName);
 
 #if DEBUG
-            temp.Add(mediaSource.Session.SourceAppUserModelId ?? "no AUMID");
-            if (!string.IsNullOrWhiteSpace(mediaSource.ApplicationIconPath))
-            {
-                temp.Add(Path.GetFileName(mediaSource.ApplicationIconPath));
-            }
+            subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.Session.SourceAppUserModelId ?? "no AUMID");
+            subtitleBuilder.AppendWhenNotEmpty(" • ", Path.GetFileName(mediaSource.ApplicationIconPath));
 #endif
 
-            return string.Join(" • ", temp);
+            return subtitleBuilder.ToString();
         }
 
         ITag[] BuildTags()
         {
-            var tags = new List<ITag>();
+            var tags = new List<ITag>(2);
             if (mediaSource.IsPlaying)
             {
-                tags.Add(new Tag
-                {
-                    Text = Strings.Tags_Playing!,
-                    Icon = Icons.PlaySolid,
-                    Foreground = new OptionalColor(true, new Color(0, 255, 0, 128)),
-                    Background = new OptionalColor(true, new Color(0, 255, 00, 40))
-                });
+                tags.Add(PlayingTag);
             }
+
             if (this._settingsManager.ShowThumbnails)
             {
                 tags.Add(new Tag { Text = mediaSource.ApplicationName ?? "", Icon = new IconInfo(mediaSource.ApplicationIconPath) });
             }
+
             return [.. tags];
         }
     }
 
-    private static IconInfo GetIconForPlaybackType(MediaPlaybackType playbackType)
+    private static IconInfo GetFallbackIconForPlaybackType(MediaPlaybackType playbackType)
     {
         return playbackType switch
         {
@@ -220,5 +208,45 @@ internal sealed partial class MediaSourceListItem : ListItem, IDisposable
             MediaPlaybackType.Image => Icons.Image,
             _ => Icons.Unknown
         };
+    }
+
+    private bool Equals(MediaSourceListItem other)
+    {
+        return this._mediaSource.Session.SourceAppUserModelId.Equals(other._mediaSource.Session.SourceAppUserModelId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj) || obj is MediaSourceListItem other && this.Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return this._mediaSource.GetHashCode();
+    }
+
+    private void SettingsOnSettingsChanged(object sender, Settings args) => this._throttledAction.Invoke();
+
+    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args) => this._throttledAction.Invoke();
+
+    public void Dispose()
+    {
+        if (this._disposed)
+        {
+            return;
+        }
+
+        try
+        {
+            this._throttledAction.Dispose();
+            this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
+            this._mediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            this._mediaSource = null!;
+            this._disposed = true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex);
+        }
     }
 }

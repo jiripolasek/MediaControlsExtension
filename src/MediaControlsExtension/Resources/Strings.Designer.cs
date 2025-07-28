@@ -79,6 +79,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Next Application.
+        /// </summary>
+        internal static string Command_NextApp {
+            get {
+                return ResourceManager.GetString("Command_NextApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Next Track.
         /// </summary>
         internal static string Command_NextTrack {
@@ -97,11 +106,38 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Pause.
+        /// </summary>
+        internal static string Command_Pause {
+            get {
+                return ResourceManager.GetString("Command_Pause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Play.
+        /// </summary>
+        internal static string Command_Play {
+            get {
+                return ResourceManager.GetString("Command_Play", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Play / Pause.
         /// </summary>
         internal static string Command_PlayPause {
             get {
                 return ResourceManager.GetString("Command_PlayPause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Previous Application.
+        /// </summary>
+        internal static string Command_PreviousApp {
+            get {
+                return ResourceManager.GetString("Command_PreviousApp", resourceCulture);
             }
         }
         
@@ -120,6 +156,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         internal static string Command_PreviousTrack_Subtitle {
             get {
                 return ResourceManager.GetString("Command_PreviousTrack_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stop.
+        /// </summary>
+        internal static string Command_Stop {
+            get {
+                return ResourceManager.GetString("Command_Stop", resourceCulture);
             }
         }
         
@@ -237,6 +282,24 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         internal static string Settings_GlobalCommands_Title {
             get {
                 return ResourceManager.GetString("Settings_GlobalCommands_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Prevent Command Palette from closing after invoking a media command, so you can easily make another one.
+        /// </summary>
+        internal static string Settings_KeepOpen_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_KeepOpen_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Keep Open.
+        /// </summary>
+        internal static string Settings_KeepOpen_Title {
+            get {
+                return ResourceManager.GetString("Settings_KeepOpen_Title", resourceCulture);
             }
         }
         

@@ -27,13 +27,17 @@ internal static class AppListEntryExtensions
         {
             var appId = appListEntry.AppUserModelId.Split('!').LastOrDefault();
             if (string.IsNullOrEmpty(appId))
+            {
                 return false;
+            }
 
             var package = appListEntry.AppInfo!.Package;
             var manifestPath = Path.Combine(package.InstalledPath, "AppXManifest.xml");
 
             if (!File.Exists(manifestPath))
+            {
                 return false;
+            }
 
             var doc = new XmlDocument();
             doc.Load(manifestPath);

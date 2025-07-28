@@ -5,7 +5,6 @@
 // ------------------------------------------------------------
 
 using System.Diagnostics;
-using Microsoft.CommandPalette.Extensions;
 using Shmuelie.WinRTServer;
 using Shmuelie.WinRTServer.CsWinRT;
 

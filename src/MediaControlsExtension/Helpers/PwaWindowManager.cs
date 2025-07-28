@@ -40,7 +40,9 @@ internal static class PwaWindowManager
     private static string ExtractAppNameFromTitle(string windowTitle)
     {
         if (string.IsNullOrEmpty(windowTitle))
+        {
             return string.Empty;
+        }
 
         // Look for the first " - " separator
         int separatorIndex = windowTitle.IndexOf(" - ", StringComparison.CurrentCultureIgnoreCase);
@@ -91,7 +93,9 @@ internal static class PwaWindowManager
         });
 
         if (exactPageMatch != null)
+        {
             return exactPageMatch;
+        }
 
         // Strategy 2: Partial page title match (contains)
         var partialPageMatch = appWindows.FirstOrDefault(w =>
@@ -101,14 +105,18 @@ internal static class PwaWindowManager
         });
 
         if (partialPageMatch != null)
+        {
             return partialPageMatch;
+        }
 
         // Strategy 3: Check if page title appears anywhere in the full window title
         var anywhereMatch = appWindows.FirstOrDefault(w =>
             w.Title.Contains(pageTitle, StringComparison.OrdinalIgnoreCase));
 
         if (anywhereMatch != null)
+        {
             return anywhereMatch;
+        }
 
         // If no match found with page title, return first app window anyway
         return appWindows.FirstOrDefault();
@@ -120,7 +128,9 @@ internal static class PwaWindowManager
     private static string ExtractPageTitleFromWindowTitle(string windowTitle)
     {
         if (string.IsNullOrEmpty(windowTitle))
+        {
             return string.Empty;
+        }
 
         // Look for the first " - " separator
         int separatorIndex = windowTitle.IndexOf(" - ", StringComparison.InvariantCultureIgnoreCase);
