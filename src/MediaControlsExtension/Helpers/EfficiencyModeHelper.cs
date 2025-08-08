@@ -42,7 +42,9 @@ public static partial class EfficiencyModeHelper
     private static void EnableProcessEfficiencyMode()
     {
         if (!IsSupported())
+        {
             throw new PlatformNotSupportedException("Efficiency Mode (EcoQoS) is supported on Windows 11 (build 22000+) only.");
+        }
 
         var process = GetCurrentProcess();
         var ecoQosState = new PROCESS_POWER_THROTTLING_STATE

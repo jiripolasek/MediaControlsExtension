@@ -5,7 +5,6 @@
 // ------------------------------------------------------------
 
 using System.Runtime.InteropServices;
-using Microsoft.CommandPalette.Extensions;
 
 namespace JPSoftworks.MediaControlsExtension;
 

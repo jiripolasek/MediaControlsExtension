@@ -6,19 +6,18 @@
 
 using AudioSwitcher.AudioApi;
 using AudioSwitcher.AudioApi.CoreAudio;
-using JPSoftworks.MediaControlsExtension.Resources;
-using Microsoft.CommandPalette.Extensions;
-using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableCommand
 {
     private readonly bool _targetMute;
+    private readonly YetAnotherHelper _yetAnotherHelper;
 
-    public SetMuteMediaInvokableCommand(bool targetMute)
+    public SetMuteMediaInvokableCommand(bool targetMute, YetAnotherHelper yetAnotherHelper)
     {
         this._targetMute = targetMute;
+        this._yetAnotherHelper = yetAnotherHelper;
         this.Name = targetMute ? Strings.Command_Mute! : Strings.Command_Unmute!;
         this.Icon = targetMute ? Icons.Volume_Mute : Icons.Volume_Unmute;
     }
@@ -32,13 +31,14 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
             if (playbackDevice != null)
             {
                 await playbackDevice.SetMuteAsync(this._targetMute)!.ConfigureAwait(false);
+                return this._yetAnotherHelper.GetMediaCommandResult(this._targetMute ? "🔇Muted" : "🔊 Unmuted");
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
-
-        return CommandResult.Dismiss();
+        
+        return this._yetAnotherHelper.GetMediaCommandResult("Can't change the volume");
     }
 }

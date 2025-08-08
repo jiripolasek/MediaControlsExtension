@@ -4,254 +4,144 @@
 // 
 // ------------------------------------------------------------
 
-using System.Collections.Immutable;
-using JPSoftworks.MediaControlsExtension.Commands;
-using JPSoftworks.MediaControlsExtension.Resources;
-using JPSoftworks.MediaControlsExtension.Threading;
-using Microsoft.CommandPalette.Extensions;
-using Microsoft.CommandPalette.Extensions.Toolkit;
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension.Pages;
 
-internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
+internal sealed partial class MediaControlsExtensionPage : ListPage
 {
-    private readonly System.Timers.Timer _throttleTimer;
     private readonly SettingsManager _settingsManager;
-    private readonly Lock _resultsLock = new();
-    private CancellationTokenSource? _cancellationTokenSource;
-    private Task<ImmutableArray<MediaSource>>? _currentUpdateTask;
+    private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly MediaService _mediaService;
+    private readonly Lock _refreshLock = new();
 
     private bool _isInitialized;
-    private ImmutableArray<MediaSource> _results = [];
-    private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
-    private IListItem[] _commandsForNoSession = [];
-    private ListItem? _playPauseCommand;
-    private ListItem? _nextTrackCommand;
-    private ListItem? _prevTrackCommand;
-    private ListItem? _muteCommand;
+    private readonly ListItem? _playPauseCurrentSessionItem;
+    private readonly ListItem? _nextTrackCurrentSessionItem;
+    private readonly ListItem? _prevTrackCurrentSessionItem;
+    private readonly ListItem? _muteCommandItem;
+    private List<MediaSourceListItem> _items = [];
 
-    public MediaControlsExtensionPage(SettingsManager settingsManager)
+    public MediaControlsExtensionPage(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper)
     {
+        ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
+        ArgumentNullException.ThrowIfNull(yetAnotherHelper);
 
         this._settingsManager = settingsManager;
+        this._yetAnotherHelper = yetAnotherHelper;
+        this._mediaService = mediaService;
+
         this.Icon = Icons.MainIcon;
         this.Title = Strings.Name!;
         this.Name = Strings.Open!;
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols";
+        this.PlaceholderText = "Search media commands or sessions…";
 
-        this._throttleTimer = new System.Timers.Timer(100);
-        this._throttleTimer.Enabled = false;
-        this._throttleTimer.Elapsed += (_, _) =>
+        this._mediaService.Initialized += (_, _) =>
         {
-            this._throttleTimer.Stop();
-            this.RefreshCore();
+            this._isInitialized = true;
+            this.RaiseItemsChanged();
         };
+
+        this._mediaService.MediaSourcesChanged += (_, _) =>
+        {
+            var oldItems = this._items.ToArray();
+
+            List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper))];
+            lock (this._refreshLock)
+            {
+                this._items = mediaSourceListItems;
+            }
+
+            _ = Task.Run(() =>
+            {
+                foreach (var item in oldItems)
+                {
+                    try
+                    {
+                        
+                        item.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex);
+                    }
+                }
+            });
+
+            this.RaiseItemsChanged();
+        };
+
+        this._mediaService.CurrentMediaSourceChanged += (_, _) => this.UpdateCurrentMediaItems();
+
+        this._mediaService.CurrentMediaPlaybackChanged += (_, _) => this.UpdateCurrentMediaItems();
+
+        this._mediaService.LoadingStatusChanged += (_, _) => this.IsLoading = this._mediaService.IsLoading;
+
+        this.EmptyContent = new CommandItem
+        {
+            Title = "No media sources available",
+            Subtitle = "No media sources are currently available. Please ensure that you have media applications running that support media controls.",
+            Icon = Icons.MainIcon
+        };
+
+        this._playPauseCurrentSessionItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper);
+        this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle, Icon = Icons.SkipNextTrack };
+        this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle, Icon = Icons.SkipPreviousTrack };
+        this._muteCommandItem = new(new ToggleMuteMediaInvokableCommand(this._yetAnotherHelper));
     }
 
-    public void Dispose()
+    private void UpdateCurrentMediaItems()
     {
-        this._cancellationTokenSource?.Dispose();
-        this._currentUpdateTask?.Dispose();
-
-        foreach (var mediaSource in this._results)
+        if (!this._settingsManager.ShowSkipCommands)
         {
-            mediaSource.Dispose();
+            return;
         }
 
-        if (this._sessionManager != null)
+        if (this._nextTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand nextTrackCommand)
         {
-            this._sessionManager.SessionsChanged -= this.SessionManagerOnSessionsChanged;
-            this._sessionManager.CurrentSessionChanged -= this.SessionManagerOnCurrentSessionChanged;
+            this._nextTrackCurrentSessionItem.UpdateIcon(nextTrackCommand.CanExecute() ? Icons.SkipNextTrack : Icons.SkipNextTrackDisabled);
         }
+        if (this._prevTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand prevTrackCommand)
+        {
+            this._prevTrackCurrentSessionItem.UpdateIcon(prevTrackCommand.CanExecute() ? Icons.SkipPreviousTrack : Icons.SkipPreviousTrackDisabled);
+        }
+
+        // don't refresh items - it causes reset of the selected item
     }
 
     public override IListItem[] GetItems()
     {
-        try
-        {
-            return this.GetItemsUnsafe();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-            return [];
-        }
-    }
-
-    private IListItem[] GetItemsUnsafe()
-    {
         if (!this._isInitialized)
         {
-            if (!this.IsLoading)
-            {
-                this.IsLoading = true;
-                _ = this.InitializeAsync();
-            }
-
-            return this.GetGlobalCommands();
+            this.IsLoading = true;
+            return [..this.GetGlobalCommands()];
         }
 
         return
         [
             ..this.GetGlobalCommands(),
-            ..this._results.Select(mediaSource =>
-                new MediaSourceListItem(mediaSource, this._settingsManager,
-                    new PlayPauseSessionMediaCommand(this._sessionManager!, mediaSource.Session)))
+            ..this._items
         ];
     }
 
-    private IListItem[] GetGlobalCommands()
+    private List<IListItem> GetGlobalCommands()
     {
-        var currentSession = this._sessionManager?.GetCurrentSession();
+        List<IListItem> items = [];
 
-        if (currentSession == null)
+        if (this._playPauseCurrentSessionItem != null)
         {
-            return this._commandsForNoSession;
+            items.Add(this._playPauseCurrentSessionItem);
         }
-        else
-        {
-            List<IListItem> items =
-            [
-                this._playPauseCommand!
-            ];
-            if (currentSession.GetPlaybackInfo()?.Controls?.IsNextEnabled == true)
-            {
-                items.Add(this._nextTrackCommand!);
-            }
-            if (currentSession.GetPlaybackInfo()?.Controls?.IsPreviousEnabled == true)
-            {
-                items.Add(this._prevTrackCommand!);
-            }
-            items.Add(this._muteCommand!);
 
-            return [.. items];
+        if (this._settingsManager.ShowSkipCommands)
+        {
+            items.Add(this._nextTrackCurrentSessionItem!);
+            items.Add(this._prevTrackCurrentSessionItem!);
         }
+
+        items.Add(this._muteCommandItem!);
+
+        return items;
     }
 
-    private async Task InitializeAsync()
-    {
-        Logger.LogInformation("InitializeAsync started...");
-
-        try
-        {
-            var getManagerRequest = GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-            this._sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync()!;
-            this._sessionManager.SessionsChanged += this.SessionManagerOnSessionsChanged;
-            this._sessionManager.CurrentSessionChanged += this.SessionManagerOnCurrentSessionChanged;
-
-            this._playPauseCommand = new ListItem(new PlayPauseMediaCommand(getManagerRequest!))
-            {
-                Title = Strings.TogglePlayPause!, Subtitle = Strings.TogglePlayPause_Comments!
-            };
-            this._nextTrackCommand = new ListItem(new NextTrackInvokableMediaCommand(getManagerRequest!));
-            this._prevTrackCommand = new ListItem(new PreviousTrackInvokableMediaCommand(getManagerRequest!));
-            this._muteCommand = new ListItem(new ToggleMuteMediaInvokableCommand());
-            this._commandsForNoSession = [this._muteCommand];
-            this._isInitialized = true;
-
-            this.RefreshCore();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-            throw;
-        }
-    }
-
-    private void SessionManagerOnCurrentSessionChanged(
-        GlobalSystemMediaTransportControlsSessionManager sender,
-        CurrentSessionChangedEventArgs args)
-    {
-        this.Refresh();
-    }
-
-    private void SessionManagerOnSessionsChanged(
-        GlobalSystemMediaTransportControlsSessionManager sender,
-        SessionsChangedEventArgs args)
-    {
-        this.Refresh();
-    }
-
-
-    private void Refresh()
-    {
-        if (this._isInitialized)
-        {
-            this._throttleTimer.Start();
-        }
-    }
-
-    private void RefreshCore()
-    {
-        this._cancellationTokenSource?.Cancel();
-        this._cancellationTokenSource = new CancellationTokenSource();
-
-        this.IsLoading = true;
-
-        this._currentUpdateTask = this.UpdateMediaSourcesAsync(this._cancellationTokenSource.Token);
-        _ = this.ProcessSearchResultsAsync(this._currentUpdateTask);
-    }
-
-    private async Task ProcessSearchResultsAsync(Task<ImmutableArray<MediaSource>> searchTask)
-    {
-        try
-        {
-            var newMediaSessions = await searchTask;
-
-            if (searchTask != this._currentUpdateTask)
-            {
-                return;
-            }
-
-            var oldResults = this._results;
-            lock (this._resultsLock)
-            {
-                this._results = newMediaSessions;
-            }
-
-            foreach (var mediaSource in oldResults)
-            {
-                mediaSource.Dispose();
-            }
-
-            this.IsLoading = false;
-            this.RaiseItemsChanged();
-            this._currentUpdateTask = null;
-        }
-        catch (OperationCanceledException)
-        {
-            // Ignore cancellation
-        }
-    }
-
-
-    private Task<ImmutableArray<MediaSource>> UpdateMediaSourcesAsync(CancellationToken cancellationToken)
-    {
-        return ComThread.BeginInvoke(() =>
-        {
-            try
-            {
-                var result = this.GetMediaSessionSources();
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex);
-            }
-
-            return [];
-        }, cancellationToken);
-    }
-
-
-    private ImmutableArray<MediaSource> GetMediaSessionSources()
-    {
-        return [
-            ..this._sessionManager!
-                .GetSessions()!
-                .Select(static session => new MediaSource(session))
-        ];
-    }
 }

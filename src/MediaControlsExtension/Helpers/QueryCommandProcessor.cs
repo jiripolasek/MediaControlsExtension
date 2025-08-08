@@ -62,7 +62,9 @@ internal sealed class QueryCommandProcessor(
         foreach (var c in text)
         {
             if (!char.IsUpper(c))
+            {
                 return false;
+            }
         }
         return true;
     }
@@ -72,7 +74,9 @@ internal sealed class QueryCommandProcessor(
         foreach (var c in text)
         {
             if (!char.IsLower(c))
+            {
                 return false;
+            }
         }
         return true;
     }

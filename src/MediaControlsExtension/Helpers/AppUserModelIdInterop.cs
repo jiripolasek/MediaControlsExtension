@@ -41,10 +41,14 @@ internal static partial class AppUserModelIdInterop
     {
         using var hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, false, processId);
         if (hProcess.IsInvalid || hProcess.IsClosed)
+        {
             return null;
+        }
 
         if (WaitForSingleObject(hProcess.DangerousGetHandle(), 0) != NativeMethods.WAIT_TIMEOUT)
+        {
             return null; // Process is a zombie, cannot retrieve AppUserModelId
+        }
 
         int length = 2048;
         var sb = new char[length];
