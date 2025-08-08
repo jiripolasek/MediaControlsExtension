@@ -36,7 +36,7 @@ internal sealed class SettingsManager : JsonSettingsManager
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpen = new(
         Namespaced("KeepOpen"),
-        "Keep Command Palette open\n    Keep the Command Palette open after running a command, so you can perform multiple actions.", //Strings.Settings_KeepOpen_Title!,
+        "Keep Command Palette open\n    Keep the Command Palette open after running a command, so you can perform multiple actions in a row.\n    Hold Shift while activating a command to temporarily do the opposite.", //Strings.Settings_KeepOpen_Title!,
         "", //Strings.Settings_KeepOpen_Subtitle!,
         true
         );
