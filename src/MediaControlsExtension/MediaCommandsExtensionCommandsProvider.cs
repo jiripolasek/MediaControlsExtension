@@ -17,6 +17,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly CommandItem _nowPlayingItem;
     private ICommandItem[] _commands = [];
     private IFallbackCommandItem[]? _fallbackCommands = [];
+    private readonly ICommandItem[] _bands;
 
     public MediaControlsExtensionCommandsProvider()
     {
@@ -32,8 +33,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
         var mediaControlsExtensionPage = new MediaControlsExtensionPage(this._mediaService, this._settingsManager, this._yetAnotherHelper);
         this._mediaControlsPageItem = new(mediaControlsExtensionPage) { Title = this.DisplayName, Subtitle = Strings.MediaControls_Subtitle!, MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)] };
-        this._nowPlayingItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper);
-
+        this._nowPlayingItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper, false);
+        var mediaControlsBand = new MediaControlsExtensionPage(this._mediaService, this._settingsManager, this._yetAnotherHelper, true);
+        this._bands = [new CommandItem(mediaControlsBand) { Title = Strings.Name! }];
         this.UpdateTopLevelCommands();
 
         _ = Task.Run(this.InitializeMediaServiceSafe);
@@ -88,4 +90,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     public override ICommandItem[] TopLevelCommands() => this._commands;
 
     public override IFallbackCommandItem[]? FallbackCommands() => this._fallbackCommands;
+
+    public override ICommandItem[]? GetDockBands()
+    {
+        return _bands;
+    }
 }

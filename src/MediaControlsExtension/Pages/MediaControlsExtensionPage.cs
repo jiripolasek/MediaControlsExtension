@@ -12,6 +12,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
     private readonly YetAnotherHelper _yetAnotherHelper;
     private readonly MediaService _mediaService;
     private readonly Lock _refreshLock = new();
+    private readonly bool _isBandPage;
 
     private bool _isInitialized;
     private readonly ListItem? _playPauseCurrentSessionItem;
@@ -20,12 +21,17 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
     private readonly ListItem? _muteCommandItem;
     private List<MediaSourceListItem> _items = [];
 
-    public MediaControlsExtensionPage(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper)
+    public MediaControlsExtensionPage(
+        MediaService mediaService,
+        SettingsManager settingsManager,
+        YetAnotherHelper yetAnotherHelper,
+        bool asBandPage = false)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
 
+        this._isBandPage = asBandPage;
         this._settingsManager = settingsManager;
         this._yetAnotherHelper = yetAnotherHelper;
         this._mediaService = mediaService;
@@ -58,7 +64,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
                 {
                     try
                     {
-                        
+
                         item.Dispose();
                     }
                     catch (Exception ex)
@@ -84,10 +90,22 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
             Icon = Icons.MainIcon
         };
 
-        this._playPauseCurrentSessionItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper);
+        this._playPauseCurrentSessionItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper, this._isBandPage);
         this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle, Icon = Icons.SkipNextTrack };
         this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle, Icon = Icons.SkipPreviousTrack };
         this._muteCommandItem = new(new ToggleMuteMediaInvokableCommand(this._yetAnotherHelper));
+
+        if (this._isBandPage)
+        {
+            this._playPauseCurrentSessionItem.Title = string.Empty;
+            this._playPauseCurrentSessionItem.Subtitle = string.Empty;
+            this._nextTrackCurrentSessionItem.Title = string.Empty;
+            this._nextTrackCurrentSessionItem.Subtitle = string.Empty;
+            this._prevTrackCurrentSessionItem.Title = string.Empty;
+            this._prevTrackCurrentSessionItem.Subtitle = string.Empty;
+            this._muteCommandItem.Title = string.Empty;
+            this._muteCommandItem.Subtitle = string.Empty;
+        }
     }
 
     private void UpdateCurrentMediaItems()
@@ -111,10 +129,15 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
 
     public override IListItem[] GetItems()
     {
+        if (this._isBandPage)
+        {
+            return this.GetBandItems().ToArray();
+        }
+
         if (!this._isInitialized)
         {
             this.IsLoading = true;
-            return [..this.GetGlobalCommands()];
+            return [.. this.GetGlobalCommands()];
         }
 
         return
@@ -141,6 +164,18 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
 
         items.Add(this._muteCommandItem!);
 
+        return items;
+    }
+    private List<IListItem> GetBandItems()
+    {
+        List<IListItem> items = [];
+        if (this._playPauseCurrentSessionItem != null && this._items.Count > 0)
+        {
+            items.Add(this._items.First());
+            items.Add(this._prevTrackCurrentSessionItem!);
+            items.Add(this._playPauseCurrentSessionItem);
+            items.Add(this._nextTrackCurrentSessionItem!);
+        }
         return items;
     }
 

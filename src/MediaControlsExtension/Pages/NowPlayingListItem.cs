@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -16,20 +16,22 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
     private readonly Lock _updateLock = new();
     private readonly MediaCurrentSessionCommand _playPauseCommand;
     private readonly IContextItem[] _mediaContextCommands;
+    private readonly bool _isBandPage;
 
     private MediaSource? _currentMediaSource;
 
-    public NowPlayingListItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
+    public NowPlayingListItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper, bool asBandPage) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
 
+        this._isBandPage = asBandPage;
         this._mediaService = mediaService;
         this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
-        
+
         this._settingsManager = settingsManager;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-        
+
         this._currentMediaSource = this._mediaService.CurrentSource;
         this._updateMediaInfo = new(150, () => this.Update(this._currentMediaSource));
 
@@ -44,8 +46,8 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
 
-        this.Command = this._playPauseCommand = new (this._mediaService, MediaSessionOperations.PlayPauseTrack, yetAnotherHelper, id: "com.jpsoftworks.cmdpal.mediacontrols.nowplaying") { Icon = Icons.NoMedia };
-        this.Title = Strings.Command_PlayPause!;
+        this.Command = this._playPauseCommand = new(this._mediaService, MediaSessionOperations.PlayPauseTrack, yetAnotherHelper, id: "com.jpsoftworks.cmdpal.mediacontrols.nowplaying") { Icon = Icons.NoMedia };
+        this.Title = _isBandPage ? string.Empty : Strings.Command_PlayPause!;
         this.UpdateIcon(Icons.PlayPause);
 
         this._updateMediaInfo.Invoke();
@@ -95,33 +97,33 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 {
                     if (mediaSource.Session.GetPlaybackInfo().Controls.IsPauseEnabled)
                     {
-                        this.Title = $"Pause {mediaSource.Name}";
+                        this.Title = _isBandPage ? string.Empty : $"Pause {mediaSource.Name}";
                         cmdName = Strings.Command_Pause;
                     }
                     else if (mediaSource.Session.GetPlaybackInfo().Controls.IsStopEnabled)
                     {
-                        this.Title = $"Stop {mediaSource.Name}";
+                        this.Title = _isBandPage ? string.Empty : $"Stop {mediaSource.Name}";
                         cmdName = Strings.Command_Stop;
                     }
                     else
                     {
-                        this.Title = $"Pause {mediaSource.Name}";
+                        this.Title = _isBandPage ? string.Empty : $"Pause {mediaSource.Name}";
                         cmdName = Strings.Command_Pause;
                     }
 
                     icon = Icons.PauseColorful;
-                    this.Subtitle = StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
+                    this.Subtitle = _isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
                 }
                 else
                 {
-                    this.Title = $"Play {mediaSource.Name}";
-                    this.Subtitle = StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
+                    this.Title = _isBandPage ? string.Empty : $"Play {mediaSource.Name}";
+                    this.Subtitle = _isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
                     icon = Icons.PlayColorful;
                     cmdName = Strings.Command_Play;
                 }
 
                 this.UpdateIcon(icon);
-                this._playPauseCommand.Name = cmdName;
+                this._playPauseCommand.Name = _isBandPage ? string.Empty : cmdName;
                 this._playPauseCommand.UpdateIcon(icon);
 
                 this.MoreCommands = this._mediaContextCommands;

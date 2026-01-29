@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -52,7 +52,7 @@ internal partial class ListItemBase : ListItem
         get => base.Icon;
         set
         {
-            if(ReferenceEquals(base.Icon, value))
+            if (ReferenceEquals(base.Icon, value))
             {
                 return;
             }
@@ -63,6 +63,7 @@ internal partial class ListItemBase : ListItem
             }
 
             base.Icon = value;
+            OnPropertyChanged(nameof(Icon));
         }
     }
 
@@ -140,7 +141,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
     private void UpdateCore(MediaSource mediaSource)
     {
         this.Title = (mediaSource.IsPlaying ? "▶️ " : "") + mediaSource.Name;
-        this.Subtitle  = BuildSubtitle(mediaSource);
+        this.Subtitle = BuildSubtitle(mediaSource);
         this._command.Name = mediaSource.IsPlaying ? Strings.Command_Pause : Strings.Command_Play;
         this.Tags = BuildTags();
 
