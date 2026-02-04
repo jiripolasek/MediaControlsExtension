@@ -18,7 +18,6 @@ internal sealed partial class FallbackPlayCommandItem : FallbackCommandItem
     ]);
 
     public FallbackPlayCommandItem(ICommand command, string displayTitle, SettingsManager settingsManager) : base(command, displayTitle, "com.jpsoftworks.cmdpal.mediacontrols.play")
-    //public FallbackPlayCommandItem(ICommand command, string displayTitle, SettingsManager settingsManager) : base(command, displayTitle)
     {
         this._settingsManager = settingsManager;
         this._command = (PlayPauseMediaCommand)command;

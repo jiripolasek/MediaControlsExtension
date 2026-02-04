@@ -25,7 +25,6 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper)
         : base(new NoOpCommand(), Strings.Command_NextTrack, "com.jpsoftworks.cmdpal.mediacontrols.next")
-    //: base(new NoOpCommand(), Strings.Command_NextTrack)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper) { Name = "" };

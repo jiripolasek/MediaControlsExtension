@@ -17,7 +17,6 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem
     ]);
 
     public FallbackMuteCommandItem(SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand(), Strings.Command_Mute, "com.jpsoftworks.cmdpal.mediacontrols.mute")
-    //public FallbackMuteCommandItem(SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand(), Strings.Command_Mute)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new(true, yetAnotherHelper) { Name = "" };
