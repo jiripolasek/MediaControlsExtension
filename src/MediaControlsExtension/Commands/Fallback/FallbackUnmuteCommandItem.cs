@@ -17,6 +17,7 @@ internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem
     ]);
 
     public FallbackUnmuteCommandItem(SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand(), Strings.Command_Unmute, "com.jpsoftworks.cmdpal.mediacontrols.unmute")
+    //public FallbackUnmuteCommandItem(SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand(), Strings.Command_Unmute)
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new(false, yetAnotherHelper) { Name = "" };

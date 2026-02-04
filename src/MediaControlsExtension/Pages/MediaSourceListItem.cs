@@ -5,6 +5,8 @@
 // ------------------------------------------------------------
 
 using System.Text;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation.Collections;
 using Windows.Media;
 
 namespace JPSoftworks.MediaControlsExtension.Pages;
@@ -95,14 +97,16 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         this._asBand = asBand;
 
         this.Command = this._command = new(mediaService, mediaSource, settingsManager, yetAnotherHelper);
-
+        var f = new FontIconData("x", "y");
+        var d = new Details() { Title = "sad" };
+        this.Details = d;
         this.MoreCommands =
         [
             new CommandContextItem(new BringAssociatedAppToFrontCommand(mediaSource)) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
-            new CommandContextItem(new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
-            new CommandContextItem(new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
-            new CommandContextItem(new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
-            new CommandContextItem(new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
+            new MyCommandContextItem(new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
+            new MyCommandContextItem(new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
+            new MyCommandContextItem(new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
+            new MyCommandContextItem(new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
 
         this.Update(this._mediaSource);
@@ -233,5 +237,189 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         {
             Logger.LogError(ex);
         }
+    }
+}
+
+public partial class MyCommandContextItem : MyCommandItem, ICommandContextItem
+{
+    public virtual bool IsCritical { get; set; }
+
+    public virtual KeyChord RequestedShortcut { get; set; }
+
+    public MyCommandContextItem(ICommand command)
+        : base(command)
+    {
+    }
+
+    public MyCommandContextItem(
+        string title,
+        string subtitle = "",
+        string name = "",
+        Action? action = null,
+        ICommandResult? result = null)
+    {
+        var c = new AnonymousCommand(action);
+        if (!string.IsNullOrEmpty(name))
+        {
+            c.Name = name;
+        }
+
+        if (result is not null)
+        {
+            c.Result = result;
+        }
+
+        Command = c;
+
+        Title = title;
+        Subtitle = subtitle;
+    }
+}
+
+public partial class MyCommandItem : BaseObservable, ICommandItem// , IExtendedAttributesProvider
+{
+    private readonly PropertySet _extendedAttributes = new();
+
+    private ICommand? _command;
+    //private WeakEventListener<CommandItem, object, IPropChangedEventArgs>? _commandListener;
+    private string _title = string.Empty;
+
+    private DataPackage? _dataPackage;
+    private DataPackageView? _dataPackageView;
+
+    public virtual IIconInfo? Icon { get; set; }
+
+    public virtual string Title
+    {
+        get => !string.IsNullOrEmpty(_title) ? _title : _command?.Name ?? string.Empty;
+        set
+        {
+            var oldTitle = Title;
+            _title = value;
+            //if (Title != oldTitle)
+            //{
+            //    OnPropertyChanged();
+            //}
+        }
+    }
+
+    public virtual string Subtitle { get; set; } = string.Empty;
+
+    public virtual ICommand? Command
+    {
+        get => _command;
+        set
+        {
+            if (EqualityComparer<ICommand?>.Default.Equals(value, _command))
+            {
+                return;
+            }
+
+            var oldTitle = Title;
+
+            //if (_commandListener is not null)
+            //{
+            //    _commandListener.Detach();
+            //    _commandListener = null;
+            //}
+
+            _command = value;
+
+            if (value is not null)
+            {
+                //_commandListener = new(this, OnCommandPropertyChanged, listener => value.PropChanged -= listener.OnEvent);
+                //value.PropChanged += _commandListener.OnEvent;
+            }
+
+            //OnPropertyChanged();
+            if (string.IsNullOrEmpty(_title) && oldTitle != Title)
+            {
+                OnPropertyChanged(nameof(Title));
+            }
+        }
+    }
+
+    private void OnCommandPropertyChanged(CommandItem instance, object source, IPropChangedEventArgs args)
+    {
+        // command's name affects Title only if Title wasn't explicitly set
+        if (args.PropertyName == nameof(ICommand.Name) && string.IsNullOrEmpty(_title))
+        {
+            //instance.OnPropertyChanged(nameof(Title));
+        }
+    }
+
+    public virtual IContextItem[] MoreCommands { get; set; } = [];
+
+    public DataPackage? DataPackage
+    {
+        get => _dataPackage;
+        set
+        {
+            _dataPackage = value;
+            _dataPackageView = null;
+            //_extendedAttributes[WellKnownExtensionAttributes.DataPackage] = value?.AsAgile().Get()?.GetView()!;
+            OnPropertyChanged(nameof(DataPackage));
+            OnPropertyChanged(nameof(DataPackageView));
+        }
+    }
+
+    public DataPackageView? DataPackageView
+    {
+        get => _dataPackageView;
+        set
+        {
+            _dataPackage = null;
+            _dataPackageView = value;
+            //_extendedAttributes[WellKnownExtensionAttributes.DataPackage] = value?.AsAgile().Get()!;
+            OnPropertyChanged(nameof(DataPackage));
+            OnPropertyChanged(nameof(DataPackageView));
+        }
+    }
+
+    public MyCommandItem()
+        : this(new NoOpCommand())
+    {
+    }
+
+    public MyCommandItem(ICommand command)
+    {
+        Command = command;
+    }
+
+    public MyCommandItem(ICommandItem other)
+    {
+        Command = other.Command;
+        Subtitle = other.Subtitle;
+        Icon = (IconInfo?)other.Icon;
+        MoreCommands = other.MoreCommands;
+    }
+
+    public MyCommandItem(
+        string title,
+        string subtitle = "",
+        string name = "",
+        Action? action = null,
+        ICommandResult? result = null)
+    {
+        var c = new AnonymousCommand(action);
+        if (!string.IsNullOrEmpty(name))
+        {
+            c.Name = name;
+        }
+
+        if (result is not null)
+        {
+            c.Result = result;
+        }
+
+        Command = c;
+
+        Title = title;
+        Subtitle = subtitle;
+    }
+
+    public IDictionary<string, object> GetProperties()
+    {
+        return _extendedAttributes;
     }
 }
