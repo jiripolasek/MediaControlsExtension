@@ -55,3 +55,7 @@ Apache 2.0
 ## Author
 
 [Jiří Polášek](https://jiripolasek.com)
+
+## Very special thanks
+
+[Mike Griese](https://github.com/zadjii-msft)
