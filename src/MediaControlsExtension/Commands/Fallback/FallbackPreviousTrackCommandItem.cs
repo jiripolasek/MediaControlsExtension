@@ -22,7 +22,7 @@ internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommand
         IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper)
-        : base(new NoOpCommand(), Strings.Command_PreviousTrack)
+        : base(new NoOpCommand(), Strings.Command_PreviousTrack, "com.jpsoftworks.cmdpal.mediacontrols.previous")
     {
         this._settingsManager = settingsManager;
         this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper) { Name = "" };

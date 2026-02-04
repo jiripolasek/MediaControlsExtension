@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -47,25 +47,6 @@ internal partial class ListItemBase : ListItem
         }
     }
 
-    public override IIconInfo? Icon
-    {
-        get => base.Icon;
-        set
-        {
-            if(ReferenceEquals(base.Icon, value))
-            {
-                return;
-            }
-
-            if (base.Icon == value || (base.Icon?.Dark?.Icon == value?.Dark?.Icon && base.Icon?.Light?.Icon == value?.Light?.Icon))
-            {
-                return;
-            }
-
-            base.Icon = value;
-        }
-    }
-
     protected ListItemBase(ICommand command) : base(command)
     {
     }
@@ -86,12 +67,14 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
     private NiceIconInfo? _lastIcon;
     private MediaSource _mediaSource;
     private bool _disposed;
+    private bool _asBand;
 
     public MediaSourceListItem(
         MediaService mediaService,
         MediaSource mediaSource,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
+        YetAnotherHelper yetAnotherHelper,
+        bool asBand) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(mediaSource);
@@ -108,6 +91,8 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
 
         this.Title = Strings.Command_PlayPause!;
         this.Icon = Icons.PlayPause;
+
+        this._asBand = asBand;
 
         this.Command = this._command = new(mediaService, mediaSource, settingsManager, yetAnotherHelper);
 
@@ -139,8 +124,8 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
 
     private void UpdateCore(MediaSource mediaSource)
     {
-        this.Title = (mediaSource.IsPlaying ? "▶️ " : "") + mediaSource.Name;
-        this.Subtitle  = BuildSubtitle(mediaSource);
+        this.Title = (mediaSource.IsPlaying && !this._asBand ? "▶️ " : "") + mediaSource.Name;
+        this.Subtitle = BuildSubtitle(mediaSource);
         this._command.Name = mediaSource.IsPlaying ? Strings.Command_Pause : Strings.Command_Play;
         this.Tags = BuildTags();
 
