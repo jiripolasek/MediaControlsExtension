@@ -52,7 +52,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
         {
             var oldItems = this._items.ToArray();
 
-            List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper))];
+            List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper, this._isBandPage))];
             lock (this._refreshLock)
             {
                 this._items = mediaSourceListItems;
