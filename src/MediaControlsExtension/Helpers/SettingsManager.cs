@@ -1,7 +1,7 @@
 ﻿// ------------------------------------------------------------
-// 
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
@@ -48,7 +48,7 @@ internal sealed class SettingsManager : JsonSettingsManager
         "", //Strings.Settings_KeepOpen_Subtitle!,
         false
     );
-    
+
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpenSkipTrack = new(
         Namespaced("KeepOpenSkipTrack"),
@@ -94,6 +94,13 @@ internal sealed class SettingsManager : JsonSettingsManager
         "", //"Shows skip commands on the media controls page",
         true);
 
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _showSkipCommandsInDockBand = new(
+        Namespaced("ShowSkipCommandsInDockBand"),
+        "Show skip track commands in Dock\n    Display “Next” and “Previous Track” in the Dock.",
+        "", //"Shows skip commands on the media controls page",
+        true);
+
     public bool ShowThumbnails => this._showThumbnailsOption.Value;
 
     public GlobalCommandsMode GlobalCommands =>
@@ -119,12 +126,15 @@ internal sealed class SettingsManager : JsonSettingsManager
 
     public bool ShowSkipCommands => _showSkipCommands.Value;
 
+    public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
+
     public SettingsManager()
     {
         this.FilePath = SettingsJsonPath();
 
         this.Settings.Add(this._showCurrentMediaAtTopLevel);
         this.Settings.Add(this._showSkipCommands);
+        this.Settings.Add(this._showSkipCommandsInDockBand);
         this.Settings.Add(this._showThumbnailsOption);
         this.Settings.Add(this._keepOpen);
         this.Settings.Add(this._pauseOthersOnPlay);
@@ -134,7 +144,7 @@ internal sealed class SettingsManager : JsonSettingsManager
         //this.Settings.Add(this._keepOpenTogglePlayPauseCurrent);
         //this.Settings.Add(this._keepOpenSkipTrack);
         //this.Settings.Add(this._keepOpenTogglePlayMedia);
-        
+
 
 
         this.LoadSettings();
