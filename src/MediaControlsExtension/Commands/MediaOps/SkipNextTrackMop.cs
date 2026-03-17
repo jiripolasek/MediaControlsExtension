@@ -18,6 +18,6 @@ internal sealed class SkipNextTrackMop : MediaSessionOp
     public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
         bool success = session.GetPlaybackInfo().Controls.IsNextEnabled && await session.TrySkipNextAsync();
-        return new(success ? "⏭️ Skipped to next track" : "🚫 Could not skip to next track", success);
+        return new(success ? $"⏭️ {Strings.Toast_SkippedNext}" : $"🚫 {Strings.Toast_CouldNotSkipNext}", success);
     }
 }

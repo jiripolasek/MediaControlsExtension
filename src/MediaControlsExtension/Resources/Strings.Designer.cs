@@ -19,7 +19,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -223,6 +223,24 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No media sources are currently available. Please ensure that you have media applications running that support media controls..
+        /// </summary>
+        internal static string EmptyContent_Subtitle {
+            get {
+                return ResourceManager.GetString("EmptyContent_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No media sources available.
+        /// </summary>
+        internal static string EmptyContent_Title {
+            get {
+                return ResourceManager.GetString("EmptyContent_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Manage playback and switch between media apps with ease.
         /// </summary>
         internal static string MediaControls_Subtitle {
@@ -241,11 +259,74 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Nothing is playing right now.
+        /// </summary>
+        internal static string NowPlaying_NothingPlaying {
+            get {
+                return ResourceManager.GetString("NowPlaying_NothingPlaying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Now playing {0}.
+        /// </summary>
+        internal static string NowPlaying_NowPlaying {
+            get {
+                return ResourceManager.GetString("NowPlaying_NowPlaying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Pause {0}.
+        /// </summary>
+        internal static string NowPlaying_Pause {
+            get {
+                return ResourceManager.GetString("NowPlaying_Pause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Play {0}.
+        /// </summary>
+        internal static string NowPlaying_Play {
+            get {
+                return ResourceManager.GetString("NowPlaying_Play", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stop {0}.
+        /// </summary>
+        internal static string NowPlaying_Stop {
+            get {
+                return ResourceManager.GetString("NowPlaying_Stop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Now playing.
+        /// </summary>
+        internal static string NowPlaying_Subtitle {
+            get {
+                return ResourceManager.GetString("NowPlaying_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Open.
         /// </summary>
         internal static string Open {
             get {
                 return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Search media commands or sessions….
+        /// </summary>
+        internal static string SearchPlaceholder {
+            get {
+                return ResourceManager.GetString("SearchPlaceholder", resourceCulture);
             }
         }
         
@@ -286,7 +367,35 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Prevent Command Palette from closing after invoking a media command, so you can easily make another one.
+        ///   Looks up a localized string similar to Hide after changing tracks.
+        /// </summary>
+        internal static string Settings_HideAfterChangingTracks {
+            get {
+                return ResourceManager.GetString("Settings_HideAfterChangingTracks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide after Play/Pause.
+        /// </summary>
+        internal static string Settings_HideAfterPlayPause {
+            get {
+                return ResourceManager.GetString("Settings_HideAfterPlayPause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide after toggle play/pause on media session.
+        /// </summary>
+        internal static string Settings_HideAfterTogglePlayPause {
+            get {
+                return ResourceManager.GetString("Settings_HideAfterTogglePlayPause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Keep the Command Palette open after running a command, so you can perform multiple actions in a row.
+        ///Hold Shift while activating a command to temporarily do the opposite..
         /// </summary>
         internal static string Settings_KeepOpen_Subtitle {
             get {
@@ -295,7 +404,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Keep Open.
+        ///   Looks up a localized string similar to Keep Command Palette open.
         /// </summary>
         internal static string Settings_KeepOpen_Title {
             get {
@@ -304,7 +413,79 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Display media thumbnail instead of application icon.
+        ///   Looks up a localized string similar to When playing a session, automatically pause all other sessions..
+        /// </summary>
+        internal static string Settings_PauseOthersOnPlay_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_PauseOthersOnPlay_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Pause other sessions on play.
+        /// </summary>
+        internal static string Settings_PauseOthersOnPlay_Title {
+            get {
+                return ResourceManager.GetString("Settings_PauseOthersOnPlay_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Adds a “Now Playing” item to the home page for easy access to the current session..
+        /// </summary>
+        internal static string Settings_ShowCurrentMediaAtTopLevel_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowCurrentMediaAtTopLevel_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show current media session on home page.
+        /// </summary>
+        internal static string Settings_ShowCurrentMediaAtTopLevel_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowCurrentMediaAtTopLevel_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Display “Next” and “Previous Track” as top-level items on the Media Controls page..
+        /// </summary>
+        internal static string Settings_ShowSkipCommands_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowSkipCommands_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show skip track commands.
+        /// </summary>
+        internal static string Settings_ShowSkipCommands_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowSkipCommands_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Display “Next” and “Previous Track” in the Dock..
+        /// </summary>
+        internal static string Settings_ShowSkipCommandsInDock_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowSkipCommandsInDock_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show skip track commands in Dock.
+        /// </summary>
+        internal static string Settings_ShowSkipCommandsInDock_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowSkipCommandsInDock_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use media thumbnails (album art) instead of app icons in the session list..
         /// </summary>
         internal static string Settings_ShowThumbnails_Subtitle {
             get {
@@ -313,11 +494,29 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show Thumbnails.
+        ///   Looks up a localized string similar to Show thumbnails.
         /// </summary>
         internal static string Settings_ShowThumbnails_Title {
             get {
                 return ResourceManager.GetString("Settings_ShowThumbnails_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show a confirmation notification after each media action..
+        /// </summary>
+        internal static string Settings_ShowToastMessages_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowToastMessages_Subtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show toast messages.
+        /// </summary>
+        internal static string Settings_ShowToastMessages_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowToastMessages_Title", resourceCulture);
             }
         }
         
@@ -327,6 +526,258 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         internal static string Tags_Playing {
             get {
                 return ResourceManager.GetString("Tags_Playing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Can&apos;t change the volume.
+        /// </summary>
+        internal static string Toast_CantChangeVolume {
+            get {
+                return ResourceManager.GetString("Toast_CantChangeVolume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not change repeat mode.
+        /// </summary>
+        internal static string Toast_CouldNotChangeRepeat {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotChangeRepeat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not pause playback.
+        /// </summary>
+        internal static string Toast_CouldNotPause {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotPause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not play track.
+        /// </summary>
+        internal static string Toast_CouldNotPlay {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotPlay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not skip to next track.
+        /// </summary>
+        internal static string Toast_CouldNotSkipNext {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotSkipNext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not go to previous track.
+        /// </summary>
+        internal static string Toast_CouldNotSkipPrevious {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotSkipPrevious", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not switch to {0}: {1}.
+        /// </summary>
+        internal static string Toast_CouldNotSwitchTo {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotSwitchTo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not toggle shuffle.
+        /// </summary>
+        internal static string Toast_CouldNotToggleShuffle {
+            get {
+                return ResourceManager.GetString("Toast_CouldNotToggleShuffle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Muted.
+        /// </summary>
+        internal static string Toast_Muted {
+            get {
+                return ResourceManager.GetString("Toast_Muted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No current media session found.
+        /// </summary>
+        internal static string Toast_NoCurrentSession {
+            get {
+                return ResourceManager.GetString("Toast_NoCurrentSession", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No next session found.
+        /// </summary>
+        internal static string Toast_NoNextSession {
+            get {
+                return ResourceManager.GetString("Toast_NoNextSession", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No other sessions to switch to.
+        /// </summary>
+        internal static string Toast_NoOtherSessions {
+            get {
+                return ResourceManager.GetString("Toast_NoOtherSessions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No media session manager found.
+        /// </summary>
+        internal static string Toast_NoSessionManager {
+            get {
+                return ResourceManager.GetString("Toast_NoSessionManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not the current session.
+        /// </summary>
+        internal static string Toast_NotCurrentSession {
+            get {
+                return ResourceManager.GetString("Toast_NotCurrentSession", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Nothing happened.
+        /// </summary>
+        internal static string Toast_NothingHappened {
+            get {
+                return ResourceManager.GetString("Toast_NothingHappened", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Nothing is playing.
+        /// </summary>
+        internal static string Toast_NothingPlaying {
+            get {
+                return ResourceManager.GetString("Toast_NothingPlaying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Paused.
+        /// </summary>
+        internal static string Toast_Paused {
+            get {
+                return ResourceManager.GetString("Toast_Paused", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playing.
+        /// </summary>
+        internal static string Toast_Playing {
+            get {
+                return ResourceManager.GetString("Toast_Playing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Playing {0}.
+        /// </summary>
+        internal static string Toast_PlayingName {
+            get {
+                return ResourceManager.GetString("Toast_PlayingName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Repeat mode changed to {0}.
+        /// </summary>
+        internal static string Toast_RepeatChanged {
+            get {
+                return ResourceManager.GetString("Toast_RepeatChanged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Repeat control is not available for this session.
+        /// </summary>
+        internal static string Toast_RepeatNotAvailable {
+            get {
+                return ResourceManager.GetString("Toast_RepeatNotAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shuffle disabled.
+        /// </summary>
+        internal static string Toast_ShuffleDisabled {
+            get {
+                return ResourceManager.GetString("Toast_ShuffleDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shuffle enabled.
+        /// </summary>
+        internal static string Toast_ShuffleEnabled {
+            get {
+                return ResourceManager.GetString("Toast_ShuffleEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Shuffle control is not available for this session.
+        /// </summary>
+        internal static string Toast_ShuffleNotAvailable {
+            get {
+                return ResourceManager.GetString("Toast_ShuffleNotAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Skipped to next track.
+        /// </summary>
+        internal static string Toast_SkippedNext {
+            get {
+                return ResourceManager.GetString("Toast_SkippedNext", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Returned to previous track.
+        /// </summary>
+        internal static string Toast_SkippedPrevious {
+            get {
+                return ResourceManager.GetString("Toast_SkippedPrevious", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Switched to {0} and {1}.
+        /// </summary>
+        internal static string Toast_SwitchedTo {
+            get {
+                return ResourceManager.GetString("Toast_SwitchedTo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unmuted.
+        /// </summary>
+        internal static string Toast_Unmuted {
+            get {
+                return ResourceManager.GetString("Toast_Unmuted", resourceCulture);
             }
         }
         

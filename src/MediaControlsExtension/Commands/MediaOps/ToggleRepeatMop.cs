@@ -1,9 +1,11 @@
 ﻿// ------------------------------------------------------------
-// 
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
+using System.Globalization;
+using System.Text;
 using Windows.Media;
 using Windows.Media.Control;
 
@@ -11,12 +13,13 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed class ToggleRepeatMop : MediaSessionOp
 {
+    private static readonly CompositeFormat s_repeatChangedFormat = CompositeFormat.Parse(Strings.Toast_RepeatChanged!);
     public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
         var canControlRepeat = session.GetPlaybackInfo().Controls.IsRepeatEnabled;
         if (!canControlRepeat)
         {
-            return new("🚫 Repeat control is not available for this session", false);
+            return new($"🚫 {Strings.Toast_RepeatNotAvailable}", false);
         }
 
         var currentRepeatMode = session.GetPlaybackInfo().AutoRepeatMode;
@@ -29,6 +32,6 @@ internal sealed class ToggleRepeatMop : MediaSessionOp
             _ => throw new InvalidOperationException()
         };
         bool success = await session.TryChangeAutoRepeatModeAsync(nextRepeatMode);
-        return new(success ? $"🔁 Repeat mode changed to {nextRepeatMode}" : "🚫 Could not change repeat mode", success);
+        return new(success ? $"🔁 {string.Format(CultureInfo.CurrentCulture, s_repeatChangedFormat, nextRepeatMode)}" : $"🚫 {Strings.Toast_CouldNotChangeRepeat}", success);
     }
 }

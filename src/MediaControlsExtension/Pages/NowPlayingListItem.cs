@@ -4,10 +4,18 @@
 //
 // ------------------------------------------------------------
 
+using System.Globalization;
+using System.Text;
+
 namespace JPSoftworks.MediaControlsExtension.Pages;
 
 internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 {
+    private static readonly CompositeFormat s_pauseFormat = CompositeFormat.Parse(Strings.NowPlaying_Pause!);
+    private static readonly CompositeFormat s_stopFormat = CompositeFormat.Parse(Strings.NowPlaying_Stop!);
+    private static readonly CompositeFormat s_playFormat = CompositeFormat.Parse(Strings.NowPlaying_Play!);
+    private static readonly CompositeFormat s_nowPlayingFormat = CompositeFormat.Parse(Strings.NowPlaying_NowPlaying!);
+
     private readonly MediaService _mediaService;
     private readonly SettingsManager _settingsManager;
     private readonly ThrottledAction _updateMediaInfo;
@@ -79,9 +87,9 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         {
             if (mediaSource is not { HasProperties: true })
             {
-                this.Title = this._isBandPage ? string.Empty : "Nothing is playing right now";
+                this.Title = this._isBandPage ? string.Empty : Strings.NowPlaying_NothingPlaying!;
                 this.Icon = Icons.NoMedia;
-                this.Subtitle = this._isBandPage ? string.Empty : "Now playing";
+                this.Subtitle = this._isBandPage ? string.Empty : Strings.NowPlaying_Subtitle!;
 
                 this._playPauseCommand.Name = this._isBandPage ? string.Empty : Strings.Command_PlayPause;
                 this._playPauseCommand.UpdateIcon(Icons.PlayPause);
@@ -97,27 +105,27 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 {
                     if (mediaSource.Session.GetPlaybackInfo().Controls.IsPauseEnabled)
                     {
-                        this.Title = this._isBandPage ? string.Empty : $"Pause {mediaSource.Name}";
+                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_pauseFormat, mediaSource.Name);
                         cmdName = Strings.Command_Pause;
                     }
                     else if (mediaSource.Session.GetPlaybackInfo().Controls.IsStopEnabled)
                     {
-                        this.Title = this._isBandPage ? string.Empty : $"Stop {mediaSource.Name}";
+                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_stopFormat, mediaSource.Name);
                         cmdName = Strings.Command_Stop;
                     }
                     else
                     {
-                        this.Title = this._isBandPage ? string.Empty : $"Pause {mediaSource.Name}";
+                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_pauseFormat, mediaSource.Name);
                         cmdName = Strings.Command_Pause;
                     }
 
                     icon = Icons.PauseColorful;
-                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
+                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
                 }
                 else
                 {
-                    this.Title = this._isBandPage ? string.Empty : $"Play {mediaSource.Name}";
-                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", $"Now playing {mediaSource.Name}", mediaSource.Artist, mediaSource.ApplicationName);
+                    this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_playFormat, mediaSource.Name);
+                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
                     icon = Icons.PlayColorful;
                     cmdName = Strings.Command_Play;
                 }

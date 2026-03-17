@@ -25,7 +25,7 @@ internal static class MediaSessionOperations
     {
         public override Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
         {
-            return Task.FromResult(new MediaSessionOperationResult("😢 Nothing happened", false));
+            return Task.FromResult(new MediaSessionOperationResult($"😢 {Strings.Toast_NothingHappened}", false));
         }
     }
 }

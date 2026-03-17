@@ -28,7 +28,7 @@ internal sealed class PlayPauseMop : MediaSessionOp
         if (sessionIsPlaying)
         {
             success = await session.TryPauseAsync();
-            message = success ? "⏸️ Paused" : "🚫 Could not pause playback";
+            message = success ? $"⏸️ {Strings.Toast_Paused}" : $"🚫 {Strings.Toast_CouldNotPause}";
         }
         else
         {
@@ -44,7 +44,7 @@ internal sealed class PlayPauseMop : MediaSessionOp
             }
 
             success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();
-            message = success ? "⏯️ Playing" : "🚫 Could not play track";
+            message = success ? $"⏯️ {Strings.Toast_Playing}" : $"🚫 {Strings.Toast_CouldNotPlay}";
         }
 
         return new(message, success);

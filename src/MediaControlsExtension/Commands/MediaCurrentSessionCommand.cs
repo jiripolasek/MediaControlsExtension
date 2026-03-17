@@ -54,13 +54,13 @@ internal sealed partial class MediaCurrentSessionCommand : AsyncInvokableCommand
         var manager = this._mediaService.SessionManager;
         if (manager == null)
         {
-            return this._yetAnotherHelper.GetMediaCommandResult("😢 No media session manager found");
+            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoSessionManager}");
         }
 
         var session = manager.GetCurrentSession();
         if (session == null)
         {
-            return this._yetAnotherHelper.GetMediaCommandResult("😢 No current media session found");
+            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}");
         }
 
         var result = await this._mediaSessionOp.InvokeAsync(manager, session);

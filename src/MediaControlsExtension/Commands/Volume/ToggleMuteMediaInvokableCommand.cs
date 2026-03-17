@@ -31,7 +31,7 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
                 var isMuted = playbackDevice.IsMuted;
                 await playbackDevice.ToggleMuteAsync()!.ConfigureAwait(false);
 
-                return this._yetAnotherHelper.GetMediaCommandResult(isMuted ? "🔊 Unmuted" : "🔇 Muted");
+                return this._yetAnotherHelper.GetMediaCommandResult(isMuted ? $"🔊 {Strings.Toast_Unmuted}" : $"🔇 {Strings.Toast_Muted}");
             }
         }
         catch (Exception ex)
@@ -39,6 +39,6 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
             Logger.LogError(ex);
         }
 
-        return this._yetAnotherHelper.GetMediaCommandResult("Can't change the volume");
+        return this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!);
     }
 }
