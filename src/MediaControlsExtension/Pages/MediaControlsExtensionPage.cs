@@ -1,12 +1,12 @@
 // ------------------------------------------------------------
-// 
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
 namespace JPSoftworks.MediaControlsExtension.Pages;
 
-internal sealed partial class MediaControlsExtensionPage : ListPage
+internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 {
     private readonly SettingsManager _settingsManager;
     private readonly YetAnotherHelper _yetAnotherHelper;
@@ -15,11 +15,13 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
     private readonly bool _isBandPage;
 
     private bool _isInitialized;
-    private readonly ListItem? _playPauseCurrentSessionItem;
-    private readonly ListItem? _nextTrackCurrentSessionItem;
-    private readonly ListItem? _prevTrackCurrentSessionItem;
-    private readonly ListItem? _muteCommandItem;
+    private readonly NowPlayingListItem _playPauseCurrentSessionItem;
+    private readonly DockHeadItem? _bandFirstItem;
+    private readonly ListItem _nextTrackCurrentSessionItem;
+    private readonly ListItem _prevTrackCurrentSessionItem;
+    private readonly ListItem _muteCommandItem;
     private List<MediaSourceListItem> _items = [];
+    private IListItem[] _cachedItems = [];
 
     public MediaControlsExtensionPage(
         MediaService mediaService,
@@ -45,18 +47,20 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
         this._mediaService.Initialized += (_, _) =>
         {
             this._isInitialized = true;
-            this.RaiseItemsChanged();
+            this.RebuildAndRaiseIfChanged();
         };
 
         this._mediaService.MediaSourcesChanged += (_, _) =>
         {
-            var oldItems = this._items.ToArray();
-
             List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper, this._isBandPage))];
+            MediaSourceListItem[] oldItems;
             lock (this._refreshLock)
             {
+                oldItems = [.. this._items];
                 this._items = mediaSourceListItems;
             }
+
+            this.RebuildAndRaiseIfChanged();
 
             _ = Task.Run(() =>
             {
@@ -64,7 +68,6 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
                 {
                     try
                     {
-
                         item.Dispose();
                     }
                     catch (Exception ex)
@@ -73,8 +76,6 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
                     }
                 }
             });
-
-            this.RaiseItemsChanged();
         };
 
         this._mediaService.CurrentMediaSourceChanged += (_, _) => this.UpdateCurrentMediaItems();
@@ -91,6 +92,9 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
         };
 
         this._playPauseCurrentSessionItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper, this._isBandPage);
+        this._bandFirstItem = this._isBandPage
+            ? new DockHeadItem(this._mediaService, this._settingsManager, this._yetAnotherHelper)
+            : null;
         this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle, Icon = Icons.SkipNextTrack };
         this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle, Icon = Icons.SkipPreviousTrack };
         this._muteCommandItem = new(new ToggleMuteMediaInvokableCommand(this._yetAnotherHelper));
@@ -110,11 +114,6 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
 
     private void UpdateCurrentMediaItems()
     {
-        if (!this._settingsManager.ShowSkipCommands)
-        {
-            return;
-        }
-
         if (this._nextTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand nextTrackCommand)
         {
             this._nextTrackCurrentSessionItem.UpdateIcon(nextTrackCommand.CanExecute() ? Icons.SkipNextTrack : Icons.SkipNextTrackDisabled);
@@ -124,14 +123,34 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
             this._prevTrackCurrentSessionItem.UpdateIcon(prevTrackCommand.CanExecute() ? Icons.SkipPreviousTrack : Icons.SkipPreviousTrackDisabled);
         }
 
-        // don't refresh items - it causes reset of the selected item
+        this.RebuildAndRaiseIfChanged();
     }
 
-    public override IListItem[] GetItems()
+    /// <summary>
+    /// Rebuilds the items list and raises <see cref="RaiseItemsChanged"/> only when
+    /// the item composition (identity or order) actually changed.
+    /// </summary>
+    private void RebuildAndRaiseIfChanged()
+    {
+        lock (this._refreshLock)
+        {
+            var newItems = this.BuildItems();
+            if (ItemsEqual(this._cachedItems, newItems))
+            {
+                return;
+            }
+
+            this._cachedItems = newItems;
+        }
+
+        this.RaiseItemsChanged();
+    }
+
+    private IListItem[] BuildItems()
     {
         if (this._isBandPage)
         {
-            return this.GetBandItems().ToArray();
+            return [.. this.GetBandItems()];
         }
 
         if (!this._isInitialized)
@@ -140,11 +159,15 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
             return [.. this.GetGlobalCommands()];
         }
 
-        return
-        [
-            ..this.GetGlobalCommands(),
-            ..this._items
-        ];
+        return [.. this.GetGlobalCommands(), .. this._items];
+    }
+
+    public override IListItem[] GetItems()
+    {
+        lock (this._refreshLock)
+        {
+            return this._cachedItems;
+        }
     }
 
     private List<IListItem> GetGlobalCommands()
@@ -166,17 +189,54 @@ internal sealed partial class MediaControlsExtensionPage : ListPage
 
         return items;
     }
+
     private List<IListItem> GetBandItems()
     {
-        List<IListItem> items = [];
-        if (this._playPauseCurrentSessionItem != null && this._items.Count > 0)
+        if (!this._isBandPage || this._bandFirstItem is null)
         {
-            items.Add(this._items.First());
-            items.Add(this._prevTrackCurrentSessionItem!);
+            return [];
+        }
+
+        List<IListItem> items = [];
+
+        items.Add(this._bandFirstItem!);
+
+        if (this._mediaService.CurrentSource is not null)
+        {
+            if (this._settingsManager.ShowSkipCommandsInDockBand)
+            {
+                items.Add(this._prevTrackCurrentSessionItem!);
+            }
             items.Add(this._playPauseCurrentSessionItem);
-            items.Add(this._nextTrackCurrentSessionItem!);
+            if (this._settingsManager.ShowSkipCommandsInDockBand)
+            {
+                items.Add(this._nextTrackCurrentSessionItem!);
+            }
         }
         return items;
     }
 
+    private static bool ItemsEqual(IListItem[] a, IListItem[] b)
+    {
+        if (a.Length != b.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (!ReferenceEquals(a[i], b[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void Dispose()
+    {
+        this._playPauseCurrentSessionItem?.Dispose();
+        this._bandFirstItem?.Dispose();
+    }
 }
