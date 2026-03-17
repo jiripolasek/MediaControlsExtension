@@ -29,7 +29,7 @@ internal partial class CurrentMediaSessionCommand : AsyncInvokableCommand
         var session = manager.GetCurrentSession();
         if (session == null)
         {
-            return this._yetAnotherHelper.GetMediaCommandResult("🚫 Nothing is playing");
+            return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_NothingPlaying}");
         }
 
         var result = await this._mediaSessionOp.InvokeAsync(manager, session);

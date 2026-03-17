@@ -42,7 +42,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this.Title = Strings.Name!;
         this.Name = Strings.Open!;
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols";
-        this.PlaceholderText = "Search media commands or sessions…";
+        this.PlaceholderText = Strings.SearchPlaceholder!;
 
         this._mediaService.Initialized += (_, _) =>
         {
@@ -86,8 +86,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
         this.EmptyContent = new CommandItem
         {
-            Title = "No media sources available",
-            Subtitle = "No media sources are currently available. Please ensure that you have media applications running that support media controls.",
+            Title = Strings.EmptyContent_Title!,
+            Subtitle = Strings.EmptyContent_Subtitle!,
             Icon = Icons.MainIcon
         };
 

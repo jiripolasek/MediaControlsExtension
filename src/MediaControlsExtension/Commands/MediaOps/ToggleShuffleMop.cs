@@ -15,11 +15,11 @@ internal sealed class ToggleShuffleMop : MediaSessionOp
         var canControlShuffle = session.GetPlaybackInfo().Controls.IsShuffleEnabled;
         if (!canControlShuffle)
         {
-            return new("🚫 Shuffle control is not available for this session", false);
+            return new($"🚫 {Strings.Toast_ShuffleNotAvailable}", false);
         }
 
         var isShuffleActive = session.GetPlaybackInfo().IsShuffleActive ?? false;
         bool success = await session.TryChangeShuffleActiveAsync(!isShuffleActive);
-        return new(success ? (isShuffleActive ? "🔀 Shuffle disabled" : "🔀 Shuffle enabled") : "🚫 Could not toggle shuffle", success);
+        return new(success ? (isShuffleActive ? $"🔀 {Strings.Toast_ShuffleDisabled}" : $"🔀 {Strings.Toast_ShuffleEnabled}") : $"🚫 {Strings.Toast_CouldNotToggleShuffle}", success);
     }
 }

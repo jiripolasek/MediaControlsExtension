@@ -15,8 +15,8 @@ internal sealed class SettingsManager : JsonSettingsManager
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showThumbnailsOption = new(
         Namespaced("ShowThumbnails"),
-        "Show thumbnails\n    Use media thumbnails (album art) instead of app icons in the session list.", // Strings.Settings_ShowThumbnails_Title!,
-        "", //Strings.Settings_ShowThumbnails_Subtitle!,
+        Strings.Settings_ShowThumbnails_Title! + Environment.NewLine + Strings.Settings_ShowThumbnails_Subtitle!,
+        "",
         false);
 
 
@@ -36,69 +36,69 @@ internal sealed class SettingsManager : JsonSettingsManager
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpen = new(
         Namespaced("KeepOpen"),
-        "Keep Command Palette open\n    Keep the Command Palette open after running a command, so you can perform multiple actions in a row.\n    Hold Shift while activating a command to temporarily do the opposite.", //Strings.Settings_KeepOpen_Title!,
-        "", //Strings.Settings_KeepOpen_Subtitle!,
+        Strings.Settings_KeepOpen_Title! + Environment.NewLine + Strings.Settings_KeepOpen_Subtitle!,
+        "",
         true
         );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpenTogglePlayPauseCurrent = new(
         Namespaced("KeepOpenTogglePlayPauseCurrent"),
-        "Hide after Play/Pause",
-        "", //Strings.Settings_KeepOpen_Subtitle!,
+        Strings.Settings_HideAfterPlayPause!,
+        "",
         false
     );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpenSkipTrack = new(
         Namespaced("KeepOpenSkipTrack"),
-        "Hide after changing tracks",
-        "", //Strings.Settings_KeepOpen_Subtitle!,
+        Strings.Settings_HideAfterChangingTracks!,
+        "",
         false
     );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpenTogglePlayMedia = new(
         Namespaced("KeepOpenTogglePlayMedia"),
-        "Hide after toggle play/pause on media session",
-        "", //Strings.Settings_KeepOpen_Subtitle!,
+        Strings.Settings_HideAfterTogglePlayPause!,
+        "",
         false
     );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showToastMessages = new(
         Namespaced("ShowToastMessages"),
-        "Show toast messages\n    Show a confirmation notification after each media action.",
-        "", //"Show toast messages when media commands are invoked",
+        Strings.Settings_ShowToastMessages_Title! + Environment.NewLine + Strings.Settings_ShowToastMessages_Subtitle!,
+        "",
         true
     );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _pauseOthersOnPlay = new(
         Namespaced("PauseOthersOnPlay"),
-        "Pause other sessions on play\n    When playing a session, automatically pause all other sessions.",
-        "", // ""Pauses all other media",
+        Strings.Settings_PauseOthersOnPlay_Title! + Environment.NewLine + Strings.Settings_PauseOthersOnPlay_Subtitle!,
+        "",
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showCurrentMediaAtTopLevel = new(
         Namespaced("ShowCurrentMediaAtTopLevel"),
-        "Show current media session on home page\n    Adds a “Now Playing” item to the home page for easy access to the current session.",
-        "", //"Shows the current media at the top level of the command palette",
+        Strings.Settings_ShowCurrentMediaAtTopLevel_Title! + Environment.NewLine + Strings.Settings_ShowCurrentMediaAtTopLevel_Subtitle!,
+        "",
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showSkipCommands = new(
         Namespaced("ShowSkipCommands"),
-        "Show skip track commands\n    Display “Next” and “Previous Track” as top-level items on the Media Controls page.",
-        "", //"Shows skip commands on the media controls page",
+        Strings.Settings_ShowSkipCommands_Title! + Environment.NewLine + Strings.Settings_ShowSkipCommands_Subtitle!,
+        "",
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showSkipCommandsInDockBand = new(
         Namespaced("ShowSkipCommandsInDockBand"),
-        "Show skip track commands in Dock\n    Display “Next” and “Previous Track” in the Dock.",
-        "", //"Shows skip commands on the media controls page",
+        Strings.Settings_ShowSkipCommandsInDock_Title! + Environment.NewLine + Strings.Settings_ShowSkipCommandsInDock_Subtitle!,
+        "",
         true);
 
     public bool ShowThumbnails => this._showThumbnailsOption.Value;

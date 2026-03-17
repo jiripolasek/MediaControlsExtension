@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -118,250 +118,250 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Name" xml:space="preserve">
-    <value>Media controls</value>
+    <value>미디어 컨트롤</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>Open</value>
+    <value>열기</value>
   </data>
   <data name="TogglePlayPause" xml:space="preserve">
-    <value>Toggle Play / Pause</value>
+    <value>재생/일시정지 전환</value>
   </data>
   <data name="TogglePlayPause_Comments" xml:space="preserve">
-    <value>Play or pause current media</value>
+    <value>현재 미디어 재생 또는 일시 중지</value>
   </data>
   <data name="Command_SwitchToApplication" xml:space="preserve">
-    <value>Switch to Application</value>
+    <value>애플리케이션으로 전환</value>
   </data>
   <data name="Command_NextTrack" xml:space="preserve">
-    <value>Next Track</value>
+    <value>다음 트랙</value>
   </data>
   <data name="Command_PlayPause" xml:space="preserve">
-    <value>Play / Pause</value>
+    <value>재생 / 일시정지</value>
   </data>
   <data name="Command_ToggleMute" xml:space="preserve">
-    <value>Toggle Mute</value>
+    <value>음소거 전환</value>
   </data>
   <data name="Settings_ShowThumbnails_Title" xml:space="preserve">
-    <value>Show thumbnails</value>
+    <value>썸네일 표시</value>
   </data>
   <data name="Settings_ShowThumbnails_Subtitle" xml:space="preserve">
-    <value>Use media thumbnails (album art) instead of app icons in the session list.</value>
+    <value>세션 목록에서 앱 아이콘 대신 미디어 썸네일(앨범 아트)을 사용합니다.</value>
   </data>
   <data name="Command_PreviousTrack" xml:space="preserve">
-    <value>Previous Track</value>
+    <value>이전 트랙</value>
   </data>
   <data name="Command_ToggleRepeat" xml:space="preserve">
-    <value>Toggle Repeat</value>
+    <value>반복 전환</value>
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
-    <value>Toggle Shuffle</value>
+    <value>셔플 전환</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Playing</value>
+    <value>재생 중</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
-    <value>Mute</value>
+    <value>음소거</value>
   </data>
   <data name="Command_Unmute" xml:space="preserve">
-    <value>Unmute</value>
+    <value>음소거 해제</value>
   </data>
   <data name="Command_Mute_Subtitle" xml:space="preserve">
-    <value>Mute system volume</value>
+    <value>시스템 볼륨 음소거</value>
   </data>
   <data name="Command_Unmute_Subtitle" xml:space="preserve">
-    <value>Unmute system volume</value>
+    <value>시스템 볼륨 음소거 해제</value>
   </data>
   <data name="Command_NextTrack_Subtitle" xml:space="preserve">
-    <value>Skip to the next track in the active media session</value>
+    <value>활성 미디어 세션에서 다음 트랙으로 건너뛰기</value>
   </data>
   <data name="Command_PreviousTrack_Subtitle" xml:space="preserve">
-    <value>Returns to the previous track in the active media session</value>
+    <value>활성 미디어 세션에서 이전 트랙으로 돌아갑니다</value>
   </data>
   <data name="MediaControls_Subtitle" xml:space="preserve">
-    <value>Manage playback and switch between media apps with ease</value>
+    <value>미디어 앱 간에 쉽게 전환하고 재생을 관리하세요</value>
   </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
-    <value>Global Commands</value>
+    <value>글로벌 명령어</value>
   </data>
   <data name="Settings_GlobalCommands_Subtitle" xml:space="preserve">
-    <value>Controls additional media controls commands in the global search</value>
+    <value>전역 검색에서 추가 미디어 제어 명령을 제어합니다</value>
   </data>
   <data name="Settings_GlobalCommands_Option_Enabled" xml:space="preserve">
-    <value>Enabled</value>
+    <value>활성화됨</value>
   </data>
   <data name="Settings_GlobalCommands_Option_Disabled" xml:space="preserve">
-    <value>Disabled</value>
+    <value>비활성화됨</value>
   </data>
   <data name="Settings_KeepOpen_Title" xml:space="preserve">
-    <value>Keep Command Palette open</value>
+    <value>명령 팔레트를 열어 둔 상태로 유지</value>
   </data>
   <data name="Settings_KeepOpen_Subtitle" xml:space="preserve">
-    <value>Keep the Command Palette open after running a command, so you can perform multiple actions in a row.
-Hold Shift while activating a command to temporarily do the opposite.</value>
+    <value>명령을 실행한 후에도 명령 팔레트를 열어 둔 채로 유지하여 여러 작업을 연속으로 수행할 수 있습니다.
+명령을 실행할 때 Shift 키를 누르고 있으면 일시적으로 반대 동작을 수행합니다.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Play</value>
+    <value>재생</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
-    <value>Pause</value>
+    <value>일시 중지</value>
   </data>
   <data name="Command_Stop" xml:space="preserve">
-    <value>Stop</value>
+    <value>멈춰</value>
   </data>
   <data name="Command_NextApp" xml:space="preserve">
-    <value>Next Application</value>
+    <value>다음 신청서</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>Previous Application</value>
+    <value>이전 신청서</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
-    <value>Search media commands or sessions…</value>
+    <value>미디어 명령 또는 세션 검색…</value>
   </data>
   <data name="EmptyContent_Title" xml:space="preserve">
-    <value>No media sources available</value>
+    <value>사용 가능한 미디어 소스가 없습니다</value>
   </data>
   <data name="EmptyContent_Subtitle" xml:space="preserve">
-    <value>No media sources are currently available. Please ensure that you have media applications running that support media controls.</value>
+    <value>현재 사용할 수 있는 미디어 소스가 없습니다. 미디어 제어를 지원하는 미디어 애플리케이션이 실행 중인지 확인하세요.</value>
   </data>
   <data name="NowPlaying_NothingPlaying" xml:space="preserve">
-    <value>Nothing is playing right now</value>
+    <value>지금 재생 중인 것이 없습니다</value>
   </data>
   <data name="NowPlaying_Subtitle" xml:space="preserve">
-    <value>Now playing</value>
+    <value>지금 재생 중</value>
   </data>
   <data name="NowPlaying_Pause" xml:space="preserve">
-    <value>Pause {0}</value>
+    <value>일시 중지 {0}</value>
   </data>
   <data name="NowPlaying_Stop" xml:space="preserve">
-    <value>Stop {0}</value>
+    <value>{0}를 멈추세요</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Play {0}</value>
+    <value>{0} 재생</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
-    <value>Now playing {0}</value>
+    <value>지금 재생 중 {0}</value>
   </data>
   <data name="Toast_Muted" xml:space="preserve">
-    <value>Muted</value>
+    <value>음소거됨</value>
   </data>
   <data name="Toast_Unmuted" xml:space="preserve">
-    <value>Unmuted</value>
+    <value>음소거 해제됨</value>
   </data>
   <data name="Toast_CantChangeVolume" xml:space="preserve">
-    <value>Can't change the volume</value>
+    <value>볼륨을 변경할 수 없습니다</value>
   </data>
   <data name="Toast_Paused" xml:space="preserve">
-    <value>Paused</value>
+    <value>일시 중지됨</value>
   </data>
   <data name="Toast_CouldNotPause" xml:space="preserve">
-    <value>Could not pause playback</value>
+    <value>재생을 일시 중지할 수 없습니다</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Playing</value>
+    <value>재생 중</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
-    <value>Could not play track</value>
+    <value>트랙을 재생할 수 없습니다</value>
   </data>
   <data name="Toast_SkippedNext" xml:space="preserve">
-    <value>Skipped to next track</value>
+    <value>다음 트랙으로 건너뜀</value>
   </data>
   <data name="Toast_CouldNotSkipNext" xml:space="preserve">
-    <value>Could not skip to next track</value>
+    <value>다음 트랙으로 건너뛸 수 없습니다</value>
   </data>
   <data name="Toast_SkippedPrevious" xml:space="preserve">
-    <value>Returned to previous track</value>
+    <value>이전 트랙으로 돌아감</value>
   </data>
   <data name="Toast_CouldNotSkipPrevious" xml:space="preserve">
-    <value>Could not go to previous track</value>
+    <value>이전 트랙으로 이동할 수 없습니다</value>
   </data>
   <data name="Toast_RepeatNotAvailable" xml:space="preserve">
-    <value>Repeat control is not available for this session</value>
+    <value>이 세션에서는 반복 제어를 사용할 수 없습니다</value>
   </data>
   <data name="Toast_RepeatChanged" xml:space="preserve">
-    <value>Repeat mode changed to {0}</value>
+    <value>반복 모드가 {0}로 변경되었습니다</value>
   </data>
   <data name="Toast_CouldNotChangeRepeat" xml:space="preserve">
-    <value>Could not change repeat mode</value>
+    <value>반복 모드를 변경할 수 없습니다</value>
   </data>
   <data name="Toast_ShuffleNotAvailable" xml:space="preserve">
-    <value>Shuffle control is not available for this session</value>
+    <value>이 세션에서는 셔플 제어를 사용할 수 없습니다</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Shuffle disabled</value>
+    <value>셔플 비활성화됨</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Shuffle enabled</value>
+    <value>셔플 사용됨</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
-    <value>Could not toggle shuffle</value>
+    <value>셔플을 전환할 수 없습니다</value>
   </data>
   <data name="Toast_NothingPlaying" xml:space="preserve">
-    <value>Nothing is playing</value>
+    <value>재생 중인 것이 없습니다</value>
   </data>
   <data name="Toast_NoSessionManager" xml:space="preserve">
-    <value>No media session manager found</value>
+    <value>미디어 세션 관리자를 찾을 수 없습니다</value>
   </data>
   <data name="Toast_NoCurrentSession" xml:space="preserve">
-    <value>No current media session found</value>
+    <value>현재 미디어 세션을 찾을 수 없습니다</value>
   </data>
   <data name="Toast_NothingHappened" xml:space="preserve">
-    <value>Nothing happened</value>
+    <value>아무 일도 없었어</value>
   </data>
   <data name="Toast_NotCurrentSession" xml:space="preserve">
-    <value>Not the current session</value>
+    <value>현재 세션이 아님</value>
   </data>
   <data name="Toast_NoOtherSessions" xml:space="preserve">
-    <value>No other sessions to switch to</value>
+    <value>전환할 다른 세션이 없습니다</value>
   </data>
   <data name="Toast_NoNextSession" xml:space="preserve">
-    <value>No next session found</value>
+    <value>다음 세션을 찾을 수 없습니다</value>
   </data>
   <data name="Toast_SwitchedTo" xml:space="preserve">
-    <value>Switched to {0} and {1}</value>
+    <value>{0} 및 {1}로 전환됨</value>
   </data>
   <data name="Toast_CouldNotSwitchTo" xml:space="preserve">
-    <value>Could not switch to {0}: {1}</value>
+    <value>{0}로 전환할 수 없습니다: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Playing {0}</value>
+    <value>{0} 플레이 중</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
-    <value>Show toast messages</value>
+    <value>토스트 메시지 표시</value>
   </data>
   <data name="Settings_ShowToastMessages_Subtitle" xml:space="preserve">
-    <value>Show a confirmation notification after each media action.</value>
+    <value>각 미디어 작업 후 확인 알림을 표시합니다.</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Title" xml:space="preserve">
-    <value>Pause other sessions on play</value>
+    <value>재생 시 다른 세션 일시 중지</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>When playing a session, automatically pause all other sessions.</value>
+    <value>세션을 재생할 때 다른 모든 세션을 자동으로 일시 중지합니다.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
-    <value>Show current media session on home page</value>
+    <value>홈페이지에 현재 미디어 세션 표시</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Subtitle" xml:space="preserve">
-    <value>Adds a &#x201C;Now Playing&#x201D; item to the home page for easy access to the current session.</value>
+    <value>현재 세션에 쉽게 접근할 수 있도록 홈 페이지에 “지금 재생 중” 항목을 추가합니다.</value>
   </data>
   <data name="Settings_ShowSkipCommands_Title" xml:space="preserve">
-    <value>Show skip track commands</value>
+    <value>건너뛰기 트랙 명령 표시</value>
   </data>
   <data name="Settings_ShowSkipCommands_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; as top-level items on the Media Controls page.</value>
+    <value>미디어 컨트롤 페이지에서 “다음”과 “이전 트랙”을 최상위 항목으로 표시합니다.</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Title" xml:space="preserve">
-    <value>Show skip track commands in Dock</value>
+    <value>Dock에 트랙 건너뛰기 명령 표시</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
+    <value>Dock에 “다음” 및 “이전 트랙”을 표시합니다.</value>
   </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
-    <value>Hide after Play/Pause</value>
+    <value>재생/일시정지 후 숨기기</value>
   </data>
   <data name="Settings_HideAfterChangingTracks" xml:space="preserve">
-    <value>Hide after changing tracks</value>
+    <value>트랙을 변경한 후 숨기기</value>
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
-    <value>Hide after toggle play/pause on media session</value>
+    <value>미디어 세션에서 재생/일시정지 토글 후 숨기기</value>
   </data>
 </root>

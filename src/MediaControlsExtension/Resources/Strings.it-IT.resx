@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -118,250 +118,250 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Name" xml:space="preserve">
-    <value>Media controls</value>
+    <value>Controlli multimediali</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>Open</value>
+    <value>Aperto</value>
   </data>
   <data name="TogglePlayPause" xml:space="preserve">
-    <value>Toggle Play / Pause</value>
+    <value>Alterna riproduzione/pausa</value>
   </data>
   <data name="TogglePlayPause_Comments" xml:space="preserve">
-    <value>Play or pause current media</value>
+    <value>Riprodurre o mettere in pausa il media corrente</value>
   </data>
   <data name="Command_SwitchToApplication" xml:space="preserve">
-    <value>Switch to Application</value>
+    <value>Passare all'applicazione</value>
   </data>
   <data name="Command_NextTrack" xml:space="preserve">
-    <value>Next Track</value>
+    <value>Traccia successiva</value>
   </data>
   <data name="Command_PlayPause" xml:space="preserve">
-    <value>Play / Pause</value>
+    <value>Riproduzione / Pausa</value>
   </data>
   <data name="Command_ToggleMute" xml:space="preserve">
-    <value>Toggle Mute</value>
+    <value>Attiva il silenziamento</value>
   </data>
   <data name="Settings_ShowThumbnails_Title" xml:space="preserve">
-    <value>Show thumbnails</value>
+    <value>Mostra le miniature</value>
   </data>
   <data name="Settings_ShowThumbnails_Subtitle" xml:space="preserve">
-    <value>Use media thumbnails (album art) instead of app icons in the session list.</value>
+    <value>Utilizzare le miniature dei media (album art) invece delle icone delle app nell'elenco delle sessioni.</value>
   </data>
   <data name="Command_PreviousTrack" xml:space="preserve">
-    <value>Previous Track</value>
+    <value>Traccia precedente</value>
   </data>
   <data name="Command_ToggleRepeat" xml:space="preserve">
-    <value>Toggle Repeat</value>
+    <value>Alterna la ripetizione</value>
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
-    <value>Toggle Shuffle</value>
+    <value>Alterna la funzione Shuffle</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Playing</value>
+    <value>Giocare</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
-    <value>Mute</value>
+    <value>Muto</value>
   </data>
   <data name="Command_Unmute" xml:space="preserve">
-    <value>Unmute</value>
+    <value>Disattivare l'audio</value>
   </data>
   <data name="Command_Mute_Subtitle" xml:space="preserve">
-    <value>Mute system volume</value>
+    <value>Silenziamento del volume del sistema</value>
   </data>
   <data name="Command_Unmute_Subtitle" xml:space="preserve">
-    <value>Unmute system volume</value>
+    <value>Disattivare il volume del sistema</value>
   </data>
   <data name="Command_NextTrack_Subtitle" xml:space="preserve">
-    <value>Skip to the next track in the active media session</value>
+    <value>Passa alla traccia successiva nella sessione multimediale attiva</value>
   </data>
   <data name="Command_PreviousTrack_Subtitle" xml:space="preserve">
-    <value>Returns to the previous track in the active media session</value>
+    <value>Ritorna alla traccia precedente nella sessione multimediale attiva</value>
   </data>
   <data name="MediaControls_Subtitle" xml:space="preserve">
-    <value>Manage playback and switch between media apps with ease</value>
+    <value>Gestire la riproduzione e passare da un'app multimediale all'altra con facilità</value>
   </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
-    <value>Global Commands</value>
+    <value>Comandi globali</value>
   </data>
   <data name="Settings_GlobalCommands_Subtitle" xml:space="preserve">
-    <value>Controls additional media controls commands in the global search</value>
+    <value>Controlla ulteriori comandi di controllo dei media nella ricerca globale</value>
   </data>
   <data name="Settings_GlobalCommands_Option_Enabled" xml:space="preserve">
-    <value>Enabled</value>
+    <value>Abilitato</value>
   </data>
   <data name="Settings_GlobalCommands_Option_Disabled" xml:space="preserve">
-    <value>Disabled</value>
+    <value>Disabili</value>
   </data>
   <data name="Settings_KeepOpen_Title" xml:space="preserve">
-    <value>Keep Command Palette open</value>
+    <value>Tenere aperta la palette dei comandi</value>
   </data>
   <data name="Settings_KeepOpen_Subtitle" xml:space="preserve">
-    <value>Keep the Command Palette open after running a command, so you can perform multiple actions in a row.
-Hold Shift while activating a command to temporarily do the opposite.</value>
+    <value>Mantenete aperta la Tavolozza dei comandi dopo aver eseguito un comando, in modo da poter eseguire più azioni di seguito.
+Tenere premuto Shift mentre si attiva un comando per fare temporaneamente il contrario.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Play</value>
+    <value>Gioco</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
-    <value>Pause</value>
+    <value>Pausa</value>
   </data>
   <data name="Command_Stop" xml:space="preserve">
-    <value>Stop</value>
+    <value>Fermarsi</value>
   </data>
   <data name="Command_NextApp" xml:space="preserve">
-    <value>Next Application</value>
+    <value>Prossima applicazione</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>Previous Application</value>
+    <value>Applicazione precedente</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
-    <value>Search media commands or sessions…</value>
+    <value>Ricerca di comandi o sessioni multimediali...</value>
   </data>
   <data name="EmptyContent_Title" xml:space="preserve">
-    <value>No media sources available</value>
+    <value>Nessuna fonte mediatica disponibile</value>
   </data>
   <data name="EmptyContent_Subtitle" xml:space="preserve">
-    <value>No media sources are currently available. Please ensure that you have media applications running that support media controls.</value>
+    <value>Al momento non sono disponibili fonti multimediali. Assicurarsi che siano in esecuzione applicazioni multimediali che supportino i controlli multimediali.</value>
   </data>
   <data name="NowPlaying_NothingPlaying" xml:space="preserve">
-    <value>Nothing is playing right now</value>
+    <value>In questo momento non c'è nulla in riproduzione</value>
   </data>
   <data name="NowPlaying_Subtitle" xml:space="preserve">
-    <value>Now playing</value>
+    <value>Ora in riproduzione</value>
   </data>
   <data name="NowPlaying_Pause" xml:space="preserve">
-    <value>Pause {0}</value>
+    <value>Pausa {0}</value>
   </data>
   <data name="NowPlaying_Stop" xml:space="preserve">
-    <value>Stop {0}</value>
+    <value>Arresto {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Play {0}</value>
+    <value>Gioca {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
-    <value>Now playing {0}</value>
+    <value>Ora si sta giocando {0}</value>
   </data>
   <data name="Toast_Muted" xml:space="preserve">
-    <value>Muted</value>
+    <value>Silenzioso</value>
   </data>
   <data name="Toast_Unmuted" xml:space="preserve">
-    <value>Unmuted</value>
+    <value>Non silenziato</value>
   </data>
   <data name="Toast_CantChangeVolume" xml:space="preserve">
-    <value>Can't change the volume</value>
+    <value>Non è possibile modificare il volume</value>
   </data>
   <data name="Toast_Paused" xml:space="preserve">
-    <value>Paused</value>
+    <value>In pausa</value>
   </data>
   <data name="Toast_CouldNotPause" xml:space="preserve">
-    <value>Could not pause playback</value>
+    <value>Impossibile mettere in pausa la riproduzione</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Playing</value>
+    <value>Giocare</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
-    <value>Could not play track</value>
+    <value>Impossibile riprodurre il brano</value>
   </data>
   <data name="Toast_SkippedNext" xml:space="preserve">
-    <value>Skipped to next track</value>
+    <value>Salto al brano successivo</value>
   </data>
   <data name="Toast_CouldNotSkipNext" xml:space="preserve">
-    <value>Could not skip to next track</value>
+    <value>Impossibile passare al brano successivo</value>
   </data>
   <data name="Toast_SkippedPrevious" xml:space="preserve">
-    <value>Returned to previous track</value>
+    <value>Ritorno alla traccia precedente</value>
   </data>
   <data name="Toast_CouldNotSkipPrevious" xml:space="preserve">
-    <value>Could not go to previous track</value>
+    <value>Impossibile passare al brano precedente</value>
   </data>
   <data name="Toast_RepeatNotAvailable" xml:space="preserve">
-    <value>Repeat control is not available for this session</value>
+    <value>Il controllo della ripetizione non è disponibile per questa sessione</value>
   </data>
   <data name="Toast_RepeatChanged" xml:space="preserve">
-    <value>Repeat mode changed to {0}</value>
+    <value>La modalità di ripetizione è passata a {0}</value>
   </data>
   <data name="Toast_CouldNotChangeRepeat" xml:space="preserve">
-    <value>Could not change repeat mode</value>
+    <value>Impossibile cambiare la modalità di ripetizione</value>
   </data>
   <data name="Toast_ShuffleNotAvailable" xml:space="preserve">
-    <value>Shuffle control is not available for this session</value>
+    <value>Il controllo della riproduzione casuale non è disponibile per questa sessione</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Shuffle disabled</value>
+    <value>Riproduzione casuale disattivata</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Shuffle enabled</value>
+    <value>Riproduzione casuale abilitata</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
-    <value>Could not toggle shuffle</value>
+    <value>Impossibile attivare la riproduzione casuale</value>
   </data>
   <data name="Toast_NothingPlaying" xml:space="preserve">
-    <value>Nothing is playing</value>
+    <value>Non c'è nulla da suonare</value>
   </data>
   <data name="Toast_NoSessionManager" xml:space="preserve">
-    <value>No media session manager found</value>
+    <value>Nessun gestore di sessione multimediale trovato</value>
   </data>
   <data name="Toast_NoCurrentSession" xml:space="preserve">
-    <value>No current media session found</value>
+    <value>Non è stata trovata alcuna sessione multimediale in corso</value>
   </data>
   <data name="Toast_NothingHappened" xml:space="preserve">
-    <value>Nothing happened</value>
+    <value>Non è successo nulla</value>
   </data>
   <data name="Toast_NotCurrentSession" xml:space="preserve">
-    <value>Not the current session</value>
+    <value>Non la sessione corrente</value>
   </data>
   <data name="Toast_NoOtherSessions" xml:space="preserve">
-    <value>No other sessions to switch to</value>
+    <value>Non ci sono altre sessioni a cui passare</value>
   </data>
   <data name="Toast_NoNextSession" xml:space="preserve">
-    <value>No next session found</value>
+    <value>Non è stata trovata una sessione successiva</value>
   </data>
   <data name="Toast_SwitchedTo" xml:space="preserve">
-    <value>Switched to {0} and {1}</value>
+    <value>Passato a {0} e {1}</value>
   </data>
   <data name="Toast_CouldNotSwitchTo" xml:space="preserve">
-    <value>Could not switch to {0}: {1}</value>
+    <value>Impossibile passare a {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Playing {0}</value>
+    <value>Giocare {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
-    <value>Show toast messages</value>
+    <value>Mostra i messaggi di toast</value>
   </data>
   <data name="Settings_ShowToastMessages_Subtitle" xml:space="preserve">
-    <value>Show a confirmation notification after each media action.</value>
+    <value>Mostra una notifica di conferma dopo ogni azione multimediale.</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Title" xml:space="preserve">
-    <value>Pause other sessions on play</value>
+    <value>Mettere in pausa altre sessioni di gioco</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>When playing a session, automatically pause all other sessions.</value>
+    <value>Durante la riproduzione di una sessione, mette automaticamente in pausa tutte le altre sessioni.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
-    <value>Show current media session on home page</value>
+    <value>Mostra la sessione multimediale in corso sulla home page</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Subtitle" xml:space="preserve">
-    <value>Adds a &#x201C;Now Playing&#x201D; item to the home page for easy access to the current session.</value>
+    <value>Aggiunge un elemento "In riproduzione" alla pagina iniziale per facilitare l'accesso alla sessione corrente.</value>
   </data>
   <data name="Settings_ShowSkipCommands_Title" xml:space="preserve">
-    <value>Show skip track commands</value>
+    <value>Mostra i comandi di salto di traccia</value>
   </data>
   <data name="Settings_ShowSkipCommands_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; as top-level items on the Media Controls page.</value>
+    <value>Visualizzare "Traccia successiva" e "Traccia precedente" come elementi di primo livello nella pagina Controlli multimediali.</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Title" xml:space="preserve">
-    <value>Show skip track commands in Dock</value>
+    <value>Mostra i comandi di salto traccia nel Dock</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
+    <value>Visualizzare "Traccia successiva" e "Traccia precedente" nel Dock.</value>
   </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
-    <value>Hide after Play/Pause</value>
+    <value>Nascondi dopo la riproduzione/pausa</value>
   </data>
   <data name="Settings_HideAfterChangingTracks" xml:space="preserve">
-    <value>Hide after changing tracks</value>
+    <value>Nascondersi dopo aver cambiato traccia</value>
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
-    <value>Hide after toggle play/pause on media session</value>
+    <value>Nascondere dopo l'attivazione della riproduzione/pausa nella sessione multimediale</value>
   </data>
 </root>

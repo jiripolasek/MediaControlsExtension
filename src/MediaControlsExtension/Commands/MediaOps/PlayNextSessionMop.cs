@@ -1,15 +1,21 @@
 ﻿// ------------------------------------------------------------
-// 
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
+using System.Globalization;
+using System.Text;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class PlayOtherSessionMop : MediaSessionOp
 {
+    private static readonly CompositeFormat s_switchedToFormat = CompositeFormat.Parse(Strings.Toast_SwitchedTo!);
+    private static readonly CompositeFormat s_couldNotSwitchToFormat = CompositeFormat.Parse(Strings.Toast_CouldNotSwitchTo!);
+    private static readonly CompositeFormat s_playingNameFormat = CompositeFormat.Parse(Strings.Toast_PlayingName!);
+
     private readonly int _relativeIndex;
     private readonly MediaService _mediaService;
     private readonly SettingsManager _settingsManager;
@@ -27,19 +33,19 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         var currentSession = manager.GetCurrentSession();
         if (currentSession == null)
         {
-            return new("🚫 Not the current session", false);
+            return new($"🚫 {Strings.Toast_NotCurrentSession}", false);
         }
 
         // we have only one session, so we can't switch
         if (allSessions.Count == 1 && allSessions[0].SourceAppUserModelId == currentSession.SourceAppUserModelId)
         {
-            return new("🚫 No other sessions to switch to", false);
+            return new($"🚫 {Strings.Toast_NoOtherSessions}", false);
         }
 
         var currentIndex = allSessions.FindIndex(t => t.SourceAppUserModelId == currentSession.SourceAppUserModelId);
         if (currentIndex < 0 || currentIndex >= allSessions.Count)
         {
-            return new("🚫 No next session found", false);
+            return new($"🚫 {Strings.Toast_NoNextSession}", false);
         }
 
         var newIndex = (currentIndex + allSessions.Count + this._relativeIndex) % allSessions.Count;
@@ -51,8 +57,8 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         var applicationName = string.IsNullOrEmpty(nextMediaSource?.ApplicationName) ? "next session" : nextMediaSource?.ApplicationName;
 
         return s.Success
-            ? new($"🔄️ Switched to {applicationName} and {s.Message}", true)
-            : new($"🚫 Could not switch to {applicationName}: {s.Message}", false);
+            ? new($"🔄️ {string.Format(CultureInfo.CurrentCulture, s_switchedToFormat, applicationName, s.Message)}", true)
+            : new($"🚫 {string.Format(CultureInfo.CurrentCulture, s_couldNotSwitchToFormat, applicationName, s.Message)}", false);
     }
 
 
@@ -72,11 +78,11 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
             }
 
             success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();
-            message = success ? "⏯️ Playing " + nextMediaSource?.Name : "🚫 Could not play track";
+            message = success ? $"⏯️ {string.Format(CultureInfo.CurrentCulture, s_playingNameFormat, nextMediaSource?.Name)}" : $"🚫 {Strings.Toast_CouldNotPlay}";
         }
         else
         {
-            message = "playing";
+            message = Strings.Toast_Playing!;
             success = true; // we don't need to pause the session, just switch to it
         }
 
