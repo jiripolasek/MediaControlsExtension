@@ -21,6 +21,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly ListItem _prevTrackCurrentSessionItem;
     private readonly ListItem _muteCommandItem;
     private List<MediaSourceListItem> _items = [];
+    private IListItem[] _cachedItems = [];
 
     public MediaControlsExtensionPage(
         MediaService mediaService,
@@ -46,18 +47,20 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this._mediaService.Initialized += (_, _) =>
         {
             this._isInitialized = true;
-            this.RaiseItemsChanged();
+            this.RebuildAndRaiseIfChanged();
         };
 
         this._mediaService.MediaSourcesChanged += (_, _) =>
         {
-            var oldItems = this._items.ToArray();
-
             List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper, this._isBandPage))];
+            MediaSourceListItem[] oldItems;
             lock (this._refreshLock)
             {
+                oldItems = [.. this._items];
                 this._items = mediaSourceListItems;
             }
+
+            this.RebuildAndRaiseIfChanged();
 
             _ = Task.Run(() =>
             {
@@ -65,7 +68,6 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 {
                     try
                     {
-
                         item.Dispose();
                     }
                     catch (Exception ex)
@@ -121,14 +123,34 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._prevTrackCurrentSessionItem.UpdateIcon(prevTrackCommand.CanExecute() ? Icons.SkipPreviousTrack : Icons.SkipPreviousTrackDisabled);
         }
 
-        // don't refresh items - it causes reset of the selected item
+        this.RebuildAndRaiseIfChanged();
     }
 
-    public override IListItem[] GetItems()
+    /// <summary>
+    /// Rebuilds the items list and raises <see cref="RaiseItemsChanged"/> only when
+    /// the item composition (identity or order) actually changed.
+    /// </summary>
+    private void RebuildAndRaiseIfChanged()
+    {
+        lock (this._refreshLock)
+        {
+            var newItems = this.BuildItems();
+            if (ItemsEqual(this._cachedItems, newItems))
+            {
+                return;
+            }
+
+            this._cachedItems = newItems;
+        }
+
+        this.RaiseItemsChanged();
+    }
+
+    private IListItem[] BuildItems()
     {
         if (this._isBandPage)
         {
-            return this.GetBandItems().ToArray();
+            return [.. this.GetBandItems()];
         }
 
         if (!this._isInitialized)
@@ -137,11 +159,15 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             return [.. this.GetGlobalCommands()];
         }
 
-        return
-        [
-            ..this.GetGlobalCommands(),
-            ..this._items
-        ];
+        return [.. this.GetGlobalCommands(), .. this._items];
+    }
+
+    public override IListItem[] GetItems()
+    {
+        lock (this._refreshLock)
+        {
+            return this._cachedItems;
+        }
     }
 
     private List<IListItem> GetGlobalCommands()
@@ -188,6 +214,24 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             }
         }
         return items;
+    }
+
+    private static bool ItemsEqual(IListItem[] a, IListItem[] b)
+    {
+        if (a.Length != b.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (!ReferenceEquals(a[i], b[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void Dispose()

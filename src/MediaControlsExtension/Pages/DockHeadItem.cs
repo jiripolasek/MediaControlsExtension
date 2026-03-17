@@ -16,11 +16,11 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
     private readonly Lock _updateLock = new();
     private readonly IContextItem[] _mediaContextCommands;
 
+    private readonly BringAssociatedAppToFrontCommand _primaryMediaCommand;
+    private readonly NoOpCommand _noOpCommand = new();
+
     private MediaSource? _currentMediaSource;
     private NiceIconInfo? _lastIcon;
-
-    private BringAssociatedAppToFrontCommand _primaryMediaCommand;
-    private NoOpCommand _noOpCommand = new();
 
     public DockHeadItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
     {
@@ -89,8 +89,10 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 this.Title = "";
                 this.Subtitle = "";
                 this.Icon = Icons.NoMedia;
+                this._lastIcon = null;
                 this.Command = this._noOpCommand;
                 this.MoreCommands = [];
+
             }
             else
             {
@@ -101,8 +103,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 if (this._lastIcon != iconBuildTask && iconBuildTask?.IconInfo != null)
                 {
                     this._lastIcon = iconBuildTask;
-                    var icon = iconBuildTask.IconInfo;
-                    this.UpdateIcon(icon);
+                    this.UpdateIcon(iconBuildTask.IconInfo);
                 }
 
                 this.Command = this._primaryMediaCommand;
