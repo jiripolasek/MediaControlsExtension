@@ -157,7 +157,7 @@
     <value>Alternar reprodução aleatória</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Jogando</value>
+    <value>Tocando</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Mudo</value>
@@ -200,7 +200,7 @@
 Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o oposto.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Jogar</value>
+    <value>Tocar</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pausar</value>
@@ -236,7 +236,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Pare {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Jogar {0}</value>
+    <value>Tocar {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Tocando agora {0}</value>
@@ -257,7 +257,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Não foi possível pausar a reprodução</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Jogando</value>
+    <value>Tocando</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Não foi possível reproduzir a faixa</value>
@@ -287,10 +287,10 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>O controle de reprodução aleatória não está disponível para esta sessão</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Embaralhamento desativado</value>
+    <value>Modo aleatório desativado</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Embaralhamento ativado</value>
+    <value>Modo aleatório ativado</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Não foi possível alternar o modo aleatório</value>
@@ -323,7 +323,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Não foi possível alternar para {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Jogando {0}</value>
+    <value>Tocando {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Mostrar mensagens de toast</value>
