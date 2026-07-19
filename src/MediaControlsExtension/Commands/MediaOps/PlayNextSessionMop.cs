@@ -27,22 +27,17 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         this._settingsManager = settingsManager;
     }
 
-    public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
+    protected override async Task<MediaSessionOperationResult> InvokeUnderGateAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
         var allSessions = new List<GlobalSystemMediaTransportControlsSession>(manager.GetSessions());
-        var currentSession = manager.GetCurrentSession();
-        if (currentSession == null)
-        {
-            return new($"🚫 {Strings.Toast_NotCurrentSession}", false);
-        }
 
         // we have only one session, so we can't switch
-        if (allSessions.Count == 1 && allSessions[0].SourceAppUserModelId == currentSession.SourceAppUserModelId)
+        if (allSessions.Count <= 1)
         {
             return new($"🚫 {Strings.Toast_NoOtherSessions}", false);
         }
 
-        var currentIndex = allSessions.FindIndex(t => t.SourceAppUserModelId == currentSession.SourceAppUserModelId);
+        var currentIndex = GsmtcSessionCorrelation.FindSameSource(allSessions, session);
         if (currentIndex < 0 || currentIndex >= allSessions.Count)
         {
             return new($"🚫 {Strings.Toast_NoNextSession}", false);
@@ -51,8 +46,8 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         var newIndex = (currentIndex + allSessions.Count + this._relativeIndex) % allSessions.Count;
         var nextSession = allSessions[newIndex];
 
-        var nextMediaSource = this._mediaService.Sources.FirstOrDefault(t => t.Session.SourceAppUserModelId == nextSession.SourceAppUserModelId);
-        var s = await this.PlayAsync(manager, nextSession, nextMediaSource);
+        var nextMediaSource = this._mediaService.FindSourceForSession(nextSession);
+        var s = await this.PlayAsync(allSessions, nextSession, nextMediaSource);
 
         var applicationName = string.IsNullOrEmpty(nextMediaSource?.ApplicationName) ? "next session" : nextMediaSource?.ApplicationName;
 
@@ -62,7 +57,10 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
     }
 
 
-    private async Task<MediaSessionOperationResult> PlayAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session, MediaSource? nextMediaSource)
+    private async Task<MediaSessionOperationResult> PlayAsync(
+        IReadOnlyList<GlobalSystemMediaTransportControlsSession> sessions,
+        GlobalSystemMediaTransportControlsSession session,
+        MediaSource? nextMediaSource)
     {
         var sessionIsPlaying = session.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
         bool success;
@@ -71,9 +69,13 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         {
             if (this._settingsManager.PauseOthersOnPlay)
             {
-                foreach (var otherSession in manager.GetSessions() ?? [])
+                foreach (var otherSession in sessions)
                 {
-                    await otherSession.TryPauseAsync();
+                    if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
+                        otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                    {
+                        await otherSession.TryPauseAsync();
+                    }
                 }
             }
 

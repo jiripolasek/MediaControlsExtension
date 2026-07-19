@@ -25,14 +25,23 @@ internal partial class MediaSessionCommand : AsyncInvokableCommand
         this._yetAnotherHelper = yetAnotherHelper;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
-        var manager = this._mediaService.SessionManager;
-        var result = await this._mediaSessionOp.InvokeAsync(manager, this._mediaSource.Session);
-        if (result.Success)
+        try
         {
-            this._mediaSource.Update();
+            var manager = this._mediaService.SessionManager;
+            var result = await GsmtcOperationGate.RunAsync(
+                _ => this._mediaSessionOp.InvokeAsync(manager, this._mediaSource.Session),
+                cancellationToken);
+            if (result.Success)
+            {
+                this._mediaSource.Update();
+            }
+            return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
         }
-        return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+        catch (GsmtcCircuitOpenException)
+        {
+            return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}");
+        }
     }
 }

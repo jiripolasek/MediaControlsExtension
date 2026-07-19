@@ -602,6 +602,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Media controls stopped responding. Restart the extension to retry..
+        /// </summary>
+        internal static string Toast_MediaControlsUnavailable {
+            get {
+                return ResourceManager.GetString("Toast_MediaControlsUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Muted.
         /// </summary>
         internal static string Toast_Muted {

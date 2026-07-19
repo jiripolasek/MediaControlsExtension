@@ -22,7 +22,7 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
         this.Icon = targetMute ? Icons.Volume_Mute : Icons.Volume_Unmute;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -30,7 +30,7 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
             var playbackDevice = coreAudioController.GetDefaultDevice(DeviceType.Playback, Role.Console);
             if (playbackDevice != null)
             {
-                await playbackDevice.SetMuteAsync(this._targetMute)!.ConfigureAwait(false);
+                await playbackDevice.SetMuteAsync(this._targetMute, cancellationToken)!.ConfigureAwait(false);
                 return this._yetAnotherHelper.GetMediaCommandResult(this._targetMute ? $"🔇{Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}");
             }
         }

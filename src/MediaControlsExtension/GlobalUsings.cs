@@ -17,6 +17,7 @@ global using JPSoftworks.MediaControlsExtension.Model;
 global using JPSoftworks.MediaControlsExtension.Pages;
 global using JPSoftworks.MediaControlsExtension.Resources;
 global using JPSoftworks.MediaControlsExtension.Services;
+global using JPSoftworks.MediaControlsExtension.Threading;
 
 global using Microsoft.CommandPalette.Extensions;
 global using Microsoft.CommandPalette.Extensions.Toolkit;

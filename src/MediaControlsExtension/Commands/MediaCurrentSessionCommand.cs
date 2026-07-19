@@ -34,36 +34,33 @@ internal sealed partial class MediaCurrentSessionCommand : AsyncInvokableCommand
 
     public bool CanExecute()
     {
-        var manager = this._mediaService.SessionManager;
-        if (manager == null)
-        {
-            return false;
-        }
-
-        var session = manager.GetCurrentSession();
-        if (session == null)
-        {
-            return false;
-        }
-
-        return this._mediaSessionOp.CanExecute(manager, session);
+        var source = this._mediaService.CurrentSource;
+        return source != null && this._mediaSessionOp.CanExecute(source);
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
-        var manager = this._mediaService.SessionManager;
-        if (manager == null)
+        if (!this._mediaService.TryGetSessionManager(out var manager))
         {
             return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoSessionManager}");
         }
 
-        var session = manager.GetCurrentSession();
-        if (session == null)
+        try
         {
-            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}");
+            var result = await GsmtcOperationGate.RunAsync(
+                async _ =>
+                {
+                    var session = manager.GetCurrentSession();
+                    return session == null
+                        ? new MediaSessionOperationResult($"😢 {Strings.Toast_NoCurrentSession}", false)
+                        : await this._mediaSessionOp.InvokeAsync(manager, session);
+                },
+                cancellationToken);
+            return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
         }
-
-        var result = await this._mediaSessionOp.InvokeAsync(manager, session);
-        return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+        catch (GsmtcCircuitOpenException)
+        {
+            return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}");
+        }
     }
 }

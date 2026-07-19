@@ -22,11 +22,12 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
     private readonly Lock _currentMediaSourceLock = new();
     private readonly Lock _updateLock = new();
-    private readonly MediaCurrentSessionCommand _playPauseCommand;
+    private readonly OptimisticPlaybackCommand _playPauseCommand;
     private readonly IContextItem[] _mediaContextCommands;
     private readonly bool _isBandPage;
 
     private MediaSource? _currentMediaSource;
+    private bool _disposed;
 
     public NowPlayingListItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper, bool asBandPage) : base(new NoOpCommand())
     {
@@ -35,13 +36,8 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
         this._isBandPage = asBandPage;
         this._mediaService = mediaService;
-        this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
-
         this._settingsManager = settingsManager;
-        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-
-        this._currentMediaSource = this._mediaService.CurrentSource;
-        this._updateMediaInfo = new(150, () => this.Update(this._currentMediaSource));
+        this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
 
         this._mediaContextCommands = [
             new CommandContextItem(new BringAssociatedAppToFrontCommand(this._mediaService)) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
@@ -54,85 +50,108 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
 
-        this.Command = this._playPauseCommand = new(this._mediaService, MediaSessionOperations.PlayPauseTrack, yetAnotherHelper, id: "com.jpsoftworks.cmdpal.mediacontrols.nowplaying") { Icon = Icons.NoMedia };
+        this.Command = this._playPauseCommand = new(this._mediaService, this._settingsManager, yetAnotherHelper)
+        {
+            Id = "com.jpsoftworks.cmdpal.mediacontrols.nowplaying",
+            Icon = Icons.NoMedia
+        };
         this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;
         this.UpdateIcon(Icons.PlayPause);
 
-        this._updateMediaInfo.Invoke();
+        // Subscribe first, then seed by re-reading inside the lock: a handler that
+        // ran in between installed a value the service already held, so the locked
+        // re-read returns that value or a newer one and cannot resurrect a stale
+        // source. The seed also wires the per-source events and schedules the
+        // initial update.
+        this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
+        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
+        lock (this._currentMediaSourceLock)
+        {
+            this.SetCurrentMediaSourceUnderLock(this._mediaService.CurrentSource);
+        }
     }
 
     private void CurrentMediaSourceChanged(object? sender, MediaSource? arg)
     {
         lock (this._currentMediaSourceLock)
         {
-            if (this._currentMediaSource != null)
-            {
-                this._currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
-            }
+            this.SetCurrentMediaSourceUnderLock(arg);
+        }
+    }
 
-            this._currentMediaSource = arg;
-
-            if (this._currentMediaSource != null)
-            {
-                this._currentMediaSource.PropChanged += this.MediaSourceOnPropChanged;
-            }
+    private void SetCurrentMediaSourceUnderLock(MediaSource? mediaSource)
+    {
+        if (this._disposed)
+        {
+            return;
         }
 
-        this._updateMediaInfo?.Invoke();
+        if (this._currentMediaSource != null)
+        {
+            this._currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            this._currentMediaSource.PlaybackPresentationChanged -= this.MediaSourceOnPlaybackPresentationChanged;
+        }
+
+        this._currentMediaSource = mediaSource;
+
+        if (this._currentMediaSource != null)
+        {
+            this._currentMediaSource.PropChanged += this.MediaSourceOnPropChanged;
+            this._currentMediaSource.PlaybackPresentationChanged += this.MediaSourceOnPlaybackPresentationChanged;
+        }
+
+        this._updateMediaInfo.Invoke();
+    }
+
+    private void UpdateCurrentMediaSource()
+    {
+        lock (this._currentMediaSourceLock)
+        {
+            if (!this._disposed)
+            {
+                this.Update(this._currentMediaSource);
+            }
+        }
     }
 
     private void Update(MediaSource? mediaSource)
     {
         lock (this._updateLock)
         {
+            if (this._disposed)
+            {
+                return;
+            }
+
             if (mediaSource is not { HasProperties: true })
             {
                 this.Title = this._isBandPage ? string.Empty : Strings.NowPlaying_NothingPlaying!;
                 this.Icon = Icons.NoMedia;
                 this.Subtitle = this._isBandPage ? string.Empty : Strings.NowPlaying_Subtitle!;
 
-                this._playPauseCommand.Name = this._isBandPage ? string.Empty : Strings.Command_PlayPause;
-                this._playPauseCommand.UpdateIcon(Icons.PlayPause);
+                this._playPauseCommand.UpdatePresentation(null, showName: !this._isBandPage);
 
                 this.MoreCommands = [];
             }
             else
             {
-                IconInfo icon;
-                string cmdName;
+                var playbackAction = this._playPauseCommand.UpdatePresentation(
+                    mediaSource,
+                    showName: !this._isBandPage);
 
-                if (mediaSource.IsPlaying)
-                {
-                    if (mediaSource.Session.GetPlaybackInfo().Controls.IsPauseEnabled)
+                this.Title = this._isBandPage
+                    ? string.Empty
+                    : playbackAction.Intent switch
                     {
-                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_pauseFormat, mediaSource.Name);
-                        cmdName = Strings.Command_Pause;
-                    }
-                    else if (mediaSource.Session.GetPlaybackInfo().Controls.IsStopEnabled)
-                    {
-                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_stopFormat, mediaSource.Name);
-                        cmdName = Strings.Command_Stop;
-                    }
-                    else
-                    {
-                        this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_pauseFormat, mediaSource.Name);
-                        cmdName = Strings.Command_Pause;
-                    }
+                        PlaybackIntent.Play => string.Format(CultureInfo.CurrentCulture, s_playFormat, mediaSource.Name),
+                        PlaybackIntent.Stop => string.Format(CultureInfo.CurrentCulture, s_stopFormat, mediaSource.Name),
+                        _ => string.Format(CultureInfo.CurrentCulture, s_pauseFormat, mediaSource.Name)
+                    };
+                this.Subtitle = this._isBandPage
+                    ? string.Empty
+                    : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
 
-                    icon = Icons.PauseColorful;
-                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
-                }
-                else
-                {
-                    this.Title = this._isBandPage ? string.Empty : string.Format(CultureInfo.CurrentCulture, s_playFormat, mediaSource.Name);
-                    this.Subtitle = this._isBandPage ? string.Empty : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
-                    icon = Icons.PlayColorful;
-                    cmdName = Strings.Command_Play;
-                }
-
-                this.UpdateIcon(icon);
-                this._playPauseCommand.Name = this._isBandPage ? string.Empty : cmdName;
-                this._playPauseCommand.UpdateIcon(icon);
+                this.UpdateIcon(playbackAction.CommandIcon);
 
                 this.MoreCommands = this._mediaContextCommands;
             }
@@ -141,31 +160,64 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
-        this._updateMediaInfo.Invoke();
+        this.ScheduleUpdate();
     }
 
     private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)
     {
-        this._updateMediaInfo.Invoke();
+        this.ScheduleUpdate();
     }
 
-    public override bool Equals(object? obj)
+    private void ScheduleUpdate()
     {
-        return ReferenceEquals(this, obj) || obj is NowPlayingListItem;
+        lock (this._currentMediaSourceLock)
+        {
+            if (!this._disposed)
+            {
+                this._updateMediaInfo.Invoke();
+            }
+        }
     }
 
-    public override int GetHashCode()
+    private void MediaSourceOnPlaybackPresentationChanged(object? sender, EventArgs args)
     {
-        return 0;
+        if (sender is MediaSource mediaSource)
+        {
+            lock (this._currentMediaSourceLock)
+            {
+                if (!this._disposed && ReferenceEquals(mediaSource, this._currentMediaSource))
+                {
+                    this.Update(mediaSource);
+                }
+            }
+        }
     }
 
     public void Dispose()
     {
-        lock (this._updateLock)
+        MediaSource? currentMediaSource;
+        lock (this._currentMediaSourceLock)
         {
-            this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-            this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
-            this._updateMediaInfo.Dispose();
+            lock (this._updateLock)
+            {
+                if (this._disposed)
+                {
+                    return;
+                }
+
+                this._disposed = true;
+                currentMediaSource = this._currentMediaSource;
+                this._currentMediaSource = null;
+            }
+        }
+
+        this._updateMediaInfo.Dispose();
+        this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
+        this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
+        if (currentMediaSource != null)
+        {
+            currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            currentMediaSource.PlaybackPresentationChanged -= this.MediaSourceOnPlaybackPresentationChanged;
         }
     }
 }

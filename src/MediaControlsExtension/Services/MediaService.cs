@@ -1,280 +1,525 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Services;
 
 internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
 {
+    private const int MaxLoggedSessionDiagnostics = 16;
+
+    [Flags]
+    private enum NotificationFlags
+    {
+        None = 0,
+        MediaSourcesChanged = 1 << 0,
+        CurrentMediaSourceChanged = 1 << 1,
+        CurrentMediaPlaybackChanged = 1 << 2,
+        IsLoadingChanged = 1 << 3
+    }
+
     public event EventHandler? LoadingStatusChanged;
     public event EventHandler? Initialized;
     public event EventHandler? CurrentMediaPlaybackChanged;
     public event EventHandler? MediaSourcesChanged;
     public event EventHandler<MediaSource?>? CurrentMediaSourceChanged;
 
-    private readonly ThrottledAction _currentMediaPlaybackChangedAction;
-    private readonly ThrottledAction _currentMediaSourceChangedAction;
-    private readonly ThrottledAction _mediaSourcesChangedAction;
+    private readonly ThrottledAction _notificationAction;
 
     private readonly ThrottledAction _refreshAction;
+    private readonly CancellationTokenSource _disposeCts = new();
+    private readonly CancellationToken _disposeToken;
+    private readonly Lock _lifecycleLock = new();
 
     private readonly List<MediaSource> _sources = [];
-    private readonly Dictionary<string, MediaSource> _sourcesByAppId = new();
+    private readonly Dictionary<string, MediaSource> _sourcesByAppId = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _loggedSessionDiagnosticKeys = [];
 
     private bool _disposed;
-    private bool _hasPendingCurrentMediaPlaybackChanged;
-    private bool _hasPendingCurrentMediaSourceChanged;
-    private bool _hasPendingMediaSourcesChanged;
+    private bool _isLoading;
+    private NotificationFlags _pendingNotifications;
 
+    private MediaSource? _currentSource;
     private MediaSource? _pendingCurrentMediaSource;
     private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
 
     public MediaSource? CurrentSource
     {
-        get;
-        private set
+        get
         {
-            if (Equals(field, value))
+            lock (this._lifecycleLock)
             {
-                return;
+                return this._currentSource;
             }
-
-            if (field != null)
-            {
-                field.PlaybackInfoChanged -= this.OnCurrentMediaPlaybackInfoChanged;
-                field.MediaPropertiesUpdated -= this.OnCurrentMediaPlaybackInfoChanged;
-            }
-
-            field = value;
-
-            if (field != null)
-            {
-                field.PlaybackInfoChanged += this.OnCurrentMediaPlaybackInfoChanged;
-                field.MediaPropertiesUpdated += this.OnCurrentMediaPlaybackInfoChanged;
-            }
-
-            this.PropertyChanged?.Invoke(this, new(nameof(this.CurrentSource)));
-
-            this._pendingCurrentMediaSource = value;
-            this._hasPendingCurrentMediaSourceChanged = true;
-            this._currentMediaSourceChangedAction.Invoke();
         }
     }
 
-    public IEnumerable<MediaSource> Sources => this._sources;
+    public MediaSource[] Sources
+    {
+        get
+        {
+            lock (this._lifecycleLock)
+            {
+                return [.. this._sources];
+            }
+        }
+    }
 
     public bool IsLoading
     {
-        get;
-        private set
+        get
         {
-            if (this.SetField(ref field, value))
+            lock (this._lifecycleLock)
             {
-                this.LoadingStatusChanged?.Invoke(this, EventArgs.Empty);
+                return this._isLoading;
             }
         }
     }
 
-    internal GlobalSystemMediaTransportControlsSessionManager SessionManager => this._sessionManager ?? throw new InvalidOperationException("MediaService is not initialized. Call InitializeAsync first.");
+    internal GlobalSystemMediaTransportControlsSessionManager SessionManager =>
+        this.TryGetSessionManager(out var manager)
+            ? manager
+            : throw new InvalidOperationException("MediaService is not initialized. Call InitializeAsync first.");
+
+    internal bool TryGetSessionManager(
+        [NotNullWhen(true)] out GlobalSystemMediaTransportControlsSessionManager? manager)
+    {
+        lock (this._lifecycleLock)
+        {
+            manager = this._sessionManager;
+            return manager is not null;
+        }
+    }
 
     public MediaService()
     {
-        this._refreshAction = new(100, this.RefreshCore);
-        this._mediaSourcesChangedAction = new(100, this.FireMediaSourcesChanged);
-        this._currentMediaSourceChangedAction = new(100, this.FireCurrentMediaSourceChanged);
-        this._currentMediaPlaybackChangedAction = new(100, this.FireCurrentMediaPlaybackChanged);
+        this._disposeToken = this._disposeCts.Token;
+        this._refreshAction = new(100, this.RefreshCoreAsync);
+        this._notificationAction = new(100, this.FirePendingNotifications);
     }
 
     public void Dispose()
     {
-        if (this._disposed)
+        GlobalSystemMediaTransportControlsSessionManager? managerToUnhook;
+        MediaSource[] sourcesToDispose;
+        lock (this._lifecycleLock)
         {
-            return;
+            if (this._disposed)
+            {
+                return;
+            }
+
+            this._disposed = true;
+            managerToUnhook = this._sessionManager;
+            sourcesToDispose = [.. this._sourcesByAppId.Values];
+
+            this.SetCurrentSourceUnderLock(null);
+            this._sources.Clear();
+            this._sourcesByAppId.Clear();
+            this._sessionManager = null;
+            this._isLoading = false;
+            this._pendingNotifications = NotificationFlags.None;
+            this._pendingCurrentMediaSource = null;
         }
 
-        if (this._sessionManager != null)
-        {
-            this._sessionManager!.SessionsChanged -= this.SessionManagerOnSessionsChanged;
-            this._sessionManager!.CurrentSessionChanged -= this.SessionManagerOnCurrentSessionChanged;
-        }
-
-        foreach (var source in this._sourcesByAppId.Values)
-        {
-            source.Dispose();
-        }
-
-        this.CurrentSource = null;
-        this._sources.Clear();
-        this._sourcesByAppId.Clear();
-
+        this._disposeCts.Cancel();
         this._refreshAction.Dispose();
-        this._mediaSourcesChangedAction.Dispose();
-        this._currentMediaSourceChangedAction.Dispose();
-        this._currentMediaPlaybackChangedAction.Dispose();
+        this._notificationAction.Dispose();
 
-        this._disposed = true;
+        DisposeSources(sourcesToDispose);
+
+        if (managerToUnhook is not null)
+        {
+            _ = GsmtcOperationGate.RunDetached(() => this.UnhookSessionManagerAsync(managerToUnhook));
+        }
+
+        this._disposeCts.Dispose();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnCurrentMediaPlaybackInfoChanged(object? sender, EventArgs e)
     {
-        this._hasPendingCurrentMediaPlaybackChanged = true;
-        this._currentMediaPlaybackChangedAction.Invoke();
+        lock (this._lifecycleLock)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            this.QueueNotificationsUnderLock(NotificationFlags.CurrentMediaPlaybackChanged);
+        }
     }
 
     public async Task InitializeAsync()
     {
         Logger.LogInformation("Media Service initialization started...");
 
-        this._sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-        this._sessionManager.SessionsChanged += this.SessionManagerOnSessionsChanged;
-        this._sessionManager.CurrentSessionChanged += this.SessionManagerOnCurrentSessionChanged;
+        var manager = await GsmtcOperationGate.RunAsync(
+            async _ =>
+            {
+                var requestedManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                requestedManager.SessionsChanged += this.SessionManagerOnSessionsChanged;
+                requestedManager.CurrentSessionChanged += this.SessionManagerOnCurrentSessionChanged;
+                return requestedManager;
+            });
+
+        var disposeManager = false;
+        lock (this._lifecycleLock)
+        {
+            if (this._disposed)
+            {
+                disposeManager = true;
+            }
+            else
+            {
+                this._sessionManager = manager;
+            }
+        }
+
+        if (disposeManager)
+        {
+            _ = GsmtcOperationGate.RunDetached(() => this.UnhookSessionManagerAsync(manager));
+            return;
+        }
 
         this.Initialized?.Invoke(this, EventArgs.Empty);
 
-        this.UpdateCurrentSource();
         this.Refresh();
     }
 
-    private void UpdateCurrentSource()
+    internal MediaSource? FindSourceForSession(GlobalSystemMediaTransportControlsSession session)
     {
-        var currentSession = this._sessionManager?.GetCurrentSession();
-        this.CurrentSource = currentSession != null ? this._sourcesByAppId.GetValueOrDefault(currentSession.SourceAppUserModelId) ?? new MediaSource(currentSession) : null;
+        GsmtcOperationGate.VerifyAccess();
+        ArgumentNullException.ThrowIfNull(session);
+
+        var appId = session.SourceAppUserModelId;
+        lock (this._lifecycleLock)
+        {
+            return this._sourcesByAppId.GetValueOrDefault(appId);
+        }
+    }
+
+    private bool SetCurrentSourceUnderLock(MediaSource? source)
+    {
+        if (ReferenceEquals(this._currentSource, source))
+        {
+            return false;
+        }
+
+        if (this._currentSource is not null)
+        {
+            this._currentSource.PlaybackInfoChanged -= this.OnCurrentMediaPlaybackInfoChanged;
+            this._currentSource.MediaPropertiesUpdated -= this.OnCurrentMediaPlaybackInfoChanged;
+        }
+
+        this._currentSource = source;
+
+        if (!this._disposed && source is not null)
+        {
+            source.PlaybackInfoChanged += this.OnCurrentMediaPlaybackInfoChanged;
+            source.MediaPropertiesUpdated += this.OnCurrentMediaPlaybackInfoChanged;
+        }
+
+        this._pendingCurrentMediaSource = source;
+        return true;
+    }
+
+    private void QueueNotificationsUnderLock(NotificationFlags notifications)
+    {
+        if (this._disposed || notifications == NotificationFlags.None)
+        {
+            return;
+        }
+
+        this._pendingNotifications |= notifications;
+        this._notificationAction.Invoke();
+    }
+
+    private bool SetIsLoadingUnderLock(bool value)
+    {
+        if (this._isLoading == value)
+        {
+            return false;
+        }
+
+        this._isLoading = value;
+        return true;
+    }
+
+    private void NotifyCurrentSourceChanged()
+    {
+        this.PropertyChanged?.Invoke(this, new(nameof(this.CurrentSource)));
+    }
+
+    private void NotifyIsLoadingChanged()
+    {
+        this.PropertyChanged?.Invoke(this, new(nameof(this.IsLoading)));
+        this.LoadingStatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void LogSessionDiagnosticOnce(string key, string message)
+    {
+        if (this._loggedSessionDiagnosticKeys.Count >= MaxLoggedSessionDiagnostics
+            || !this._loggedSessionDiagnosticKeys.Add(key))
+        {
+            return;
+        }
+
+        Logger.LogWarning(message);
     }
 
     private void Refresh()
     {
-        this._refreshAction.Invoke();
+        lock (this._lifecycleLock)
+        {
+            if (!this._disposed && !GsmtcOperationGate.IsCircuitOpen)
+            {
+                this._refreshAction.Invoke();
+            }
+        }
     }
 
-    private void RefreshCore()
+    private MediaSource[] RefreshCore()
     {
-        this.IsLoading = true;
-        try
+        GsmtcOperationGate.VerifyAccess();
+
+        GlobalSystemMediaTransportControlsSessionManager? manager;
+        Dictionary<string, MediaSource> existingSources;
+        lock (this._lifecycleLock)
         {
-            var sessions = this._sessionManager?.GetSessions() ?? [];
-            var currentAppIds = sessions.Select(s => s.SourceAppUserModelId).ToHashSet();
-            var changed = false;
-
-            // Remove sources that no longer exist
-            var toRemove = this._sourcesByAppId.Keys.Except(currentAppIds).ToList();
-            foreach (var appId in toRemove)
+            if (this._disposed)
             {
-                if (this._sourcesByAppId.TryGetValue(appId, out var source))
-                {
-                    this._sources.Remove(source);
-                    this._sourcesByAppId.Remove(appId);
-
-                    try
-                    {
-                        source.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex);
-                    }
-
-                    changed = true;
-                }
+                return [];
             }
 
-            // Add new sources or update existing ones with fresh session instances
+            manager = this._sessionManager;
+            existingSources = new(this._sourcesByAppId, StringComparer.Ordinal);
+            if (this.SetIsLoadingUnderLock(true))
+            {
+                this.QueueNotificationsUnderLock(NotificationFlags.IsLoadingChanged);
+            }
+        }
+
+        var preparedSources = new Dictionary<string, MediaSource>(StringComparer.Ordinal);
+        var preparedSourcesCommitted = false;
+        List<MediaSource> sourcesToUpdate = [];
+        try
+        {
+            var sessions = manager?.GetSessions() ?? [];
+            var currentSession = manager?.GetCurrentSession();
+            var currentAppId = currentSession?.SourceAppUserModelId;
+            var sessionsByAppId = new Dictionary<string, GlobalSystemMediaTransportControlsSession>(StringComparer.Ordinal);
+
             foreach (var session in sessions)
             {
                 var appId = session.SourceAppUserModelId;
-
-                if (this._sourcesByAppId.TryGetValue(appId, out var existingSource))
+                if (!sessionsByAppId.TryAdd(appId, session))
                 {
-                    existingSource.UpdateSession(session);
+                    this.LogSessionDiagnosticOnce(
+                        $"duplicate:{appId}",
+                        $"GSMTC returned more than one session for AUMID {appId}; using the first session.");
                 }
-                else
+            }
+
+            // WinRT event registration can block, so prepare all session proxies without
+            // holding the managed lifecycle lock.
+            foreach (var (appId, session) in sessionsByAppId)
+            {
+                if (existingSources.TryGetValue(appId, out var existingSource))
                 {
-                    var newSource = new MediaSource(session);
+                    if (existingSource.UpdateSessionUnderGate(session))
+                    {
+                        sourcesToUpdate.Add(existingSource);
+                    }
+
+                    continue;
+                }
+
+                var newSource = new MediaSource(session);
+                newSource.HookSessionUnderGate();
+                preparedSources.Add(appId, newSource);
+                sourcesToUpdate.Add(newSource);
+            }
+
+            List<MediaSource> sourcesToDispose = [];
+            lock (this._lifecycleLock)
+            {
+                if (this._disposed)
+                {
+                    return [];
+                }
+
+                var changed = false;
+
+                // Remove sources that no longer exist
+                var toRemove = this._sourcesByAppId.Keys
+                    .Where(appId => !sessionsByAppId.ContainsKey(appId))
+                    .ToList();
+                foreach (var appId in toRemove)
+                {
+                    if (this._sourcesByAppId.Remove(appId, out var source))
+                    {
+                        this._sources.Remove(source);
+                        sourcesToDispose.Add(source);
+                        changed = true;
+                    }
+                }
+
+                foreach (var (appId, newSource) in preparedSources)
+                {
                     this._sources.Add(newSource);
-                    this._sourcesByAppId[appId] = newSource;
+                    this._sourcesByAppId.Add(appId, newSource);
                     changed = true;
                 }
+
+                preparedSourcesCommitted = true;
+
+                var notifications = changed
+                    ? NotificationFlags.MediaSourcesChanged
+                    : NotificationFlags.None;
+
+                var currentSource = currentAppId is not null
+                    ? this._sourcesByAppId.GetValueOrDefault(currentAppId)
+                    : null;
+                if (this.SetCurrentSourceUnderLock(currentSource))
+                {
+                    notifications |= NotificationFlags.CurrentMediaSourceChanged
+                        | NotificationFlags.CurrentMediaPlaybackChanged;
+                }
+
+                this.QueueNotificationsUnderLock(notifications);
             }
 
-            if (changed)
-            {
-                this._hasPendingMediaSourcesChanged = true;
-                this._mediaSourcesChangedAction.Invoke();
-            }
-
-            this.UpdateCurrentSource();
+            DisposeSources(sourcesToDispose);
         }
         catch (OperationCanceledException)
         {
             // Ignore cancellation
+            return [];
         }
         finally
         {
-            this.IsLoading = false;
+            if (!preparedSourcesCommitted)
+            {
+                DisposeSources(preparedSources.Values);
+            }
+
+            lock (this._lifecycleLock)
+            {
+                if (!this._disposed && this.SetIsLoadingUnderLock(false))
+                {
+                    this.QueueNotificationsUnderLock(NotificationFlags.IsLoadingChanged);
+                }
+            }
+        }
+
+        return [.. sourcesToUpdate];
+    }
+
+    private async Task RefreshCoreAsync()
+    {
+        try
+        {
+            var sourcesToUpdate = await GsmtcOperationGate.RunAsync(this.RefreshCore, this._disposeToken);
+            foreach (var source in sourcesToUpdate)
+            {
+                source.Update();
+            }
+        }
+        catch (OperationCanceledException) when (this._disposeToken.IsCancellationRequested)
+        {
         }
     }
 
     private void SessionManagerOnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
     {
-        this.UpdateCurrentSource();
+        this.Refresh();
     }
 
     private void SessionManagerOnSessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
     {
         this.Refresh();
     }
-    
-    private void FireMediaSourcesChanged()
+
+    private async Task UnhookSessionManagerAsync(GlobalSystemMediaTransportControlsSessionManager manager)
     {
-        if (this._hasPendingMediaSourcesChanged)
+        try
         {
-            this._hasPendingMediaSourcesChanged = false;
+            await GsmtcOperationGate.RunAsync(
+                () =>
+                {
+                    manager.SessionsChanged -= this.SessionManagerOnSessionsChanged;
+                    manager.CurrentSessionChanged -= this.SessionManagerOnCurrentSessionChanged;
+                });
+        }
+        catch (GsmtcCircuitOpenException)
+        {
+            // The process must be restarted before native cleanup is safe.
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning($"Could not unsubscribe from the GSMTC manager: {ex.Message}");
+        }
+    }
+
+    private void FirePendingNotifications()
+    {
+        NotificationFlags notifications;
+        MediaSource? currentSource;
+        lock (this._lifecycleLock)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            notifications = this._pendingNotifications;
+            currentSource = this._pendingCurrentMediaSource;
+            this._pendingNotifications = NotificationFlags.None;
+            this._pendingCurrentMediaSource = null;
+        }
+
+        if ((notifications & NotificationFlags.IsLoadingChanged) != 0)
+        {
+            this.NotifyIsLoadingChanged();
+        }
+
+        if ((notifications & NotificationFlags.MediaSourcesChanged) != 0)
+        {
             this.MediaSourcesChanged?.Invoke(this, EventArgs.Empty);
         }
-    }
 
-    private void FireCurrentMediaSourceChanged()
-    {
-        if (this._hasPendingMediaSourcesChanged)
+        if ((notifications & NotificationFlags.CurrentMediaSourceChanged) != 0)
         {
-            this.FireMediaSourcesChanged();
+            this.NotifyCurrentSourceChanged();
+            this.CurrentMediaSourceChanged?.Invoke(this, currentSource);
         }
 
-        if (this._hasPendingCurrentMediaSourceChanged)
+        if ((notifications & NotificationFlags.CurrentMediaPlaybackChanged) != 0)
         {
-            this._hasPendingCurrentMediaSourceChanged = false;
-            this._hasPendingCurrentMediaPlaybackChanged = false;
-            var source = this._pendingCurrentMediaSource;
-            this.CurrentMediaSourceChanged?.Invoke(this, source);
             this.CurrentMediaPlaybackChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    private void FireCurrentMediaPlaybackChanged()
+    private static void DisposeSources(IEnumerable<MediaSource> sources)
     {
-        if (this._hasPendingCurrentMediaPlaybackChanged && !this._hasPendingCurrentMediaSourceChanged)
+        foreach (var source in sources)
         {
-            this._hasPendingCurrentMediaPlaybackChanged = false;
-            this.CurrentMediaPlaybackChanged?.Invoke(this, EventArgs.Empty);
+            try
+            {
+                source.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
         }
-    }
-
-    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        this.PropertyChanged?.Invoke(this, new(propertyName));
-        return true;
     }
 }

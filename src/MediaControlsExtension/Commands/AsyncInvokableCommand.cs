@@ -20,6 +20,7 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
 
     public override ICommandResult Invoke()
     {
+        var invocation = this.CreateInvocation();
         Logger.LogDebug("Invoking async command " + this.GetType().FullName);
         var stopwatch = Stopwatch.StartNew();
 
@@ -27,7 +28,7 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         {
             // If the command is set to return immediately, we just return a dismiss result
             // and invoke the async operation in the background.
-            _ = Task.Run(this.SafeInvokeAsync);
+            _ = Task.Run(() => this.SafeInvokeAsync(invocation, CancellationToken.None));
             Logger.LogDebug("Async command " + this.GetType().FullName + " returned immediately");
             return this.Result;
         }
@@ -35,7 +36,8 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         {
             // If the command is not set to return immediately, we will wait for the async operation to complete
             // and return the result.
-            var cmdResult = Task.Run(this.SafeInvokeAsync);
+            using var timeoutCts = new CancellationTokenSource();
+            var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, timeoutCts.Token));
             if (cmdResult.Wait(this.Timeout))
             {
                 Logger.LogDebug("Async command " + this.GetType().FullName + " returned after " + stopwatch.Elapsed);
@@ -43,24 +45,33 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
             }
             else
             {
+                timeoutCts.Cancel();
                 Logger.LogDebug("Async command " + this.GetType().FullName + " timed out " + stopwatch.Elapsed);
                 return this.TimeoutResult;
             }
         }
     }
 
-    private Task<ICommandResult> SafeInvokeAsync()
+    private async Task<ICommandResult> SafeInvokeAsync(
+        Func<CancellationToken, Task<ICommandResult>> invocation,
+        CancellationToken cancellationToken)
     {
         try
         {
-            return this.InvokeAsync();
+            return await invocation(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return this.TimeoutResult;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
-            return Task.FromResult<ICommandResult>(CommandResult.KeepOpen());
+            return CommandResult.KeepOpen();
         }
     }
 
-    protected abstract Task<ICommandResult> InvokeAsync();
+    protected virtual Func<CancellationToken, Task<ICommandResult>> CreateInvocation() => this.InvokeAsync;
+
+    protected abstract Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken);
 }

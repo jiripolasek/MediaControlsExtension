@@ -29,8 +29,6 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
         this._yetAnotherHelper = new(this._settingsManager);
 
-        MediaSessionOperations.Initialize(this._settingsManager);
-
         var mediaControlsExtensionPage = new MediaControlsExtensionPage(this._mediaService, this._settingsManager, this._yetAnotherHelper);
         this._mediaControlsPageItem = new(mediaControlsExtensionPage) { Title = this.DisplayName, Subtitle = Strings.MediaControls_Subtitle!, MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)] };
         this._nowPlayingItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper, false);
@@ -58,7 +56,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     {
         try
         {
-            var sessionManagerTask = GlobalSystemMediaTransportControlsSessionManager.RequestAsync()!;
+            var sessionManagerTask = GsmtcOperationGate.RunAsync(
+                static async _ => await GlobalSystemMediaTransportControlsSessionManager.RequestAsync());
             this._fallbackCommands = [
                 new FallbackPlayCommandItem(new PlayPauseMediaCommand(sessionManagerTask!, this._settingsManager, this._yetAnotherHelper), Strings.TogglePlayPause!, this._settingsManager),
                 new FallbackUnmuteCommandItem(this._settingsManager, this._yetAnotherHelper),

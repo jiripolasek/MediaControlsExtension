@@ -21,6 +21,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
     private MediaSource? _currentMediaSource;
     private NiceIconInfo? _lastIcon;
+    private bool _disposed;
 
     public DockHeadItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
     {
@@ -28,13 +29,8 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         ArgumentNullException.ThrowIfNull(settingsManager);
 
         this._mediaService = mediaService;
-        this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
-
         this._settingsManager = settingsManager;
-        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-
-        this._currentMediaSource = this._mediaService.CurrentSource;
-        this._updateMediaInfo = new(150, () => this.Update(this._currentMediaSource));
+        this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
 
         this._mediaContextCommands = [
 
@@ -57,33 +53,66 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         this.Title = string.Empty;
         this.UpdateIcon(Icons.PlayPause);
 
-        this._updateMediaInfo.Invoke();
+        // Subscribe first, then seed by re-reading inside the lock; see
+        // NowPlayingListItem for why the locked re-read cannot go stale.
+        this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
+        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
+        lock (this._currentMediaSourceLock)
+        {
+            this.SetCurrentMediaSourceUnderLock(this._mediaService.CurrentSource);
+        }
     }
 
     private void CurrentMediaSourceChanged(object? sender, MediaSource? arg)
     {
         lock (this._currentMediaSourceLock)
         {
-            if (this._currentMediaSource != null)
-            {
-                this._currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
-            }
+            this.SetCurrentMediaSourceUnderLock(arg);
+        }
+    }
 
-            this._currentMediaSource = arg;
-
-            if (this._currentMediaSource != null)
-            {
-                this._currentMediaSource.PropChanged += this.MediaSourceOnPropChanged;
-            }
+    private void SetCurrentMediaSourceUnderLock(MediaSource? mediaSource)
+    {
+        if (this._disposed)
+        {
+            return;
         }
 
-        this._updateMediaInfo?.Invoke();
+        if (this._currentMediaSource != null)
+        {
+            this._currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+        }
+
+        this._currentMediaSource = mediaSource;
+
+        if (this._currentMediaSource != null)
+        {
+            this._currentMediaSource.PropChanged += this.MediaSourceOnPropChanged;
+        }
+
+        this._updateMediaInfo.Invoke();
+    }
+
+    private void UpdateCurrentMediaSource()
+    {
+        lock (this._currentMediaSourceLock)
+        {
+            if (!this._disposed)
+            {
+                this.Update(this._currentMediaSource);
+            }
+        }
     }
 
     private void Update(MediaSource? mediaSource)
     {
         lock (this._updateLock)
         {
+            if (this._disposed)
+            {
+                return;
+            }
+
             if (mediaSource is not { HasProperties: true })
             {
                 this.Title = "";
@@ -131,31 +160,49 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
-        this._updateMediaInfo.Invoke();
+        this.ScheduleUpdate();
     }
 
     private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)
     {
-        this._updateMediaInfo.Invoke();
+        this.ScheduleUpdate();
     }
 
-    public override bool Equals(object? obj)
+    private void ScheduleUpdate()
     {
-        return ReferenceEquals(this, obj) || obj is NowPlayingListItem;
-    }
-
-    public override int GetHashCode()
-    {
-        return 0;
+        lock (this._currentMediaSourceLock)
+        {
+            if (!this._disposed)
+            {
+                this._updateMediaInfo?.Invoke();
+            }
+        }
     }
 
     public void Dispose()
     {
-        lock (this._updateLock)
+        MediaSource? currentMediaSource;
+        lock (this._currentMediaSourceLock)
         {
-            this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-            this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
-            this._updateMediaInfo.Dispose();
+            lock (this._updateLock)
+            {
+                if (this._disposed)
+                {
+                    return;
+                }
+
+                this._disposed = true;
+                currentMediaSource = this._currentMediaSource;
+                this._currentMediaSource = null;
+            }
+        }
+
+        this._updateMediaInfo.Dispose();
+        this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
+        this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
+        if (currentMediaSource != null)
+        {
+            currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
         }
     }
 }

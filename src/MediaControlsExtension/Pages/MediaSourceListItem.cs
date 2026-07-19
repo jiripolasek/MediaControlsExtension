@@ -15,7 +15,8 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
 
     private readonly SettingsManager _settingsManager;
     private readonly ThrottledAction _throttledAction;
-    private readonly PlayPauseSpecificMediaCommand _command;
+    private readonly OptimisticPlaybackCommand _command;
+    private readonly Lock _updateLock = new();
 
     private NiceIconInfo? _lastIcon;
     private MediaSource _mediaSource;
@@ -36,18 +37,18 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
 
         this._mediaSource = mediaSource;
         this._settingsManager = settingsManager;
+        this._throttledAction = new(100, () => this.Update(this._mediaSource));
 
         this._mediaSource.PropChanged += this.MediaSourceOnPropChanged;
+        this._mediaSource.PlaybackPresentationChanged += this.MediaSourceOnPlaybackPresentationChanged;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-
-        this._throttledAction = new(100, () => this.Update(this._mediaSource));
 
         this.Title = Strings.Command_PlayPause!;
         this.Icon = Icons.PlayPause;
 
         this._asBand = asBand;
 
-        this.Command = this._command = new(mediaService, mediaSource, settingsManager, yetAnotherHelper);
+        this.Command = this._command = new(mediaService, settingsManager, yetAnotherHelper);
 
         this.MoreCommands =
         [
@@ -65,21 +66,31 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
     {
         ArgumentNullException.ThrowIfNull(mediaSource);
 
-        try
+        lock (this._updateLock)
         {
-            this.UpdateCore(mediaSource);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
+            if (this._disposed)
+            {
+                return;
+            }
+
+            try
+            {
+                this.UpdateCore(mediaSource);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
         }
     }
 
     private void UpdateCore(MediaSource mediaSource)
     {
-        this.Title = (mediaSource.IsPlaying && !this._asBand ? "▶️ " : "") + mediaSource.Name;
+        var isPlaying = mediaSource.DisplayedIsPlaying;
+
+        this.Title = (isPlaying && !this._asBand ? "▶️ " : "") + mediaSource.Name;
         this.Subtitle = BuildSubtitle(mediaSource);
-        this._command.Name = mediaSource.IsPlaying ? Strings.Command_Pause : Strings.Command_Play;
+        this._command.UpdatePresentation(mediaSource);
         this.Tags = BuildTags();
 
         var iconBuildTask = BuildIcon(mediaSource, this._settingsManager.ShowThumbnails);
@@ -113,7 +124,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
             subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.ApplicationName);
 
 #if DEBUG
-            subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.Session.SourceAppUserModelId ?? "no AUMID");
+            subtitleBuilder.AppendWhenNotEmpty(" • ", mediaSource.SourceAppUserModelId);
             subtitleBuilder.AppendWhenNotEmpty(" • ", Path.GetFileName(mediaSource.ApplicationIconPath));
 #endif
 
@@ -123,7 +134,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         ITag[] BuildTags()
         {
             var tags = new List<ITag>(2);
-            if (mediaSource.IsPlaying)
+            if (mediaSource.DisplayedIsPlaying)
             {
                 tags.Add(PlayingTag);
             }
@@ -150,7 +161,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
 
     private bool Equals(MediaSourceListItem other)
     {
-        return this._mediaSource.Session.SourceAppUserModelId.Equals(other._mediaSource.Session.SourceAppUserModelId, StringComparison.OrdinalIgnoreCase);
+        return ReferenceEquals(this._mediaSource, other._mediaSource);
     }
 
     public override bool Equals(object? obj)
@@ -163,28 +174,52 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         return this._mediaSource.GetHashCode();
     }
 
-    private void SettingsOnSettingsChanged(object sender, Settings args) => this._throttledAction.Invoke();
+    private void SettingsOnSettingsChanged(object sender, Settings args) => this.ScheduleUpdate();
 
-    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args) => this._throttledAction.Invoke();
+    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args) => this.ScheduleUpdate();
+
+    private void ScheduleUpdate()
+    {
+        lock (this._updateLock)
+        {
+            if (!this._disposed)
+            {
+                this._throttledAction.Invoke();
+            }
+        }
+    }
+
+    private void MediaSourceOnPlaybackPresentationChanged(object? sender, EventArgs args)
+    {
+        if (sender is MediaSource mediaSource)
+        {
+            this.Update(mediaSource);
+        }
+    }
 
     public void Dispose()
     {
-        if (this._disposed)
+        lock (this._updateLock)
         {
-            return;
+            if (this._disposed)
+            {
+                return;
+            }
+
+            this._disposed = true;
         }
 
         try
         {
             this._throttledAction.Dispose();
-            this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-            this._mediaSource.PropChanged -= this.MediaSourceOnPropChanged;
-            this._mediaSource = null!;
-            this._disposed = true;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
+
+        this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
+        this._mediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+        this._mediaSource.PlaybackPresentationChanged -= this.MediaSourceOnPlaybackPresentationChanged;
     }
 }
