@@ -199,10 +199,10 @@
     <value>Manage playback and switch between media apps with ease</value>
   </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
-    <value>Global Commands</value>
+    <value>Additional global commands</value>
   </data>
   <data name="Settings_GlobalCommands_Subtitle" xml:space="preserve">
-    <value>Controls additional media controls commands in the global search</value>
+    <value>Show additional Media Controls commands in global search results.</value>
   </data>
   <data name="Settings_GlobalCommands_Option_Enabled" xml:space="preserve">
     <value>Enabled</value>
@@ -211,11 +211,10 @@
     <value>Disabled</value>
   </data>
   <data name="Settings_KeepOpen_Title" xml:space="preserve">
-    <value>Keep Command Palette open</value>
+    <value>Keep Command Palette open after a command</value>
   </data>
   <data name="Settings_KeepOpen_Subtitle" xml:space="preserve">
-    <value>Keep the Command Palette open after running a command, so you can perform multiple actions in a row.
-Hold Shift while activating a command to temporarily do the opposite.</value>
+    <value>Run multiple media commands in sequence without reopening Command Palette. Hold Shift while running a command to temporarily reverse this behavior.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
     <value>Play</value>
@@ -350,25 +349,25 @@ Hold Shift while activating a command to temporarily do the opposite.</value>
     <value>Playing {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
-    <value>Show toast messages</value>
+    <value>Show action confirmations</value>
   </data>
   <data name="Settings_ShowToastMessages_Subtitle" xml:space="preserve">
-    <value>Show a confirmation notification after each media action.</value>
+    <value>Show a notification after each media action.</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Title" xml:space="preserve">
-    <value>Pause other sessions on play</value>
+    <value>Pause other sessions when playback starts</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
     <value>When playing a session, automatically pause all other sessions.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
-    <value>Show current media session on home page</value>
+    <value>Show the current media session on the home page</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Subtitle" xml:space="preserve">
-    <value>Adds a &#x201C;Now Playing&#x201D; item to the home page for easy access to the current session.</value>
+    <value>Add a &#x201C;Now Playing&#x201D; item for quick access to the current media session.</value>
   </data>
   <data name="Settings_ShowSkipCommands_Title" xml:space="preserve">
-    <value>Show skip track commands</value>
+    <value>Show track navigation commands</value>
   </data>
   <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
     <value>Enable volume controls</value>
@@ -377,13 +376,38 @@ Hold Shift while activating a command to temporarily do the opposite.</value>
     <value>Show this extension's system volume commands. Turn this off if another extension already provides them.</value>
   </data>
   <data name="Settings_ShowSkipCommands_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; as top-level items on the Media Controls page.</value>
+    <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; on the Media Controls page.</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Title" xml:space="preserve">
-    <value>Show skip track commands in Dock</value>
+    <value>Show track navigation commands</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Command Palette page</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Appearance and behavior</value>
+  </data>
+  <data name="Settings_Group_GlobalSearch" xml:space="preserve">
+    <value>Global search</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Help and acknowledgements</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Get help, report a problem, or view the source code](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Created by [Jiří Polášek](https://jiripolasek.com)
+_Licensed under the Apache 2.0 license_
+_Copyright © Jiří Polášek_
+
+Special thanks to [Mike Griese](https://github.com/zadjii-msft)</value>
   </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Hide after Play/Pause</value>
