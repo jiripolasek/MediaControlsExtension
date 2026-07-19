@@ -4,7 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
@@ -19,7 +18,7 @@ internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommand
     ]);
 
     public FallbackPreviousTrackCommandItem(
-        IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
+        Task<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper)
         : base(new NoOpCommand(), Strings.Command_PreviousTrack, "com.jpsoftworks.cmdpal.mediacontrols.previous")

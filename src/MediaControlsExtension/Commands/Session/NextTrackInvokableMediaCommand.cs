@@ -4,7 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
@@ -12,7 +11,7 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 internal sealed partial class NextTrackInvokableMediaCommand : CurrentMediaSessionCommand
 {
     public NextTrackInvokableMediaCommand(
-        IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> manager,
+        Task<GlobalSystemMediaTransportControlsSessionManager> manager,
         YetAnotherHelper yetAnotherHelper) : base(manager, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)
     {
         this.Name = Strings.Command_NextTrack!;

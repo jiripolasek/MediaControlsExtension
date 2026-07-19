@@ -10,7 +10,17 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class MediaSessionOp
 {
-    public virtual bool CanExecute(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session) => true;
+    public virtual bool CanExecute(MediaSource source) => true;
 
-    public abstract Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session);
+    public Task<MediaSessionOperationResult> InvokeAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager,
+        GlobalSystemMediaTransportControlsSession session)
+    {
+        GsmtcOperationGate.VerifyAccess();
+        return this.InvokeUnderGateAsync(manager, session);
+    }
+
+    protected abstract Task<MediaSessionOperationResult> InvokeUnderGateAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager,
+        GlobalSystemMediaTransportControlsSession session);
 }

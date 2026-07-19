@@ -19,34 +19,88 @@ internal sealed class PlayPauseMop : MediaSessionOp
         this._settingsManager = settingsManager;
     }
 
-    public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
+    protected override async Task<MediaSessionOperationResult> InvokeUnderGateAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
-        var sessionIsPlaying = session.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+        return await this.InvokeAsync(manager, session, PlaybackIntent.Toggle);
+    }
 
-        bool success;
-        string message;
+    public async Task<MediaSessionOperationResult> InvokeAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager,
+        GlobalSystemMediaTransportControlsSession session,
+        PlaybackIntent intent)
+    {
+        GsmtcOperationGate.VerifyAccess();
+
+        var playbackInfo = session.GetPlaybackInfo();
+        var sessionIsPlaying = playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+        var effectiveIntent = intent == PlaybackIntent.Toggle
+            ? PlaybackActionPolicy.ResolveIntent(
+                sessionIsPlaying,
+                playbackInfo.Controls.IsPauseEnabled,
+                playbackInfo.Controls.IsStopEnabled)
+            : intent;
+
+        return effectiveIntent switch
+        {
+            PlaybackIntent.Play => await this.PlayAsync(manager, session, playbackInfo, sessionIsPlaying),
+            PlaybackIntent.Pause => await PauseAsync(session, playbackInfo, sessionIsPlaying),
+            PlaybackIntent.Stop => await StopAsync(session, playbackInfo),
+            _ => new($"😢 {Strings.Toast_NothingHappened}", false)
+        };
+    }
+
+    private async Task<MediaSessionOperationResult> PlayAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager,
+        GlobalSystemMediaTransportControlsSession session,
+        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo,
+        bool sessionIsPlaying)
+    {
         if (sessionIsPlaying)
         {
-            success = await session.TryPauseAsync();
-            message = success ? $"⏸️ {Strings.Toast_Paused}" : $"🚫 {Strings.Toast_CouldNotPause}";
+            return new($"⏯️ {Strings.Toast_Playing}");
         }
-        else
+
+        if (!playbackInfo.Controls.IsPlayEnabled)
         {
-            if (this._settingsManager.PauseOthersOnPlay)
+            return new($"🚫 {Strings.Toast_CouldNotPlay}", false);
+        }
+
+        if (this._settingsManager.PauseOthersOnPlay)
+        {
+            foreach (var otherSession in manager.GetSessions() ?? [])
             {
-                foreach (var otherSession in manager.GetSessions() ?? [])
+                if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
+                    otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
                 {
-                    if (otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-                    {
-                        await otherSession.TryPauseAsync();
-                    }
+                    await otherSession.TryPauseAsync();
                 }
             }
-
-            success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();
-            message = success ? $"⏯️ {Strings.Toast_Playing}" : $"🚫 {Strings.Toast_CouldNotPlay}";
         }
 
-        return new(message, success);
+        var success = await session.TryPlayAsync();
+        return new(success ? $"⏯️ {Strings.Toast_Playing}" : $"🚫 {Strings.Toast_CouldNotPlay}", success);
+    }
+
+    private static async Task<MediaSessionOperationResult> PauseAsync(
+        GlobalSystemMediaTransportControlsSession session,
+        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo,
+        bool sessionIsPlaying)
+    {
+        if (!sessionIsPlaying)
+        {
+            return new($"⏸️ {Strings.Toast_Paused}");
+        }
+
+        var success = playbackInfo.Controls.IsPauseEnabled && await session.TryPauseAsync();
+        return new(success ? $"⏸️ {Strings.Toast_Paused}" : $"🚫 {Strings.Toast_CouldNotPause}", success);
+    }
+
+    private static async Task<MediaSessionOperationResult> StopAsync(
+        GlobalSystemMediaTransportControlsSession session,
+        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo)
+    {
+        var success = playbackInfo.Controls.IsStopEnabled && await session.TryStopAsync();
+        return new(success ? $"⏹️ {Strings.Command_Stop}" : $"🚫 {Strings.Command_Stop}", success);
     }
 }

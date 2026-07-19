@@ -20,7 +20,7 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
         this._yetAnotherHelper = yetAnotherHelper;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -29,7 +29,7 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
             if (playbackDevice != null)
             {
                 var isMuted = playbackDevice.IsMuted;
-                await playbackDevice.ToggleMuteAsync()!.ConfigureAwait(false);
+                await playbackDevice.ToggleMuteAsync(cancellationToken)!.ConfigureAwait(false);
 
                 return this._yetAnotherHelper.GetMediaCommandResult(isMuted ? $"🔊 {Strings.Toast_Unmuted}" : $"🔇 {Strings.Toast_Muted}");
             }

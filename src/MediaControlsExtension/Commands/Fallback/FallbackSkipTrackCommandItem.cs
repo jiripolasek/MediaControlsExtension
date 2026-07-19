@@ -4,7 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
@@ -21,7 +20,7 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
     ]);
 
     public FallbackSkipTrackCommandItem(
-        IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
+        Task<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper)
         : base(new NoOpCommand(), Strings.Command_NextTrack, "com.jpsoftworks.cmdpal.mediacontrols.next")

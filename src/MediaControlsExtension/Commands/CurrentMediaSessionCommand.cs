@@ -4,35 +4,43 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
 using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal partial class CurrentMediaSessionCommand : AsyncInvokableCommand
 {
-    private readonly IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> _managerGetter;
+    private readonly Task<GlobalSystemMediaTransportControlsSessionManager> _managerGetter;
     private readonly MediaSessionOp _mediaSessionOp;
     private readonly YetAnotherHelper _yetAnotherHelper;
 
-    protected CurrentMediaSessionCommand(IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> managerGetter, MediaSessionOp mediaSessionOp, YetAnotherHelper yetAnotherHelper)
+    protected CurrentMediaSessionCommand(Task<GlobalSystemMediaTransportControlsSessionManager> managerGetter, MediaSessionOp mediaSessionOp, YetAnotherHelper yetAnotherHelper)
     {
         this._managerGetter = managerGetter;
         this._mediaSessionOp = mediaSessionOp;
         this._yetAnotherHelper = yetAnotherHelper;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
-        var manager = await this._managerGetter;
-
-        var session = manager.GetCurrentSession();
-        if (session == null)
+        try
         {
-            return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_NothingPlaying}");
-        }
+            var manager = await this._managerGetter.WaitAsync(cancellationToken);
 
-        var result = await this._mediaSessionOp.InvokeAsync(manager, session);
-        return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+            var result = await GsmtcOperationGate.RunAsync(
+                async _ =>
+                {
+                    var session = manager.GetCurrentSession();
+                    return session == null
+                        ? new MediaSessionOperationResult($"🚫 {Strings.Toast_NothingPlaying}", false)
+                        : await this._mediaSessionOp.InvokeAsync(manager, session);
+                },
+                cancellationToken);
+            return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+        }
+        catch (GsmtcCircuitOpenException)
+        {
+            return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}");
+        }
     }
 }
