@@ -19,17 +19,19 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly DockHeadItem? _bandFirstItem;
     private readonly ListItem _nextTrackCurrentSessionItem;
     private readonly ListItem _prevTrackCurrentSessionItem;
-    private readonly ListItem _muteCommandItem;
+    private readonly VolumeListItem? _volumeItem;
     private List<MediaSourceListItem> _items = [];
     private IListItem[] _cachedItems = [];
 
     public MediaControlsExtensionPage(
         MediaService mediaService,
+        SystemVolumeService systemVolumeService,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper,
         bool asBandPage = false)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(systemVolumeService);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
 
@@ -37,6 +39,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this._settingsManager = settingsManager;
         this._yetAnotherHelper = yetAnotherHelper;
         this._mediaService = mediaService;
+        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
 
         this.Icon = Icons.MainIcon;
         this.Title = Strings.Name!;
@@ -97,7 +100,9 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             : null;
         this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle, Icon = Icons.SkipNextTrack };
         this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle, Icon = Icons.SkipPreviousTrack };
-        this._muteCommandItem = new(new ToggleMuteMediaInvokableCommand(this._yetAnotherHelper));
+        this._volumeItem = this._isBandPage
+            ? null
+            : new(systemVolumeService, this._yetAnotherHelper);
 
         if (this._isBandPage)
         {
@@ -107,8 +112,6 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._nextTrackCurrentSessionItem.Subtitle = string.Empty;
             this._prevTrackCurrentSessionItem.Title = string.Empty;
             this._prevTrackCurrentSessionItem.Subtitle = string.Empty;
-            this._muteCommandItem.Title = string.Empty;
-            this._muteCommandItem.Subtitle = string.Empty;
         }
     }
 
@@ -125,6 +128,9 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
         this.RebuildAndRaiseIfChanged();
     }
+
+    private void SettingsOnSettingsChanged(object sender, Settings args)
+        => this.RebuildAndRaiseIfChanged();
 
     /// <summary>
     /// Rebuilds the items list and raises <see cref="RaiseItemsChanged"/> only when
@@ -185,7 +191,10 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             items.Add(this._prevTrackCurrentSessionItem!);
         }
 
-        items.Add(this._muteCommandItem!);
+        if (this._settingsManager.EnableVolumeControls && this._volumeItem is not null)
+        {
+            items.Add(this._volumeItem);
+        }
 
         return items;
     }
@@ -236,7 +245,11 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
     public void Dispose()
     {
+        this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
         this._playPauseCurrentSessionItem?.Dispose();
         this._bandFirstItem?.Dispose();
+        this._volumeItem?.Dispose();
     }
+
+    internal VolumeListItem? VolumeItem => this._volumeItem;
 }

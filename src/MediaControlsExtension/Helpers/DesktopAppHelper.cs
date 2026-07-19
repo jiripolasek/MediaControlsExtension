@@ -17,13 +17,7 @@ internal static class DesktopAppHelper
 
         try
         {
-            var shellItem = NativeMethods.SHCreateItemInKnownFolder(
-                NativeMethods.FOLDERID_AppsFolder,
-                NativeMethods.KF_FLAG_DONT_VERIFY,
-                appId,
-                typeof(IShellItem2).GUID);
-            string displayName = shellItem.GetString(ref PropertyKeys.PKEY_ItemNameDisplay);
-            string path = shellItem.GetString(ref PropertyKeys.PKEY_Link_TargetParsingPath);
+            var (displayName, path) = NativeMethods.GetAppsFolderProperties(appId);
 
             return !string.IsNullOrWhiteSpace(path) && File.Exists(path)
                 ? new DesktopAppInfo(displayName, path, appId, path + ",0")

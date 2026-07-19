@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Name" xml:space="preserve">
-    <value>Media controls</value>
+    <value>Media Controls</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
@@ -139,7 +139,25 @@
     <value>Play / Pause</value>
   </data>
   <data name="Command_ToggleMute" xml:space="preserve">
-    <value>Toggle Mute</value>
+    <value>Toggle volume mute</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Set volume to {0}%</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Volume down</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Volume up</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Volume - {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Volume - muted</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0}%</value>
   </data>
   <data name="Settings_ShowThumbnails_Title" xml:space="preserve">
     <value>Show thumbnails</value>
@@ -250,6 +268,9 @@ Hold Shift while activating a command to temporarily do the opposite.</value>
   <data name="Toast_CantChangeVolume" xml:space="preserve">
     <value>Can't change the volume</value>
   </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
   <data name="Toast_Paused" xml:space="preserve">
     <value>Paused</value>
   </data>
@@ -349,14 +370,20 @@ Hold Shift while activating a command to temporarily do the opposite.</value>
   <data name="Settings_ShowSkipCommands_Title" xml:space="preserve">
     <value>Show skip track commands</value>
   </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Enable volume controls</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Show this extension's system volume commands. Turn this off if another extension already provides them.</value>
+  </data>
   <data name="Settings_ShowSkipCommands_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; as top-level items on the Media Controls page.</value>
+    <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; as top-level items on the Media Controls page.</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Title" xml:space="preserve">
     <value>Show skip track commands in Dock</value>
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
-    <value>Display &#x201C;Next&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
+    <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
   </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Hide after Play/Pause</value>

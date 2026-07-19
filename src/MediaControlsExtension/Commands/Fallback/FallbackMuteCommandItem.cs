@@ -13,19 +13,25 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem
     private readonly QueryCommandProcessor _queryProcessor = new([
         new("mu", "Mute"),
         new("media", "Media Controls: Mute"),
-        new("vol", "Volume Mute"),
+        new("vol", "Volume mute"),
     ]);
 
-    public FallbackMuteCommandItem(SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand(), Strings.Command_Mute, "com.jpsoftworks.cmdpal.mediacontrols.mute")
+    public FallbackMuteCommandItem(
+        SettingsManager settingsManager,
+        SystemVolumeService systemVolumeService,
+        YetAnotherHelper yetAnotherHelper)
+        : base(new NoOpCommand(), Strings.Command_Mute, "com.jpsoftworks.cmdpal.mediacontrols.mute")
     {
         this._settingsManager = settingsManager;
-        this.Command = this._command = new(true, yetAnotherHelper) { Name = "" };
+        this.Command = this._command = new(true, systemVolumeService, yetAnotherHelper) { Name = "" };
         this.Title = "";
         this.Subtitle = Strings.Command_Mute_Subtitle!;
     }
+
     public override void UpdateQuery(string query)
     {
-        this.Title = this._settingsManager.GlobalCommands == GlobalCommandsMode.Disabled
+        this.Title = !this._settingsManager.EnableVolumeControls ||
+                     this._settingsManager.GlobalCommands == GlobalCommandsMode.Disabled
             ? this._command.Name = ""
             : this._command.Name = this._queryProcessor.ProcessQuery(query);
     }

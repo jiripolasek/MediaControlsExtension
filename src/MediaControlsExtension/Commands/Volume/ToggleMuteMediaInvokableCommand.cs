@@ -4,41 +4,33 @@
 // 
 // ------------------------------------------------------------
 
-using AudioSwitcher.AudioApi;
-using AudioSwitcher.AudioApi.CoreAudio;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCommand
 {
+    private readonly SystemVolumeService _systemVolumeService;
     private readonly YetAnotherHelper _yetAnotherHelper;
-    public override IconInfo Icon => Icons.ToggleMute;
     public override string Name => Strings.Command_ToggleMute!;
 
-    public ToggleMuteMediaInvokableCommand(YetAnotherHelper yetAnotherHelper)
+    public ToggleMuteMediaInvokableCommand(SystemVolumeService systemVolumeService, YetAnotherHelper yetAnotherHelper)
     {
+        this._systemVolumeService = systemVolumeService;
         this._yetAnotherHelper = yetAnotherHelper;
+        this.Icon = Icons.ToggleMute;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
+    protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
         try
         {
-            using CoreAudioController coreAudioController = new();
-            var playbackDevice = coreAudioController.GetDefaultDevice(DeviceType.Playback, Role.Console);
-            if (playbackDevice != null)
-            {
-                var isMuted = playbackDevice.IsMuted;
-                await playbackDevice.ToggleMuteAsync(cancellationToken)!.ConfigureAwait(false);
-
-                return this._yetAnotherHelper.GetMediaCommandResult(isMuted ? $"🔊 {Strings.Toast_Unmuted}" : $"🔇 {Strings.Toast_Muted}");
-            }
+            var state = this._systemVolumeService.ToggleMute(cancellationToken);
+            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
 
-        return this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!);
+        return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!));
     }
 }
