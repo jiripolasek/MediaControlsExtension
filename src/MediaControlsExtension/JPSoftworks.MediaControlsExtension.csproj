@@ -50,8 +50,6 @@
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="AudioSwitcher.AudioApi" NoWarn="NU1701" />
-		<PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" NoWarn="NU1701" />
 		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit" />
 		<PackageReference Include="Microsoft.CommandPalette.Extensions" />
 		<PackageReference Include="Microsoft.Windows.CsWinRT" />
@@ -73,24 +71,22 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<IsAotCompatible>false</IsAotCompatible>
+		<PublishAot>true</PublishAot>
+		<IsAotCompatible>true</IsAotCompatible>
 		<CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
 		<CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
 		<!-- Suppress DynamicallyAccessedMemberTypes.PublicParameterlessConstructor in fallback code path of Windows SDK projection -->
 		<WarningsNotAsErrors>IL2081</WarningsNotAsErrors>
 
-		<PublishTrimmed>false</PublishTrimmed>
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>full</TrimMode>
 		<PublishSingleFile>true</PublishSingleFile>
-		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
 		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi" />
-		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Update="Resources\Strings.Designer.cs">

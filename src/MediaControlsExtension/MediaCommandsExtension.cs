@@ -31,6 +31,13 @@ public sealed partial class MediaControlsExtension : IExtension, IDisposable
 
     public void Dispose()
     {
-        this._extensionDisposedEvent.Set();
+        try
+        {
+            this._provider.Dispose();
+        }
+        finally
+        {
+            this._extensionDisposedEvent.Set();
+        }
     }
 }

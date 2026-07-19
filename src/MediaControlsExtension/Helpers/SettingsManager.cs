@@ -88,6 +88,13 @@ internal sealed class SettingsManager : JsonSettingsManager
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _enableVolumeControls = new(
+        Namespaced("EnableVolumeControls"),
+        Strings.Settings_EnableVolumeControls_Title! + Environment.NewLine + Strings.Settings_EnableVolumeControls_Subtitle!,
+        "",
+        true);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showSkipCommands = new(
         Namespaced("ShowSkipCommands"),
         Strings.Settings_ShowSkipCommands_Title! + Environment.NewLine + Strings.Settings_ShowSkipCommands_Subtitle!,
@@ -124,6 +131,8 @@ internal sealed class SettingsManager : JsonSettingsManager
 
     public bool ShowCurrentMediaAtTopLevel => _showCurrentMediaAtTopLevel.Value;
 
+    public bool EnableVolumeControls => this._enableVolumeControls.Value;
+
     public bool ShowSkipCommands => _showSkipCommands.Value;
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
@@ -140,6 +149,7 @@ internal sealed class SettingsManager : JsonSettingsManager
         this.Settings.Add(this._pauseOthersOnPlay);
         this.Settings.Add(this._showToastMessages);
         this.Settings.Add(this._globalCommands);
+        this.Settings.Add(this._enableVolumeControls);
 
         //this.Settings.Add(this._keepOpenTogglePlayPauseCurrent);
         //this.Settings.Add(this._keepOpenSkipTrack);

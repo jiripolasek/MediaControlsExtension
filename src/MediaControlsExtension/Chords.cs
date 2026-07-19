@@ -25,4 +25,7 @@ internal static class Chords
     
     public static KeyChord PreviousSession { get; } = From(ctrl: true, vkey: VirtualKey.J);
     public static KeyChord NextSession { get; } = From(ctrl: true, vkey: VirtualKey.N);
+
+    public static KeyChord VolumeUp { get; } = From(ctrl: true, vkey: VirtualKey.Add);
+    public static KeyChord VolumeDown { get; } = From(ctrl: true, vkey: VirtualKey.Subtract);
 }
