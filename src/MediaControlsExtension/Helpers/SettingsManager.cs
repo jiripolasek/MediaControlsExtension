@@ -159,8 +159,8 @@ internal sealed class SettingsManager : JsonSettingsManager
         this.Settings.Add(this._pauseOthersOnPlay);
         this.Settings.Add(this._showToastMessages);
         this.Settings.Add(new SettingsGroupHeader(
-            Namespaced("Layout.GlobalSearch"),
-            Strings.Settings_Group_GlobalSearch!));
+            Namespaced("Layout.Commands"),
+            Strings.Settings_Group_Commands!));
         this.Settings.Add(this._globalCommands);
         this.Settings.Add(this._enableVolumeControls);
         this.Settings.Add(new SettingsGroupHeader(

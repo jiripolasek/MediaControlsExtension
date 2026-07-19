@@ -434,20 +434,20 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Commands.
+        /// </summary>
+        internal static string Settings_Group_Commands {
+            get {
+                return ResourceManager.GetString("Settings_Group_Commands", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Dock.
         /// </summary>
         internal static string Settings_Group_Dock {
             get {
                 return ResourceManager.GetString("Settings_Group_Dock", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Global search.
-        /// </summary>
-        internal static string Settings_Group_GlobalSearch {
-            get {
-                return ResourceManager.GetString("Settings_Group_GlobalSearch", resourceCulture);
             }
         }
         

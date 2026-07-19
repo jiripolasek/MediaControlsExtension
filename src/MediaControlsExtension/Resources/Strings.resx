@@ -393,8 +393,8 @@
   <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
     <value>Appearance and behavior</value>
   </data>
-  <data name="Settings_Group_GlobalSearch" xml:space="preserve">
-    <value>Global search</value>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Commands</value>
   </data>
   <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
     <value>Help and acknowledgements</value>
