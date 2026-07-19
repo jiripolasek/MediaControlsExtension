@@ -167,7 +167,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Command_SetVolume", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Stop.
         /// </summary>
@@ -239,7 +239,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Command_VolumeDown", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Volume up.
         /// </summary>
@@ -248,7 +248,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Command_VolumeUp", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to No media sources are currently available. Please ensure that you have media applications running that support media controls..
         /// </summary>
@@ -358,6 +358,19 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Created by [Jiří Polášek](https://jiripolasek.com)
+        ///_Licensed under the Apache 2.0 license_
+        ///_Copyright © Jiří Polášek_
+        ///
+        ///Special thanks to [Mike Griese](https://github.com/zadjii-msft).
+        /// </summary>
+        internal static string Settings_Acknowledgements {
+            get {
+                return ResourceManager.GetString("Settings_Acknowledgements", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Show this extension&apos;s system volume commands. Turn this off if another extension already provides them..
         /// </summary>
         internal static string Settings_EnableVolumeControls_Subtitle {
@@ -365,7 +378,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Settings_EnableVolumeControls_Subtitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Enable volume controls.
         /// </summary>
@@ -374,7 +387,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Settings_EnableVolumeControls_Title", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Disabled.
         /// </summary>
@@ -394,7 +407,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Controls additional media controls commands in the global search.
+        ///   Looks up a localized string similar to Show additional Media Controls commands in global search results..
         /// </summary>
         internal static string Settings_GlobalCommands_Subtitle {
             get {
@@ -403,11 +416,65 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Global Commands.
+        ///   Looks up a localized string similar to Additional global commands.
         /// </summary>
         internal static string Settings_GlobalCommands_Title {
             get {
                 return ResourceManager.GetString("Settings_GlobalCommands_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Appearance and behavior.
+        /// </summary>
+        internal static string Settings_Group_AppearanceAndBehavior {
+            get {
+                return ResourceManager.GetString("Settings_Group_AppearanceAndBehavior", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Commands.
+        /// </summary>
+        internal static string Settings_Group_Commands {
+            get {
+                return ResourceManager.GetString("Settings_Group_Commands", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dock.
+        /// </summary>
+        internal static string Settings_Group_Dock {
+            get {
+                return ResourceManager.GetString("Settings_Group_Dock", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Help and acknowledgements.
+        /// </summary>
+        internal static string Settings_Group_HelpAndAcknowledgements {
+            get {
+                return ResourceManager.GetString("Settings_Group_HelpAndAcknowledgements", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Command Palette page.
+        /// </summary>
+        internal static string Settings_Group_PalettePage {
+            get {
+                return ResourceManager.GetString("Settings_Group_PalettePage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [Get help, report a problem, or view the source code](https://github.com/jiripolasek/MediaControlsExtension).
+        /// </summary>
+        internal static string Settings_Help {
+            get {
+                return ResourceManager.GetString("Settings_Help", resourceCulture);
             }
         }
         
@@ -439,8 +506,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Keep the Command Palette open after running a command, so you can perform multiple actions in a row.
-        ///Hold Shift while activating a command to temporarily do the opposite..
+        ///   Looks up a localized string similar to Run multiple media commands in sequence without reopening Command Palette. Hold Shift while running a command to temporarily reverse this behavior..
         /// </summary>
         internal static string Settings_KeepOpen_Subtitle {
             get {
@@ -449,7 +515,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Keep Command Palette open.
+        ///   Looks up a localized string similar to Keep Command Palette open after a command.
         /// </summary>
         internal static string Settings_KeepOpen_Title {
             get {
@@ -467,7 +533,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Pause other sessions on play.
+        ///   Looks up a localized string similar to Pause other sessions when playback starts.
         /// </summary>
         internal static string Settings_PauseOthersOnPlay_Title {
             get {
@@ -476,7 +542,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Adds a “Now Playing” item to the home page for easy access to the current session..
+        ///   Looks up a localized string similar to Add a “Now Playing” item for quick access to the current media session..
         /// </summary>
         internal static string Settings_ShowCurrentMediaAtTopLevel_Subtitle {
             get {
@@ -485,7 +551,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show current media session on home page.
+        ///   Looks up a localized string similar to Show the current media session on the home page.
         /// </summary>
         internal static string Settings_ShowCurrentMediaAtTopLevel_Title {
             get {
@@ -494,7 +560,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Display “Next Track” and “Previous Track” as top-level items on the Media Controls page..
+        ///   Looks up a localized string similar to Display “Next Track” and “Previous Track” on the Media Controls page..
         /// </summary>
         internal static string Settings_ShowSkipCommands_Subtitle {
             get {
@@ -503,7 +569,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show skip track commands.
+        ///   Looks up a localized string similar to Show track navigation commands.
         /// </summary>
         internal static string Settings_ShowSkipCommands_Title {
             get {
@@ -521,7 +587,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show skip track commands in Dock.
+        ///   Looks up a localized string similar to Show track navigation commands.
         /// </summary>
         internal static string Settings_ShowSkipCommandsInDock_Title {
             get {
@@ -548,7 +614,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show a confirmation notification after each media action..
+        ///   Looks up a localized string similar to Show a notification after each media action..
         /// </summary>
         internal static string Settings_ShowToastMessages_Subtitle {
             get {
@@ -557,7 +623,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Show toast messages.
+        ///   Looks up a localized string similar to Show action confirmations.
         /// </summary>
         internal static string Settings_ShowToastMessages_Title {
             get {
@@ -654,7 +720,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Toast_MediaControlsUnavailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Muted.
         /// </summary>
@@ -843,7 +909,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Toast_Volume", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Toggle Play / Pause.
         /// </summary>
@@ -861,7 +927,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("TogglePlayPause_Comments", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to {0}%.
         /// </summary>
@@ -870,7 +936,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Volume_Level", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Volume - {0} %.
         /// </summary>
@@ -879,7 +945,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Volume_Status", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Volume - muted.
         /// </summary>
