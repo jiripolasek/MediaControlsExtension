@@ -13,7 +13,7 @@ namespace JPSoftworks.MediaControlsExtension.Model;
 
 internal sealed partial class MediaSource : BaseObservable, IDisposable
 {
-    internal readonly record struct PlaybackPrediction(long Generation);
+    internal readonly record struct PlaybackPrediction(long Generation, bool PredictedIsPlaying);
     internal sealed record MediaUpdateRequest(
         bool UpdatePlayback,
         bool UpdateMediaProperties,
@@ -21,6 +21,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     private static readonly TimeSpan PlaybackActionPredictionLifetime = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan PlaybackReconciliationLifetime = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan StaleSessionRetryDelay = TimeSpan.FromMilliseconds(350);
     private const uint ListThumbnailMaxDimension = 40;
     private const uint ThumbnailMaxDimension = 512;
 
@@ -36,10 +37,21 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     private long _nextPlaybackPredictionGeneration;
     private PendingPlaybackPrediction? _pendingPlaybackPrediction;
 
+    private readonly Lock _playbackQueueLock = new();
+    private QueuedPlaybackAction? _queuedPlaybackAction;
+    private long _lastQueuedPlaybackGeneration;
+    private bool _playbackWorkerRunning;
+
     public event EventHandler? MediaPropertiesUpdated;
     public event EventHandler? PlaybackInfoChanged;
     public event EventHandler? PlaybackPresentationChanged;
     public event EventHandler? ThumbnailChanged;
+
+    /// <summary>
+    /// Raised when a queued playback action hit a dead session (E_BOUNDS /
+    /// RO_E_CLOSED) so the owning service can re-resolve sessions.
+    /// </summary>
+    public event EventHandler? SessionInvalidated;
 
     public bool HasProperties
     {
@@ -108,6 +120,12 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     }
 
     public bool DisplayedIsPlaying
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
+    public bool CanPlay
     {
         get;
         private set => this.SetField(ref field, value);
@@ -221,7 +239,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         }
     }
 
-    internal bool UpdateSessionUnderGate(GlobalSystemMediaTransportControlsSession session)
+    internal bool UpdateSessionUnderGate(GlobalSystemMediaTransportControlsSession session, string sourceAppUserModelId)
     {
         GsmtcOperationGate.VerifyAccess();
         ArgumentNullException.ThrowIfNull(session);
@@ -231,9 +249,11 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             return false;
         }
 
+        // The caller supplies the AUMID it already read so a dead session
+        // cannot fault this guard with a native re-read.
         if (!string.Equals(
             this.SourceAppUserModelId,
-            session.SourceAppUserModelId,
+            sourceAppUserModelId,
             StringComparison.Ordinal))
         {
             throw new InvalidOperationException("A MediaSource cannot be rebound to a different source application.");
@@ -306,12 +326,13 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         }
     }
 
-    public MediaSource(GlobalSystemMediaTransportControlsSession session)
+    public MediaSource(GlobalSystemMediaTransportControlsSession session, string sourceAppUserModelId)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(sourceAppUserModelId);
 
         this.Session = session;
-        this.SourceAppUserModelId = session.SourceAppUserModelId;
+        this.SourceAppUserModelId = sourceAppUserModelId;
 
         this._thumbnailLoader = new(
             static (reference, token) => ThumbnailLoader.LoadAsync(reference, ListThumbnailMaxDimension, ListThumbnailMaxDimension, token),
@@ -377,6 +398,11 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             this._disposed = true;
             this._pendingPlaybackPrediction?.Expiration.Cancel();
             this._pendingPlaybackPrediction = null;
+        }
+
+        lock (this._playbackQueueLock)
+        {
+            this._queuedPlaybackAction = null;
         }
 
         this.QueueUnhookSession();
@@ -456,7 +482,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
                 _ => !this.DisplayedIsPlaying
             };
 
-            prediction = new(++this._nextPlaybackPredictionGeneration);
+            prediction = new(++this._nextPlaybackPredictionGeneration, predictedIsPlaying);
             this._pendingPlaybackPrediction?.Expiration.Cancel();
             expiration = new();
             this._pendingPlaybackPrediction = new(prediction.Generation, predictedIsPlaying, expiration);
@@ -503,6 +529,146 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         if (reconciliationExpiration is not null)
         {
             _ = this.ExpirePlaybackPredictionAsync(prediction, PlaybackReconciliationLifetime, reconciliationExpiration);
+        }
+    }
+
+    /// <summary>
+    /// Queues a playback action derived from the optimistic display state.
+    /// Rapid presses coalesce: only the newest action executes, so button spam
+    /// produces a single trailing native call instead of a backlog of stale
+    /// operations. Returns this press's absolute intent (for optimistic
+    /// feedback), or null when the source is disposed.
+    /// </summary>
+    internal PlaybackIntent? EnqueuePlaybackAction(
+        PlaybackIntent intent,
+        Func<GlobalSystemMediaTransportControlsSession, PlaybackIntent, Task<bool>> executor)
+    {
+        ArgumentNullException.ThrowIfNull(executor);
+
+        var prediction = this.BeginPlaybackPrediction(intent);
+        if (prediction is null)
+        {
+            return null;
+        }
+
+        // Resolve the absolute action from the predicted end state, not from
+        // the (lagging) GSMTC snapshot at execution time — that snapshot does
+        // not yet reflect actions queued ahead of this one. Capability flags
+        // are only trusted while playback is confirmed playing: while paused
+        // they would resolve a pause press to Stop (which resets position).
+        PlaybackIntent absoluteIntent;
+        lock (this._playbackStateLock)
+        {
+            absoluteIntent = prediction.Value.PredictedIsPlaying
+                ? PlaybackIntent.Play
+                : this.IsPlaying
+                    ? PlaybackActionPolicy.ResolveIntent(true, this.CanPlay, this.CanPause, this.CanStop)
+                    : PlaybackIntent.Pause;
+        }
+
+        var startWorker = false;
+        lock (this._playbackQueueLock)
+        {
+            if (this._disposed)
+            {
+                return null;
+            }
+
+            // Concurrent presses can reach this insert out of prediction
+            // order; a press that lost the race must not replace (or re-run
+            // after) a newer action — the display already follows the newest
+            // prediction, so only the newest action may trail.
+            if (prediction.Value.Generation > this._lastQueuedPlaybackGeneration)
+            {
+                this._lastQueuedPlaybackGeneration = prediction.Value.Generation;
+                this._queuedPlaybackAction = new(absoluteIntent, prediction.Value, executor);
+                if (!this._playbackWorkerRunning)
+                {
+                    this._playbackWorkerRunning = true;
+                    startWorker = true;
+                }
+            }
+        }
+
+        if (startWorker)
+        {
+            _ = Task.Run(this.RunPlaybackWorkerAsync);
+        }
+
+        return absoluteIntent;
+    }
+
+    private async Task RunPlaybackWorkerAsync()
+    {
+        while (true)
+        {
+            QueuedPlaybackAction action;
+            lock (this._playbackQueueLock)
+            {
+                if (this._disposed || this._queuedPlaybackAction is null)
+                {
+                    this._playbackWorkerRunning = false;
+                    return;
+                }
+
+                action = this._queuedPlaybackAction;
+                this._queuedPlaybackAction = null;
+            }
+
+            try
+            {
+                var success = await this.ExecutePlaybackActionAsync(action).ConfigureAwait(false);
+                // Completing a superseded prediction is a no-op; only the
+                // latest press controls the displayed state.
+                this.CompletePlaybackPrediction(action.Prediction, success);
+                this.Update();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex);
+            }
+        }
+    }
+
+    private async Task<bool> ExecutePlaybackActionAsync(QueuedPlaybackAction action)
+    {
+        try
+        {
+            return await GsmtcOperationGate.RunAsync(
+                _ => action.Executor(this.Session, action.Intent));
+        }
+        catch (GsmtcCircuitOpenException)
+        {
+            return false;
+        }
+        catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
+        {
+            // The session died under us. Ask the service to re-resolve
+            // sessions, give the rebind a moment, then retry once.
+            this.SessionInvalidated?.Invoke(this, EventArgs.Empty);
+            await Task.Delay(StaleSessionRetryDelay).ConfigureAwait(false);
+
+            if (this._disposed || GsmtcOperationGate.IsCircuitOpen)
+            {
+                return false;
+            }
+
+            try
+            {
+                return await GsmtcOperationGate.RunAsync(
+                    _ => action.Executor(this.Session, action.Intent));
+            }
+            catch (Exception retryException)
+            {
+                Logger.LogWarning(
+                    $"Playback action failed after session rebind for {this.SourceAppUserModelId}: {retryException.Message}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex);
+            return false;
         }
     }
 
@@ -574,7 +740,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         {
             try
             {
-                this.AppInfo = UpdateAppDisplayInfo(session);
+                this.AppInfo = UpdateAppDisplayInfo(this.SourceAppUserModelId);
                 this.ApplicationName = this.AppInfo.DisplayName ?? "";
                 this.ApplicationIconPath = this.AppInfo.IconPath;
             }
@@ -594,7 +760,9 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             }
             catch (Exception ex)
             {
-                Logger.LogError("Failed to update timeline properties for " + session.SourceAppUserModelId, ex);
+                // Use the cached AUMID: reading it from a dead session throws
+                // E_BOUNDS from inside the catch block.
+                Logger.LogError("Failed to update timeline properties for " + this.SourceAppUserModelId, ex);
             }
         }
 
@@ -644,9 +812,15 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         {
             // ignore this exception, it is expected when the task is cancelled
         }
+        catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
+        {
+            // The session died; a refresh will rebind or remove this source.
+            Logger.LogWarning($"Session for {this.SourceAppUserModelId} is no longer valid; requesting a refresh.");
+            this.SessionInvalidated?.Invoke(this, EventArgs.Empty);
+        }
         catch (Exception ex)
         {
-            Logger.LogError("Failed to update properties for " + session.SourceAppUserModelId, ex);
+            Logger.LogError("Failed to update properties for " + this.SourceAppUserModelId, ex);
         }
 
         if (updatePlayback)
@@ -674,6 +848,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         lock (this._playbackStateLock)
         {
             this.IsPlaying = confirmedIsPlaying;
+            this.CanPlay = playbackInfo?.Controls.IsPlayEnabled ?? false;
             this.CanPause = playbackInfo?.Controls.IsPauseEnabled ?? false;
             this.CanStop = playbackInfo?.Controls.IsStopEnabled ?? false;
             this.CanSkipNext = playbackInfo?.Controls.IsNextEnabled ?? false;
@@ -749,24 +924,29 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         public CancellationTokenSource Expiration { get; set; } = expiration;
     }
 
-    private static IAppInfo UpdateAppDisplayInfo(GlobalSystemMediaTransportControlsSession session)
+    private sealed record QueuedPlaybackAction(
+        PlaybackIntent Intent,
+        PlaybackPrediction Prediction,
+        Func<GlobalSystemMediaTransportControlsSession, PlaybackIntent, Task<bool>> Executor);
+
+    private static IAppInfo UpdateAppDisplayInfo(string sourceAppUserModelId)
     {
-        if (string.IsNullOrWhiteSpace(session.SourceAppUserModelId))
+        if (string.IsNullOrWhiteSpace(sourceAppUserModelId))
         {
             return EmptyAppInfo.Instance;
         }
 
-        var appInfo = ModernAppHelper.Get(session.SourceAppUserModelId);
+        var appInfo = ModernAppHelper.Get(sourceAppUserModelId);
         if (appInfo != null)
         {
             var appDisplayInfo = appInfo.DisplayInfo;
             if (appDisplayInfo != null)
             {
-                return new ModernAppInfo(appInfo, PackageIconHelper.GetBestIconPath(session.SourceAppUserModelId));
+                return new ModernAppInfo(appInfo, PackageIconHelper.GetBestIconPath(sourceAppUserModelId));
             }
         }
 
-        var desktopApp = DesktopAppHelper.GetExecutable(session.SourceAppUserModelId);
+        var desktopApp = DesktopAppHelper.GetExecutable(sourceAppUserModelId);
         if (desktopApp is not null)
         {
             return desktopApp;

@@ -13,6 +13,8 @@ namespace JPSoftworks.MediaControlsExtension.Services;
 internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
 {
     private const int MaxLoggedSessionDiagnostics = 16;
+    private const int MaxConsecutiveRefreshFailures = 3;
+    private static readonly TimeSpan RefreshRetryDelay = TimeSpan.FromMilliseconds(500);
 
     [Flags]
     private enum NotificationFlags
@@ -43,6 +45,7 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
 
     private bool _disposed;
     private bool _isLoading;
+    private int _consecutiveRefreshFailures;
     private NotificationFlags _pendingNotifications;
 
     private MediaSource? _currentSource;
@@ -313,13 +316,36 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
         try
         {
             var sessions = manager?.GetSessions() ?? [];
-            var currentSession = manager?.GetCurrentSession();
-            var currentAppId = currentSession?.SourceAppUserModelId;
+
+            string? currentAppId = null;
+            try
+            {
+                currentAppId = manager?.GetCurrentSession()?.SourceAppUserModelId;
+            }
+            catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
+            {
+                this.LogSessionDiagnosticOnce(
+                    "stale-current-session",
+                    "GSMTC current session is no longer valid; keeping no current source this refresh.");
+            }
+
             var sessionsByAppId = new Dictionary<string, GlobalSystemMediaTransportControlsSession>(StringComparer.Ordinal);
 
             foreach (var session in sessions)
             {
-                var appId = session.SourceAppUserModelId;
+                string appId;
+                try
+                {
+                    appId = session.SourceAppUserModelId;
+                }
+                catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
+                {
+                    this.LogSessionDiagnosticOnce(
+                        "stale-session-enumeration",
+                        "GSMTC returned a session that is no longer valid; skipping it.");
+                    continue;
+                }
+
                 if (!sessionsByAppId.TryAdd(appId, session))
                 {
                     this.LogSessionDiagnosticOnce(
@@ -332,20 +358,30 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
             // holding the managed lifecycle lock.
             foreach (var (appId, session) in sessionsByAppId)
             {
-                if (existingSources.TryGetValue(appId, out var existingSource))
+                try
                 {
-                    if (existingSource.UpdateSessionUnderGate(session))
+                    if (existingSources.TryGetValue(appId, out var existingSource))
                     {
-                        sourcesToUpdate.Add(existingSource);
+                        if (existingSource.UpdateSessionUnderGate(session, appId))
+                        {
+                            sourcesToUpdate.Add(existingSource);
+                        }
+
+                        continue;
                     }
 
-                    continue;
+                    var newSource = new MediaSource(session, appId);
+                    newSource.HookSessionUnderGate();
+                    newSource.SessionInvalidated += this.OnSourceSessionInvalidated;
+                    preparedSources.Add(appId, newSource);
+                    sourcesToUpdate.Add(newSource);
                 }
-
-                var newSource = new MediaSource(session);
-                newSource.HookSessionUnderGate();
-                preparedSources.Add(appId, newSource);
-                sourcesToUpdate.Add(newSource);
+                catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
+                {
+                    this.LogSessionDiagnosticOnce(
+                        $"stale-prepare:{appId}",
+                        $"Session for AUMID {appId} became invalid during refresh; skipping it.");
+                }
             }
 
             List<MediaSource> sourcesToDispose = [];
@@ -428,6 +464,7 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
         try
         {
             var sourcesToUpdate = await GsmtcOperationGate.RunAsync(this.RefreshCore, this._disposeToken);
+            Interlocked.Exchange(ref this._consecutiveRefreshFailures, 0);
             foreach (var source in sourcesToUpdate)
             {
                 source.Update();
@@ -436,6 +473,39 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
         catch (OperationCanceledException) when (this._disposeToken.IsCancellationRequested)
         {
         }
+        catch (GsmtcCircuitOpenException)
+        {
+            // Refreshing is pointless until the process restarts.
+        }
+        catch (Exception ex)
+        {
+            // GSMTC fails transiently (typically E_BOUNDS) while sessions
+            // churn. Retry a few times, then wait for the next
+            // sessions-changed event instead of looping on a broken manager.
+            var failures = Interlocked.Increment(ref this._consecutiveRefreshFailures);
+            if (failures > MaxConsecutiveRefreshFailures)
+            {
+                Logger.LogError(ex);
+                return;
+            }
+
+            Logger.LogWarning($"Media source refresh failed (attempt {failures}); retrying: {ex.Message}");
+            try
+            {
+                await Task.Delay(RefreshRetryDelay, this._disposeToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            this.Refresh();
+        }
+    }
+
+    private void OnSourceSessionInvalidated(object? sender, EventArgs e)
+    {
+        this.Refresh();
     }
 
     private void SessionManagerOnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
@@ -508,10 +578,11 @@ internal sealed partial class MediaService : INotifyPropertyChanged, IDisposable
         }
     }
 
-    private static void DisposeSources(IEnumerable<MediaSource> sources)
+    private void DisposeSources(IEnumerable<MediaSource> sources)
     {
         foreach (var source in sources)
         {
+            source.SessionInvalidated -= this.OnSourceSessionInvalidated;
             try
             {
                 source.Dispose();

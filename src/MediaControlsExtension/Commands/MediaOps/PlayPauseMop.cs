@@ -1,7 +1,7 @@
 ﻿// ------------------------------------------------------------
-// 
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
 using Windows.Media.Control;
@@ -24,6 +24,11 @@ internal sealed class PlayPauseMop : MediaSessionOp
         return await this.InvokeAsync(manager, session, PlaybackIntent.Toggle);
     }
 
+    /// <summary>
+    /// One-shot entry point (fallback commands): a toggle is resolved from the
+    /// live playback snapshot because there is no optimistic state to derive
+    /// the target from.
+    /// </summary>
     public async Task<MediaSessionOperationResult> InvokeAsync(
         GlobalSystemMediaTransportControlsSessionManager manager,
         GlobalSystemMediaTransportControlsSession session,
@@ -31,50 +36,71 @@ internal sealed class PlayPauseMop : MediaSessionOp
     {
         GsmtcOperationGate.VerifyAccess();
 
-        var playbackInfo = session.GetPlaybackInfo();
-        var sessionIsPlaying = playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-
-        var effectiveIntent = intent == PlaybackIntent.Toggle
-            ? PlaybackActionPolicy.ResolveIntent(
-                sessionIsPlaying,
-                playbackInfo.Controls.IsPauseEnabled,
-                playbackInfo.Controls.IsStopEnabled)
-            : intent;
-
-        return effectiveIntent switch
+        var effectiveIntent = intent;
+        if (intent == PlaybackIntent.Toggle)
         {
-            PlaybackIntent.Play => await this.PlayAsync(manager, session, playbackInfo, sessionIsPlaying),
-            PlaybackIntent.Pause => await PauseAsync(session, playbackInfo, sessionIsPlaying),
-            PlaybackIntent.Stop => await StopAsync(session, playbackInfo),
+            var playbackInfo = session.GetPlaybackInfo();
+            effectiveIntent = PlaybackActionPolicy.ResolveIntent(
+                playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+                playbackInfo.Controls.IsPlayEnabled,
+                playbackInfo.Controls.IsPauseEnabled,
+                playbackInfo.Controls.IsStopEnabled);
+        }
+
+        return await this.ExecuteAsync(manager, session, effectiveIntent);
+    }
+
+    /// <summary>
+    /// Executes an absolute intent. The command is always sent — play while
+    /// playing and pause while paused are harmless no-ops for the player,
+    /// whereas skipping the call based on the (lagging) GSMTC snapshot is what
+    /// used to desync spammed toggles from the real player state.
+    /// </summary>
+    public async Task<MediaSessionOperationResult> ExecuteAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager,
+        GlobalSystemMediaTransportControlsSession session,
+        PlaybackIntent intent)
+    {
+        GsmtcOperationGate.VerifyAccess();
+
+        return intent switch
+        {
+            PlaybackIntent.Play => await this.PlayAsync(manager, session),
+            PlaybackIntent.Pause => await PauseAsync(session),
+            PlaybackIntent.Stop => await StopAsync(session),
             _ => new($"😢 {Strings.Toast_NothingHappened}", false)
         };
     }
 
     private async Task<MediaSessionOperationResult> PlayAsync(
         GlobalSystemMediaTransportControlsSessionManager manager,
-        GlobalSystemMediaTransportControlsSession session,
-        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo,
-        bool sessionIsPlaying)
+        GlobalSystemMediaTransportControlsSession session)
     {
-        if (sessionIsPlaying)
-        {
-            return new($"⏯️ {Strings.Toast_Playing}");
-        }
-
-        if (!playbackInfo.Controls.IsPlayEnabled)
-        {
-            return new($"🚫 {Strings.Toast_CouldNotPlay}", false);
-        }
-
         if (this._settingsManager.PauseOthersOnPlay)
         {
-            foreach (var otherSession in manager.GetSessions() ?? [])
+            // Best effort: a dead session must not prevent playback on the
+            // target session.
+            try
             {
-                if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
-                    otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                foreach (var otherSession in manager.GetSessions() ?? [])
                 {
-                    await otherSession.TryPauseAsync();
+                    try
+                    {
+                        if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
+                            otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                        {
+                            await otherSession.TryPauseAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogWarning($"Could not pause another session: {ex.Message}");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"Could not enumerate sessions to pause: {ex.Message}");
             }
         }
 
@@ -83,24 +109,16 @@ internal sealed class PlayPauseMop : MediaSessionOp
     }
 
     private static async Task<MediaSessionOperationResult> PauseAsync(
-        GlobalSystemMediaTransportControlsSession session,
-        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo,
-        bool sessionIsPlaying)
+        GlobalSystemMediaTransportControlsSession session)
     {
-        if (!sessionIsPlaying)
-        {
-            return new($"⏸️ {Strings.Toast_Paused}");
-        }
-
-        var success = playbackInfo.Controls.IsPauseEnabled && await session.TryPauseAsync();
+        var success = await session.TryPauseAsync();
         return new(success ? $"⏸️ {Strings.Toast_Paused}" : $"🚫 {Strings.Toast_CouldNotPause}", success);
     }
 
     private static async Task<MediaSessionOperationResult> StopAsync(
-        GlobalSystemMediaTransportControlsSession session,
-        GlobalSystemMediaTransportControlsSessionPlaybackInfo playbackInfo)
+        GlobalSystemMediaTransportControlsSession session)
     {
-        var success = playbackInfo.Controls.IsStopEnabled && await session.TryStopAsync();
+        var success = await session.TryStopAsync();
         return new(success ? $"⏹️ {Strings.Command_Stop}" : $"🚫 {Strings.Command_Stop}", success);
     }
 }

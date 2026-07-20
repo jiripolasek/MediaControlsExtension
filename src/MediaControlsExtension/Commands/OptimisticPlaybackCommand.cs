@@ -4,7 +4,6 @@
 //
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
 using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
@@ -77,42 +76,51 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         return this.CreateInvocation()(cancellationToken);
     }
 
-    private async Task<ICommandResult> InvokeAsync(
+    private Task<ICommandResult> InvokeAsync(
         MediaSource? target,
         PlaybackIntent intent,
         CancellationToken cancellationToken)
     {
         if (target == null)
         {
-            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}");
+            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}"));
         }
 
-        var prediction = target.BeginPlaybackPrediction(intent);
-        if (prediction == null)
+        if (GsmtcOperationGate.IsCircuitOpen)
         {
-            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}");
+            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}"));
         }
 
-        MediaSessionOperationResult result;
-        try
+        // The press only records the desired end state and returns; the
+        // source's playback queue coalesces rapid presses and executes the
+        // trailing action, so spamming the button can neither back up the
+        // GSMTC gate nor resolve against a stale playback snapshot.
+        var mediaService = this._mediaService;
+        var operation = this._operation;
+        var queuedIntent = target.EnqueuePlaybackAction(
+            intent,
+            async (session, absoluteIntent) =>
+            {
+                if (!mediaService.TryGetSessionManager(out var manager))
+                {
+                    return false;
+                }
+
+                var result = await operation.ExecuteAsync(manager, session, absoluteIntent);
+                return result.Success;
+            });
+
+        if (queuedIntent is null)
         {
-            var manager = this._mediaService.SessionManager;
-            result = await GsmtcOperationGate.RunAsync(
-                _ => this._operation.InvokeAsync(manager, target.Session, intent),
-                cancellationToken);
-        }
-        catch (GsmtcCircuitOpenException)
-        {
-            result = new($"🚫 {Strings.Toast_MediaControlsUnavailable}", false);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex);
-            result = new($"😢 {Strings.Toast_NothingHappened}", false);
+            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}"));
         }
 
-        target.CompletePlaybackPrediction(prediction.Value, result.Success);
-        target.Update();
-        return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+        var message = queuedIntent switch
+        {
+            PlaybackIntent.Play => $"⏯️ {Strings.Toast_Playing}",
+            PlaybackIntent.Stop => $"⏹️ {Strings.Command_Stop}",
+            _ => $"⏸️ {Strings.Toast_Paused}"
+        };
+        return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(message));
     }
 }

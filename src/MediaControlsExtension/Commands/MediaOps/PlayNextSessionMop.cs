@@ -71,10 +71,18 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
             {
                 foreach (var otherSession in sessions)
                 {
-                    if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
-                        otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                    try
                     {
-                        await otherSession.TryPauseAsync();
+                        if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
+                            otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                        {
+                            await otherSession.TryPauseAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // A dead session must not stop the switch to the target session.
+                        Logger.LogWarning($"Could not pause another session: {ex.Message}");
                     }
                 }
             }

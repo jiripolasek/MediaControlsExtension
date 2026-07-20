@@ -39,9 +39,20 @@ internal partial class MediaSessionCommand : AsyncInvokableCommand
             }
             return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (GsmtcCircuitOpenException)
         {
             return this._yetAnotherHelper.GetMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}");
+        }
+        catch (Exception ex)
+        {
+            // Typically a stale GSMTC session (E_BOUNDS); the next refresh
+            // rebinds it. Fail this press with a toast instead of leaking.
+            Logger.LogError(ex);
+            return this._yetAnotherHelper.GetMediaCommandResult($"😢 {Strings.Toast_NothingHappened}");
         }
     }
 }
