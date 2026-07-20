@@ -232,6 +232,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to View full metadata.
+        /// </summary>
+        internal static string Command_ViewMetadata {
+            get {
+                return ResourceManager.GetString("Command_ViewMetadata", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Volume down.
         /// </summary>
         internal static string Command_VolumeDown {
@@ -249,6 +258,177 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Album.
+        /// </summary>
+        internal static string Details_Album {
+            get {
+                return ResourceManager.GetString("Details_Album", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Album artist.
+        /// </summary>
+        internal static string Details_AlbumArtist {
+            get {
+                return ResourceManager.GetString("Details_AlbumArtist", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Application ID.
+        /// </summary>
+        internal static string Details_ApplicationId {
+            get {
+                return ResourceManager.GetString("Details_ApplicationId", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Artist.
+        /// </summary>
+        internal static string Details_Artist {
+            get {
+                return ResourceManager.GetString("Details_Artist", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Commands.
+        /// </summary>
+        internal static string Details_Commands {
+            get {
+                return ResourceManager.GetString("Details_Commands", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Genres.
+        /// </summary>
+        internal static string Details_Genres {
+            get {
+                return ResourceManager.GetString("Details_Genres", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Length.
+        /// </summary>
+        internal static string Details_Length {
+            get {
+                return ResourceManager.GetString("Details_Length", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Media type.
+        /// </summary>
+        internal static string Details_MediaType {
+            get {
+                return ResourceManager.GetString("Details_MediaType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Image.
+        /// </summary>
+        internal static string Details_MediaType_Image {
+            get {
+                return ResourceManager.GetString("Details_MediaType_Image", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Music.
+        /// </summary>
+        internal static string Details_MediaType_Music {
+            get {
+                return ResourceManager.GetString("Details_MediaType_Music", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown.
+        /// </summary>
+        internal static string Details_MediaType_Unknown {
+            get {
+                return ResourceManager.GetString("Details_MediaType_Unknown", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Video.
+        /// </summary>
+        internal static string Details_MediaType_Video {
+            get {
+                return ResourceManager.GetString("Details_MediaType_Video", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Not available.
+        /// </summary>
+        internal static string Details_NotAvailable {
+            get {
+                return ResourceManager.GetString("Details_NotAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Playback status.
+        /// </summary>
+        internal static string Details_PlaybackStatus {
+            get {
+                return ResourceManager.GetString("Details_PlaybackStatus", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Player.
+        /// </summary>
+        internal static string Details_Player {
+            get {
+                return ResourceManager.GetString("Details_Player", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Subtitle.
+        /// </summary>
+        internal static string Details_Subtitle {
+            get {
+                return ResourceManager.GetString("Details_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Title.
+        /// </summary>
+        internal static string Details_Title {
+            get {
+                return ResourceManager.GetString("Details_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Track.
+        /// </summary>
+        internal static string Details_TrackNumber {
+            get {
+                return ResourceManager.GetString("Details_TrackNumber", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} of {1}.
+        /// </summary>
+        internal static string Details_TrackNumberWithCount {
+            get {
+                return ResourceManager.GetString("Details_TrackNumberWithCount", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to No media sources are currently available. Please ensure that you have media applications running that support media controls..
         /// </summary>
@@ -276,6 +456,51 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Album artwork.
+        /// </summary>
+        internal static string Metadata_ArtworkAltText {
+            get {
+                return ResourceManager.GetString("Metadata_ArtworkAltText", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No media metadata is available..
+        /// </summary>
+        internal static string Metadata_NoMedia {
+            get {
+                return ResourceManager.GetString("Metadata_NoMedia", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Media metadata.
+        /// </summary>
+        internal static string Metadata_PageTitle {
+            get {
+                return ResourceManager.GetString("Metadata_PageTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Metadata.
+        /// </summary>
+        internal static string Metadata_Section {
+            get {
+                return ResourceManager.GetString("Metadata_Section", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Technical information.
+        /// </summary>
+        internal static string Metadata_TechnicalSection {
+            get {
+                return ResourceManager.GetString("Metadata_TechnicalSection", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Media Controls.
         /// </summary>
@@ -559,6 +784,24 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Open the details pane automatically on the Media Controls page..
+        /// </summary>
+        internal static string Settings_ShowDetails_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowDetails_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show media details by default.
+        /// </summary>
+        internal static string Settings_ShowDetails_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowDetails_Title", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Display “Next Track” and “Previous Track” on the Media Controls page..
         /// </summary>
