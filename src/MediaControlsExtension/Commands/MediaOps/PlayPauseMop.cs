@@ -42,7 +42,6 @@ internal sealed class PlayPauseMop : MediaSessionOp
             var playbackInfo = session.GetPlaybackInfo();
             effectiveIntent = PlaybackActionPolicy.ResolveIntent(
                 playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
-                playbackInfo.Controls.IsPlayEnabled,
                 playbackInfo.Controls.IsPauseEnabled,
                 playbackInfo.Controls.IsStopEnabled);
         }

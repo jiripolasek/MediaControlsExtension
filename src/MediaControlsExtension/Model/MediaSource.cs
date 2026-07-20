@@ -14,6 +14,12 @@ namespace JPSoftworks.MediaControlsExtension.Model;
 internal sealed partial class MediaSource : BaseObservable, IDisposable
 {
     internal readonly record struct PlaybackPrediction(long Generation, bool PredictedIsPlaying);
+    internal readonly record struct PlaybackPresentationState(
+        bool IsPredictionPending,
+        bool IsPlaying,
+        bool DisplayedIsPlaying,
+        bool CanPause,
+        bool CanStop);
     internal sealed record MediaUpdateRequest(
         bool UpdatePlayback,
         bool UpdateMediaProperties,
@@ -38,6 +44,8 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     private PendingPlaybackPrediction? _pendingPlaybackPrediction;
 
     private readonly Lock _playbackQueueLock = new();
+    private readonly CancellationTokenSource _playbackActionCts = new();
+    private readonly CancellationToken _playbackActionToken;
     private QueuedPlaybackAction? _queuedPlaybackAction;
     private long _lastQueuedPlaybackGeneration;
     private bool _playbackWorkerRunning;
@@ -120,12 +128,6 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     }
 
     public bool DisplayedIsPlaying
-    {
-        get;
-        private set => this.SetField(ref field, value);
-    }
-
-    public bool CanPlay
     {
         get;
         private set => this.SetField(ref field, value);
@@ -333,6 +335,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
         this.Session = session;
         this.SourceAppUserModelId = sourceAppUserModelId;
+        this._playbackActionToken = this._playbackActionCts.Token;
 
         this._thumbnailLoader = new(
             static (reference, token) => ThumbnailLoader.LoadAsync(reference, ListThumbnailMaxDimension, ListThumbnailMaxDimension, token),
@@ -400,6 +403,8 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             this._pendingPlaybackPrediction = null;
         }
 
+        this._playbackActionCts.Cancel();
+
         lock (this._playbackQueueLock)
         {
             this._queuedPlaybackAction = null;
@@ -417,6 +422,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         this._thumbnailLoader.Dispose();
         this._heroThumbnailLoader.Dispose();
         this._mediaUpdateLoader.Dispose();
+        this._playbackActionCts.Dispose();
 
         this.ThumbnailInfo = null;
         this.HeroThumbnailInfo = null;
@@ -494,6 +500,19 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         return prediction;
     }
 
+    internal PlaybackPresentationState GetPlaybackPresentationState()
+    {
+        lock (this._playbackStateLock)
+        {
+            return new(
+                this._pendingPlaybackPrediction is not null,
+                this.IsPlaying,
+                this.DisplayedIsPlaying,
+                this.CanPause,
+                this.CanStop);
+        }
+    }
+
     internal void CompletePlaybackPrediction(PlaybackPrediction prediction, bool success)
     {
         var presentationChanged = false;
@@ -551,20 +570,16 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             return null;
         }
 
-        // Resolve the absolute action from the predicted end state, not from
-        // the (lagging) GSMTC snapshot at execution time — that snapshot does
-        // not yet reflect actions queued ahead of this one. Capability flags
-        // are only trusted while playback is confirmed playing: while paused
-        // they would resolve a pause press to Stop (which resets position).
-        PlaybackIntent absoluteIntent;
-        lock (this._playbackStateLock)
+        // Preserve the absolute action presented to the user. Re-resolving it
+        // from a lagging capability snapshot can turn an optimistic Pause into
+        // Stop and reset playback position.
+        var absoluteIntent = intent switch
         {
-            absoluteIntent = prediction.Value.PredictedIsPlaying
+            PlaybackIntent.Play or PlaybackIntent.Pause or PlaybackIntent.Stop => intent,
+            _ => prediction.Value.PredictedIsPlaying
                 ? PlaybackIntent.Play
-                : this.IsPlaying
-                    ? PlaybackActionPolicy.ResolveIntent(true, this.CanPlay, this.CanPause, this.CanStop)
-                    : PlaybackIntent.Pause;
-        }
+                : PlaybackIntent.Pause
+        };
 
         var startWorker = false;
         lock (this._playbackQueueLock)
@@ -632,10 +647,21 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     private async Task<bool> ExecutePlaybackActionAsync(QueuedPlaybackAction action)
     {
+        var cancellationToken = this._playbackActionToken;
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+
         try
         {
             return await GsmtcOperationGate.RunAsync(
-                _ => action.Executor(this.Session, action.Intent));
+                _ => this.ExecutePlaybackActionUnderGateAsync(action),
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
         }
         catch (GsmtcCircuitOpenException)
         {
@@ -646,9 +672,16 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             // The session died under us. Ask the service to re-resolve
             // sessions, give the rebind a moment, then retry once.
             this.SessionInvalidated?.Invoke(this, EventArgs.Empty);
-            await Task.Delay(StaleSessionRetryDelay).ConfigureAwait(false);
+            try
+            {
+                await Task.Delay(StaleSessionRetryDelay, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
 
-            if (this._disposed || GsmtcOperationGate.IsCircuitOpen)
+            if (cancellationToken.IsCancellationRequested || GsmtcOperationGate.IsCircuitOpen)
             {
                 return false;
             }
@@ -656,7 +689,12 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             try
             {
                 return await GsmtcOperationGate.RunAsync(
-                    _ => action.Executor(this.Session, action.Intent));
+                    _ => this.ExecutePlaybackActionUnderGateAsync(action),
+                    cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return false;
             }
             catch (Exception retryException)
             {
@@ -670,6 +708,15 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             Logger.LogError(ex);
             return false;
         }
+    }
+
+    private Task<bool> ExecutePlaybackActionUnderGateAsync(QueuedPlaybackAction action)
+    {
+        GsmtcOperationGate.VerifyAccess();
+
+        return this._disposed || this._playbackActionToken.IsCancellationRequested
+            ? Task.FromResult(false)
+            : action.Executor(this.Session, action.Intent);
     }
 
     private void ScheduleThumbnailUpdate(IRandomAccessStreamReference? thumbnailRef)
@@ -848,7 +895,6 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         lock (this._playbackStateLock)
         {
             this.IsPlaying = confirmedIsPlaying;
-            this.CanPlay = playbackInfo?.Controls.IsPlayEnabled ?? false;
             this.CanPause = playbackInfo?.Controls.IsPauseEnabled ?? false;
             this.CanStop = playbackInfo?.Controls.IsStopEnabled ?? false;
             this.CanSkipNext = playbackInfo?.Controls.IsNextEnabled ?? false;
@@ -856,9 +902,12 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             this.CanToggleShuffle = playbackInfo?.Controls.IsShuffleEnabled ?? false;
             this.CanToggleRepeat = playbackInfo?.Controls.IsRepeatEnabled ?? false;
 
-            if (this._pendingPlaybackPrediction?.PredictedIsPlaying == confirmedIsPlaying)
+            var pendingPrediction = this._pendingPlaybackPrediction;
+            var predictedStateConfirmed = pendingPrediction?.PredictedIsPlaying == confirmedIsPlaying;
+            var presentationCaughtUp = !confirmedIsPlaying || this.CanPause;
+            if (predictedStateConfirmed && presentationCaughtUp)
             {
-                this._pendingPlaybackPrediction.Expiration.Cancel();
+                pendingPrediction!.Expiration.Cancel();
                 this._pendingPlaybackPrediction = null;
             }
 
