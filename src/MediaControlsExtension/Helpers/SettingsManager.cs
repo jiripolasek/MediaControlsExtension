@@ -19,6 +19,13 @@ internal sealed class SettingsManager : JsonSettingsManager
         Strings.Settings_ShowThumbnails_Subtitle!,
         false);
 
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _showDetailsOption = new(
+        Namespaced("ShowDetails"),
+        Strings.Settings_ShowDetails_Title!,
+        Strings.Settings_ShowDetails_Subtitle!,
+        true);
+
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ChoiceSetSetting _globalCommands = new(
@@ -110,6 +117,8 @@ internal sealed class SettingsManager : JsonSettingsManager
 
     public bool ShowThumbnails => this._showThumbnailsOption.Value;
 
+    public bool ShowDetails => this._showDetailsOption.Value;
+
     public GlobalCommandsMode GlobalCommands =>
         string.IsNullOrWhiteSpace(this._globalCommands.Value)
             ? GlobalCommandsMode.Enabled
@@ -146,6 +155,7 @@ internal sealed class SettingsManager : JsonSettingsManager
             Strings.Settings_Group_PalettePage!,
             showSeparator: false));
         this.Settings.Add(this._showCurrentMediaAtTopLevel);
+        this.Settings.Add(this._showDetailsOption);
         this.Settings.Add(this._showSkipCommands);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.Dock"),

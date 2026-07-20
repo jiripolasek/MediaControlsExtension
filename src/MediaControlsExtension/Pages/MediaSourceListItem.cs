@@ -16,12 +16,49 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
     private readonly SettingsManager _settingsManager;
     private readonly ThrottledAction _throttledAction;
     private readonly OptimisticPlaybackCommand _command;
+    private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
+    private readonly ICommand _nextTrackCommand;
+    private readonly ICommand _previousTrackCommand;
+#if FF_ENABLE_FULL_METADATA_PAGE
+    private readonly MediaMetadataPage _metadataPage;
+#endif
     private readonly Lock _updateLock = new();
 
     private NiceIconInfo? _lastIcon;
+    private MediaDetails? _mediaDetails;
     private MediaSource _mediaSource;
     private bool _disposed;
     private bool _asBand;
+
+    public override IDetails? Details
+    {
+        get
+        {
+            lock (this._updateLock)
+            {
+                if (!this._disposed && this._mediaDetails is null)
+                {
+                    this._mediaSource.RequestHeroThumbnail();
+                    ICommand? viewMetadataCommand = null;
+#if FF_ENABLE_FULL_METADATA_PAGE
+                    viewMetadataCommand = this._metadataPage;
+#endif
+                    this._mediaDetails = new(
+                        this._previousTrackCommand,
+                        this._command,
+                        this._nextTrackCommand,
+                        this._switchToApplicationCommand,
+                        viewMetadataCommand);
+                    this._mediaDetails.Update(this._mediaSource);
+                }
+
+                return this._mediaDetails?.Details;
+            }
+        }
+        set
+        {
+        }
+    }
 
     public MediaSourceListItem(
         MediaService mediaService,
@@ -49,14 +86,33 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         this._asBand = asBand;
 
         this.Command = this._command = new(mediaService, settingsManager, yetAnotherHelper);
+        this._switchToApplicationCommand = new(mediaSource);
+        this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
+        this._previousTrackCommand = new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
+        var toggleRepeatCommand = new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
+        var toggleShuffleCommand = new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
+#if FF_ENABLE_FULL_METADATA_PAGE
+        this._metadataPage = MediaMetadataPage.ForSource(
+            mediaService,
+            mediaSource,
+            this._previousTrackCommand,
+            this._command,
+            this._nextTrackCommand,
+            toggleShuffleCommand,
+            toggleRepeatCommand,
+            this._switchToApplicationCommand);
+#endif
 
         this.MoreCommands =
         [
-            new CommandContextItem(new BringAssociatedAppToFrontCommand(mediaSource)) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
-            new CommandContextItem(new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
-            new CommandContextItem(new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
-            new CommandContextItem(new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
-            new CommandContextItem(new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper)) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
+            new CommandContextItem(this._switchToApplicationCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
+#if FF_ENABLE_FULL_METADATA_PAGE
+            new CommandContextItem(this._metadataPage) { Icon = Icons.Metadata },
+#endif
+            new CommandContextItem(this._nextTrackCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
+            new CommandContextItem(this._previousTrackCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
+            new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
+            new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
 
         this.Update(this._mediaSource);
@@ -91,6 +147,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         this.Title = (isPlaying && !this._asBand ? "▶️ " : "") + mediaSource.Name;
         this.Subtitle = BuildSubtitle(mediaSource);
         this._command.UpdatePresentation(mediaSource);
+        this._mediaDetails?.Update(mediaSource);
         this.Tags = BuildTags();
 
         var iconBuildTask = BuildIcon(mediaSource, this._settingsManager.ShowThumbnails);

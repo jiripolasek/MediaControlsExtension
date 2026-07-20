@@ -10,6 +10,8 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed class ToggleShuffleMop : MediaSessionOp
 {
+    public override bool CanExecute(MediaSource source) => source.CanToggleShuffle;
+
     protected override async Task<MediaSessionOperationResult> InvokeUnderGateAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
         var canControlShuffle = session.GetPlaybackInfo().Controls.IsShuffleEnabled;

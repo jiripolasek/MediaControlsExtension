@@ -14,6 +14,9 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 internal sealed class ToggleRepeatMop : MediaSessionOp
 {
     private static readonly CompositeFormat s_repeatChangedFormat = CompositeFormat.Parse(Strings.Toast_RepeatChanged!);
+
+    public override bool CanExecute(MediaSource source) => source.CanToggleRepeat;
+
     protected override async Task<MediaSessionOperationResult> InvokeUnderGateAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
     {
         var canControlRepeat = session.GetPlaybackInfo().Controls.IsRepeatEnabled;

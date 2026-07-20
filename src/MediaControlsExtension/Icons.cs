@@ -56,6 +56,7 @@ internal static class Icons
     public static IconInfo Unknown { get; } = new IconInfo("\uE897");
 
     public static IconInfo SwitchApps { get; } = new IconInfo("\uE8F9");
+    public static IconInfo Metadata { get; } = new IconInfo("\uE946");
 
     public static IconInfo ToggleRepeat { get; } = new IconInfo("\uE8EE");
     public static IconInfo ToggleShuffle { get; } = new IconInfo("\uE8B1");

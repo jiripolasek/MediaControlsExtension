@@ -132,6 +132,81 @@
   <data name="Command_SwitchToApplication" xml:space="preserve">
     <value>Switch to Application</value>
   </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>View full metadata</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Album artist</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>Application ID</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Artist</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Commands</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Media type</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Music</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Not available</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>Playback status</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Player</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Subtitle</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Track</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>No media metadata is available.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Album artwork</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Media metadata</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Metadata</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Technical information</value>
+  </data>
   <data name="Command_NextTrack" xml:space="preserve">
     <value>Next Track</value>
   </data>
@@ -164,6 +239,12 @@
   </data>
   <data name="Settings_ShowThumbnails_Subtitle" xml:space="preserve">
     <value>Use media thumbnails (album art) instead of app icons in the session list.</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>Show media details by default</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Open the details pane automatically on the Media Controls page.</value>
   </data>
   <data name="Command_PreviousTrack" xml:space="preserve">
     <value>Previous Track</value>

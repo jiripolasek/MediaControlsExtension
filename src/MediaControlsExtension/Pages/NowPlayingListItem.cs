@@ -23,11 +23,43 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
     private readonly Lock _currentMediaSourceLock = new();
     private readonly Lock _updateLock = new();
     private readonly OptimisticPlaybackCommand _playPauseCommand;
+    private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
+    private readonly ICommand _nextTrackCommand;
+    private readonly ICommand _previousTrackCommand;
+#if FF_ENABLE_FULL_METADATA_PAGE
+    private readonly MediaMetadataPage _metadataPage;
+#endif
     private readonly IContextItem[] _mediaContextCommands;
     private readonly bool _isBandPage;
 
     private MediaSource? _currentMediaSource;
+    private MediaDetails? _mediaDetails;
+    private bool _detailsAvailable;
+    private bool _detailsRequested;
     private bool _disposed;
+
+    public override IDetails? Details
+    {
+        get
+        {
+            lock (this._currentMediaSourceLock)
+            {
+                lock (this._updateLock)
+                {
+                    if (!this._disposed)
+                    {
+                        this._detailsRequested = true;
+                        this.UpdateDetails(this._currentMediaSource, notifyAvailabilityChange: false);
+                    }
+
+                    return this._detailsAvailable ? this._mediaDetails?.Details : null;
+                }
+            }
+        }
+        set
+        {
+        }
+    }
 
     public NowPlayingListItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper, bool asBandPage) : base(new NoOpCommand())
     {
@@ -39,22 +71,40 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         this._settingsManager = settingsManager;
         this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
 
-        this._mediaContextCommands = [
-            new CommandContextItem(new BringAssociatedAppToFrontCommand(this._mediaService)) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack }) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack }) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat }) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle }) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
-
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
-        ];
-
+        this._switchToApplicationCommand = new(this._mediaService);
         this.Command = this._playPauseCommand = new(this._mediaService, this._settingsManager, yetAnotherHelper)
         {
             Id = "com.jpsoftworks.cmdpal.mediacontrols.nowplaying",
             Icon = Icons.NoMedia
         };
+        this._nextTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack, Icon = Icons.SkipNextTrack };
+        this._previousTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack, Icon = Icons.SkipPreviousTrack };
+        var toggleRepeatCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat };
+        var toggleShuffleCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle };
+#if FF_ENABLE_FULL_METADATA_PAGE
+        this._metadataPage = MediaMetadataPage.ForNowPlaying(
+            this._mediaService,
+            this._previousTrackCommand,
+            this._playPauseCommand,
+            this._nextTrackCommand,
+            toggleShuffleCommand,
+            toggleRepeatCommand,
+            this._switchToApplicationCommand);
+#endif
+        this._mediaContextCommands = [
+            new CommandContextItem(this._switchToApplicationCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
+#if FF_ENABLE_FULL_METADATA_PAGE
+            new CommandContextItem(this._metadataPage) { Icon = Icons.Metadata },
+#endif
+            new CommandContextItem(this._nextTrackCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
+            new CommandContextItem(this._previousTrackCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
+            new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
+            new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
+
+            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
+            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
+        ];
+
         this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;
         this.UpdateIcon(Icons.PlayPause);
 
@@ -130,6 +180,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 this.Subtitle = this._isBandPage ? string.Empty : Strings.NowPlaying_Subtitle!;
 
                 this._playPauseCommand.UpdatePresentation(null, showName: !this._isBandPage);
+                this.UpdateDetails(null);
 
                 this.MoreCommands = [];
             }
@@ -152,9 +203,46 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                     : StringHelper.JoinNonEmpty(" • ", string.Format(CultureInfo.CurrentCulture, s_nowPlayingFormat, mediaSource.Name), mediaSource.Artist, mediaSource.ApplicationName);
 
                 this.UpdateIcon(playbackAction.CommandIcon);
+                this.UpdateDetails(mediaSource);
 
                 this.MoreCommands = this._mediaContextCommands;
             }
+        }
+    }
+
+    private void UpdateDetails(MediaSource? mediaSource, bool notifyAvailabilityChange = true)
+    {
+        if (!this._detailsRequested)
+        {
+            return;
+        }
+
+        var detailsWereAvailable = this._detailsAvailable;
+        if (mediaSource is not { HasProperties: true })
+        {
+            this._mediaDetails?.Clear();
+            this._detailsAvailable = false;
+        }
+        else
+        {
+            mediaSource.RequestHeroThumbnail();
+            ICommand? viewMetadataCommand = null;
+#if FF_ENABLE_FULL_METADATA_PAGE
+            viewMetadataCommand = this._metadataPage;
+#endif
+            this._mediaDetails ??= new(
+                this._previousTrackCommand,
+                this._playPauseCommand,
+                this._nextTrackCommand,
+                this._switchToApplicationCommand,
+                viewMetadataCommand);
+            this._mediaDetails.Update(mediaSource);
+            this._detailsAvailable = true;
+        }
+
+        if (notifyAvailabilityChange && detailsWereAvailable != this._detailsAvailable)
+        {
+            this.OnPropertyChanged(nameof(this.Details));
         }
     }
 

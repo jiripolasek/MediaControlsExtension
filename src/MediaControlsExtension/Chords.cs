@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -17,6 +17,7 @@ internal static class Chords
     
     // media keyboard shortcuts follow Windows Media Player shortcuts
 
+    public static KeyChord PlayPause { get; } = From(ctrl: true, vkey: VirtualKey.P);
     public static KeyChord NextTrack { get; } = From(ctrl: true, vkey: VirtualKey.F);
     public static KeyChord PreviousTrack { get; } = From(ctrl: true, vkey: VirtualKey.B);
     public static KeyChord ToggleRepeat { get; } = From(ctrl: true, vkey: VirtualKey.T);

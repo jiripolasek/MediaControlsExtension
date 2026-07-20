@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -14,15 +14,25 @@ namespace JPSoftworks.MediaControlsExtension.Model;
 internal sealed partial class MediaSource : BaseObservable, IDisposable
 {
     internal readonly record struct PlaybackPrediction(long Generation);
-    internal sealed record MediaUpdateRequest(bool UpdatePlayback, bool UpdateMediaProperties);
+    internal sealed record MediaUpdateRequest(
+        bool UpdatePlayback,
+        bool UpdateMediaProperties,
+        bool UpdateTimeline);
 
     private static readonly TimeSpan PlaybackActionPredictionLifetime = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan PlaybackReconciliationLifetime = TimeSpan.FromSeconds(2);
+    private const uint ListThumbnailMaxDimension = 40;
+    private const uint ThumbnailMaxDimension = 512;
 
     private readonly Lock _playbackStateLock = new();
+    private readonly Lock _thumbnailStateLock = new();
     private readonly CoalescingAsyncLoader<MediaUpdateRequest, object> _mediaUpdateLoader;
     private readonly CoalescingAsyncLoader<IRandomAccessStreamReference?, ThumbnailInfo> _thumbnailLoader;
+    private readonly CoalescingAsyncLoader<IRandomAccessStreamReference?, ThumbnailInfo> _heroThumbnailLoader;
     private volatile bool _disposed;
+    private bool _heroThumbnailRequested;
+    private IRandomAccessStreamReference? _heroThumbnailReference;
+    private IRandomAccessStreamReference? _thumbnailReference;
     private long _nextPlaybackPredictionGeneration;
     private PendingPlaybackPrediction? _pendingPlaybackPrediction;
 
@@ -48,6 +58,48 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         get;
         set => this.SetField(ref field, value);
     } = "";
+
+    public string AlbumTitle
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    } = "";
+
+    public string AlbumArtist
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    } = "";
+
+    public string Subtitle
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    } = "";
+
+    public string Genres
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    } = "";
+
+    public int TrackNumber
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
+    public int AlbumTrackCount
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
+    public TimeSpan? TrackLength
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
 
     public bool IsPlaying
     {
@@ -85,6 +137,18 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         private set => this.SetField(ref field, value);
     }
 
+    public bool CanToggleShuffle
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
+    public bool CanToggleRepeat
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
     public string? ApplicationIconPath
     {
         get;
@@ -98,6 +162,12 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
     }
 
     public ThumbnailInfo? ThumbnailInfo
+    {
+        get;
+        private set => this.SetField(ref field, value);
+    }
+
+    public ThumbnailInfo? HeroThumbnailInfo
     {
         get;
         private set => this.SetField(ref field, value);
@@ -135,6 +205,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         {
             session.MediaPropertiesChanged += this.SessionOnMediaPropertiesChanged;
             session.PlaybackInfoChanged += this.SessionOnPlaybackInfoChanged;
+            session.TimelinePropertiesChanged += this.SessionOnTimelinePropertiesChanged;
             Volatile.Write(ref this._eventsSubscribed, 1);
 
             if (this._disposed && Interlocked.Exchange(ref this._eventsSubscribed, 0) != 0)
@@ -227,6 +298,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         {
             session.MediaPropertiesChanged -= this.SessionOnMediaPropertiesChanged;
             session.PlaybackInfoChanged -= this.SessionOnPlaybackInfoChanged;
+            session.TimelinePropertiesChanged -= this.SessionOnTimelinePropertiesChanged;
         }
         catch
         {
@@ -242,7 +314,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         this.SourceAppUserModelId = session.SourceAppUserModelId;
 
         this._thumbnailLoader = new(
-            static (reference, token) => ThumbnailLoader.LoadAsync(reference, 20, 20, token),
+            static (reference, token) => ThumbnailLoader.LoadAsync(reference, ListThumbnailMaxDimension, ListThumbnailMaxDimension, token),
             info =>
             {
                 if (info != this.ThumbnailInfo)
@@ -255,6 +327,13 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             _ => { }
         );
 
+        this._heroThumbnailLoader = new(
+            static (reference, token) => ThumbnailLoader.LoadAsync(reference, ThumbnailMaxDimension, ThumbnailMaxDimension, token),
+            info => this.HeroThumbnailInfo = info,
+            // CmdPal can retain published thumbnail streams through IconInfo.FromStream.
+            _ => { }
+        );
+
         this._mediaUpdateLoader = new(
             async (request, token) =>
             {
@@ -263,6 +342,7 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
                         this.Session,
                         request.UpdatePlayback,
                         request.UpdateMediaProperties,
+                        request.UpdateTimeline,
                         cancellationToken),
                     token);
 
@@ -279,7 +359,8 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             _ => { },
             static (pending, next) => new(
                 pending.UpdatePlayback || next.UpdatePlayback,
-                pending.UpdateMediaProperties || next.UpdateMediaProperties)
+                pending.UpdateMediaProperties || next.UpdateMediaProperties,
+                pending.UpdateTimeline || next.UpdateTimeline)
         );
 
     }
@@ -300,10 +381,19 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
         this.QueueUnhookSession();
 
+        lock (this._thumbnailStateLock)
+        {
+            this._heroThumbnailRequested = false;
+            this._heroThumbnailReference = null;
+            this._thumbnailReference = null;
+        }
+
         this._thumbnailLoader.Dispose();
+        this._heroThumbnailLoader.Dispose();
         this._mediaUpdateLoader.Dispose();
 
         this.ThumbnailInfo = null;
+        this.HeroThumbnailInfo = null;
     }
 
     private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
@@ -321,24 +411,31 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
         GlobalSystemMediaTransportControlsSession sender,
         PlaybackInfoChangedEventArgs args)
     {
-        this.TriggerUpdate(true, false);
+        this.TriggerUpdate(true, false, false);
     }
 
     private void SessionOnMediaPropertiesChanged(
         GlobalSystemMediaTransportControlsSession sender,
         MediaPropertiesChangedEventArgs args)
     {
-        this.TriggerUpdate(true, true);
+        this.TriggerUpdate(true, true, true);
     }
 
-    private void TriggerUpdate(bool playback, bool mediaProps)
+    private void SessionOnTimelinePropertiesChanged(
+        GlobalSystemMediaTransportControlsSession sender,
+        TimelinePropertiesChangedEventArgs args)
+    {
+        this.TriggerUpdate(false, false, true);
+    }
+
+    private void TriggerUpdate(bool playback, bool mediaProps, bool timeline)
     {
         if (this._disposed || GsmtcOperationGate.IsCircuitOpen)
         {
             return;
         }
 
-        this._mediaUpdateLoader.Schedule(new(playback, mediaProps));
+        this._mediaUpdateLoader.Schedule(new(playback, mediaProps, timeline));
     }
 
     internal PlaybackPrediction? BeginPlaybackPrediction(PlaybackIntent intent)
@@ -411,13 +508,62 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     private void ScheduleThumbnailUpdate(IRandomAccessStreamReference? thumbnailRef)
     {
+        bool loadHeroThumbnail;
+        lock (this._thumbnailStateLock)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            this._thumbnailReference = thumbnailRef;
+            loadHeroThumbnail = this._heroThumbnailRequested
+                && !ReferenceEquals(this._heroThumbnailReference, thumbnailRef);
+            if (loadHeroThumbnail)
+            {
+                this._heroThumbnailReference = thumbnailRef;
+            }
+        }
+
         this._thumbnailLoader.Schedule(thumbnailRef);
+        if (loadHeroThumbnail)
+        {
+            this._heroThumbnailLoader.Schedule(thumbnailRef);
+        }
+    }
+
+    public void RequestHeroThumbnail()
+    {
+        IRandomAccessStreamReference? thumbnailReference;
+        bool loadHeroThumbnail;
+        lock (this._thumbnailStateLock)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            this._heroThumbnailRequested = true;
+            thumbnailReference = this._thumbnailReference;
+            loadHeroThumbnail = thumbnailReference is not null
+                && !ReferenceEquals(this._heroThumbnailReference, thumbnailReference);
+            if (loadHeroThumbnail)
+            {
+                this._heroThumbnailReference = thumbnailReference;
+            }
+        }
+
+        if (loadHeroThumbnail)
+        {
+            this._heroThumbnailLoader.Schedule(thumbnailReference!);
+        }
     }
 
     private async Task<bool> UpdatePropertiesFromSession(
         GlobalSystemMediaTransportControlsSession session,
         bool updatePlayback,
         bool updateMediaProperties,
+        bool updateTimeline,
         CancellationToken cancellationToken)
     {
         GsmtcOperationGate.VerifyAccess();
@@ -438,10 +584,27 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             }
         }
 
+        if (updateTimeline)
+        {
+            try
+            {
+                var timelineProperties = session.GetTimelineProperties();
+                var trackLength = timelineProperties.EndTime - timelineProperties.StartTime;
+                this.TrackLength = trackLength > TimeSpan.Zero ? trackLength : null;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Failed to update timeline properties for " + session.SourceAppUserModelId, ex);
+            }
+        }
+
         try
         {
-            var playbackInfo = session.GetPlaybackInfo();
-            presentationChanged = this.ApplyConfirmedPlaybackInfo(playbackInfo);
+            if (updatePlayback)
+            {
+                var playbackInfo = session.GetPlaybackInfo();
+                presentationChanged = this.ApplyConfirmedPlaybackInfo(playbackInfo);
+            }
 
             if (updateMediaProperties)
             {
@@ -451,19 +614,29 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
                     this.HasProperties = true;
                     this.Name = mediaProperties.Title ?? string.Empty;
                     this.Artist = mediaProperties.Artist ?? string.Empty;
+                    this.AlbumTitle = mediaProperties.AlbumTitle ?? string.Empty;
+                    this.AlbumArtist = mediaProperties.AlbumArtist ?? string.Empty;
+                    this.Subtitle = mediaProperties.Subtitle ?? string.Empty;
+                    this.Genres = string.Join(", ", mediaProperties.Genres);
+                    this.TrackNumber = mediaProperties.TrackNumber;
+                    this.AlbumTrackCount = mediaProperties.AlbumTrackCount;
                     this.PlaybackType = mediaProperties.PlaybackType ?? MediaPlaybackType.Unknown;
-                    if (mediaProperties.Thumbnail != null)
-                    {
-                        this.ScheduleThumbnailUpdate(mediaProperties.Thumbnail);
-                    }
+                    this.ScheduleThumbnailUpdate(mediaProperties.Thumbnail);
                 }
                 else
                 {
                     this.HasProperties = false;
                     this.Name = string.Empty;
                     this.Artist = string.Empty;
+                    this.AlbumTitle = string.Empty;
+                    this.AlbumArtist = string.Empty;
+                    this.Subtitle = string.Empty;
+                    this.Genres = string.Empty;
+                    this.TrackNumber = 0;
+                    this.AlbumTrackCount = 0;
+                    this.TrackLength = null;
                     this.PlaybackType = MediaPlaybackType.Unknown;
-                    this.ThumbnailInfo = null;
+                    this.ScheduleThumbnailUpdate(null);
                 }
             }
         }
@@ -505,6 +678,8 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
             this.CanStop = playbackInfo?.Controls.IsStopEnabled ?? false;
             this.CanSkipNext = playbackInfo?.Controls.IsNextEnabled ?? false;
             this.CanSkipPrevious = playbackInfo?.Controls.IsPreviousEnabled ?? false;
+            this.CanToggleShuffle = playbackInfo?.Controls.IsShuffleEnabled ?? false;
+            this.CanToggleRepeat = playbackInfo?.Controls.IsRepeatEnabled ?? false;
 
             if (this._pendingPlaybackPrediction?.PredictedIsPlaying == confirmedIsPlaying)
             {
@@ -607,6 +782,6 @@ internal sealed partial class MediaSource : BaseObservable, IDisposable
 
     public void Update()
     {
-        this.TriggerUpdate(true, true);
+        this.TriggerUpdate(true, true, true);
     }
 }

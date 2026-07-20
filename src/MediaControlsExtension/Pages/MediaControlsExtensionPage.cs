@@ -46,6 +46,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this.Name = Strings.Open!;
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols";
         this.PlaceholderText = Strings.SearchPlaceholder!;
+        this.ShowDetails = !this._isBandPage && this._settingsManager.ShowDetails;
 
         this._mediaService.Initialized += (_, _) =>
         {
@@ -130,7 +131,10 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     }
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
-        => this.RebuildAndRaiseIfChanged();
+    {
+        this.ShowDetails = !this._isBandPage && this._settingsManager.ShowDetails;
+        this.RebuildAndRaiseIfChanged();
+    }
 
     /// <summary>
     /// Rebuilds the items list and raises <see cref="RaiseItemsChanged"/> only when
