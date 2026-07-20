@@ -9,7 +9,7 @@ using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class PreviousTrackInvokableMediaCommand : CurrentMediaSessionCommand
+internal sealed partial class PreviousTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
     public PreviousTrackInvokableMediaCommand(
         Task<GlobalSystemMediaTransportControlsSessionManager> manager,
@@ -20,7 +20,7 @@ internal sealed partial class PreviousTrackInvokableMediaCommand : CurrentMediaS
         this.Icon = iconService.GetIcon(ThemedIcon.SkipPrevious, IconSurface.CommandPalette);
     }
 }
-internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSessionCommand
+internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSourceCommand
 {
     public PreviousTrackInvokableSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
         : base(mediaService, mediaSource, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper)

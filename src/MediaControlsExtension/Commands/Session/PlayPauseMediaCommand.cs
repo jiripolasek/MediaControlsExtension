@@ -8,7 +8,7 @@ using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class PlayPauseMediaCommand : CurrentMediaSessionCommand
+internal sealed partial class PlayPauseMediaCommand : StandaloneCurrentSessionCommand
 {
     public PlayPauseMediaCommand(
         Task<GlobalSystemMediaTransportControlsSessionManager> sessionManager,

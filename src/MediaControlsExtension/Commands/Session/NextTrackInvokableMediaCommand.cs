@@ -8,7 +8,7 @@ using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class NextTrackInvokableMediaCommand : CurrentMediaSessionCommand
+internal sealed partial class NextTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
     public NextTrackInvokableMediaCommand(
         Task<GlobalSystemMediaTransportControlsSessionManager> manager,
@@ -20,7 +20,7 @@ internal sealed partial class NextTrackInvokableMediaCommand : CurrentMediaSessi
     }
 }
 
-internal sealed partial class NextTrackInvokableSpecificMediaCommand : MediaSessionCommand
+internal sealed partial class NextTrackInvokableSpecificMediaCommand : MediaSourceCommand
 {
     public NextTrackInvokableSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
         : base(mediaService, mediaSource, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)

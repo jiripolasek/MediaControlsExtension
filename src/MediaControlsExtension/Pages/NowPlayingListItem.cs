@@ -94,10 +94,10 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             Id = "com.jpsoftworks.cmdpal.mediacontrols.nowplaying",
             Icon = this._iconService.GetIcon(ThemedIcon.NoMedia, this._iconSurface)
         };
-        this._nextTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipNext, this._iconSurface) };
-        this._previousTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipPrevious, this._iconSurface) };
-        var toggleRepeatCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat };
-        var toggleShuffleCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle };
+        this._nextTrackCommand = new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipNext, this._iconSurface) };
+        this._previousTrackCommand = new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipPrevious, this._iconSurface) };
+        var toggleRepeatCommand = new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat };
+        var toggleShuffleCommand = new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle };
 #if FF_ENABLE_FULL_METADATA_PAGE
         this._metadataPage = MediaMetadataPage.ForNowPlaying(
             this._mediaService,
@@ -118,8 +118,8 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
             new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
 
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
-            new CommandContextItem(new MediaCurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
 
         this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;

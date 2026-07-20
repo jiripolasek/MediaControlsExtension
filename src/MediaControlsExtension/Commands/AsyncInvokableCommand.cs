@@ -10,10 +10,6 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class AsyncInvokableCommand : InvokableCommand
 {
-    protected virtual bool ReturnImmediately { get; set; }
-
-    protected virtual ICommandResult Result { get; set; } = CommandResult.Dismiss();
-
     protected virtual ICommandResult TimeoutResult { get; set; } = CommandResult.Dismiss();
 
     protected virtual TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
@@ -24,32 +20,17 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         Logger.LogDebug("Invoking async command " + this.GetType().FullName);
         var stopwatch = Stopwatch.StartNew();
 
-        if (this.ReturnImmediately)
+        using var timeoutCts = new CancellationTokenSource();
+        var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, timeoutCts.Token));
+        if (cmdResult.Wait(this.Timeout))
         {
-            // If the command is set to return immediately, we just return a dismiss result
-            // and invoke the async operation in the background.
-            _ = Task.Run(() => this.SafeInvokeAsync(invocation, CancellationToken.None));
-            Logger.LogDebug("Async command " + this.GetType().FullName + " returned immediately");
-            return this.Result;
+            Logger.LogDebug("Async command " + this.GetType().FullName + " returned after " + stopwatch.Elapsed);
+            return cmdResult.Result;
         }
-        else
-        {
-            // If the command is not set to return immediately, we will wait for the async operation to complete
-            // and return the result.
-            using var timeoutCts = new CancellationTokenSource();
-            var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, timeoutCts.Token));
-            if (cmdResult.Wait(this.Timeout))
-            {
-                Logger.LogDebug("Async command " + this.GetType().FullName + " returned after " + stopwatch.Elapsed);
-                return cmdResult.Result;
-            }
-            else
-            {
-                timeoutCts.Cancel();
-                Logger.LogDebug("Async command " + this.GetType().FullName + " timed out " + stopwatch.Elapsed);
-                return this.TimeoutResult;
-            }
-        }
+
+        timeoutCts.Cancel();
+        Logger.LogDebug("Async command " + this.GetType().FullName + " timed out " + stopwatch.Elapsed);
+        return this.TimeoutResult;
     }
 
     private async Task<ICommandResult> SafeInvokeAsync(

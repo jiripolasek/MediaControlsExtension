@@ -47,7 +47,7 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         var nextSession = allSessions[newIndex];
 
         var nextMediaSource = this._mediaService.FindSourceForSession(nextSession);
-        var s = await this.PlayAsync(allSessions, nextSession, nextMediaSource);
+        var s = await this.PlayAsync(manager, nextSession, nextMediaSource);
 
         var applicationName = string.IsNullOrEmpty(nextMediaSource?.ApplicationName) ? "next session" : nextMediaSource?.ApplicationName;
 
@@ -58,7 +58,7 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
 
 
     private async Task<MediaSessionOperationResult> PlayAsync(
-        IReadOnlyList<GlobalSystemMediaTransportControlsSession> sessions,
+        GlobalSystemMediaTransportControlsSessionManager manager,
         GlobalSystemMediaTransportControlsSession session,
         MediaSource? nextMediaSource)
     {
@@ -69,22 +69,7 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
         {
             if (this._settingsManager.PauseOthersOnPlay)
             {
-                foreach (var otherSession in sessions)
-                {
-                    try
-                    {
-                        if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
-                            otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-                        {
-                            await otherSession.TryPauseAsync();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // A dead session must not stop the switch to the target session.
-                        Logger.LogWarning($"Could not pause another session: {ex.Message}");
-                    }
-                }
+                await TryPauseOtherSessionsAsync(manager, session);
             }
 
             success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();

@@ -8,7 +8,7 @@ using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class ToggleShuffleSpecificMediaCommand : MediaSessionCommand
+internal sealed partial class ToggleShuffleSpecificMediaCommand : MediaSourceCommand
 {
     public ToggleShuffleSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
         : base(mediaService, mediaSource, MediaSessionOperations.ToggleShuffle, yetAnotherHelper)

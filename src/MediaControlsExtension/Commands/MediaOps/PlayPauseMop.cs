@@ -77,30 +77,7 @@ internal sealed class PlayPauseMop : MediaSessionOp
     {
         if (this._settingsManager.PauseOthersOnPlay)
         {
-            // Best effort: a dead session must not prevent playback on the
-            // target session.
-            try
-            {
-                foreach (var otherSession in manager.GetSessions() ?? [])
-                {
-                    try
-                    {
-                        if (!GsmtcSessionCorrelation.IsSameSource(otherSession, session) &&
-                            otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-                        {
-                            await otherSession.TryPauseAsync();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.LogWarning($"Could not pause another session: {ex.Message}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning($"Could not enumerate sessions to pause: {ex.Message}");
-            }
+            await TryPauseOtherSessionsAsync(manager, session);
         }
 
         var success = await session.TryPlayAsync();

@@ -8,7 +8,7 @@ using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class ToggleRepeatSpecificMediaCommand : MediaSessionCommand
+internal sealed partial class ToggleRepeatSpecificMediaCommand : MediaSourceCommand
 {
     public ToggleRepeatSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
         : base(mediaService, mediaSource, MediaSessionOperations.ToggleRepeat, yetAnotherHelper)

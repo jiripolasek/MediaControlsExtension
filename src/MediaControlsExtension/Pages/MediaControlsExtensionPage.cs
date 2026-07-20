@@ -125,8 +125,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 this._yetAnotherHelper,
                 this._iconService)
             : null;
-        this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle };
-        this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle };
+        this._nextTrackCurrentSessionItem = new(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle };
+        this._prevTrackCurrentSessionItem = new(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle };
         this.UpdateTrackNavigationIcons();
         this._volumeItem = this._isBandPage
             ? null
@@ -149,14 +149,14 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
     private void UpdateCurrentMediaItems()
     {
-        if (this._nextTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand nextTrackCommand)
+        if (this._nextTrackCurrentSessionItem?.Command is CurrentSessionCommand nextTrackCommand)
         {
             this._nextTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
                 ThemedIcon.SkipNext,
                 this._iconSurface,
                 nextTrackCommand.CanExecute() ? IconState.Default : IconState.Disabled));
         }
-        if (this._prevTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand prevTrackCommand)
+        if (this._prevTrackCurrentSessionItem?.Command is CurrentSessionCommand prevTrackCommand)
         {
             this._prevTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
                 ThemedIcon.SkipPrevious,
