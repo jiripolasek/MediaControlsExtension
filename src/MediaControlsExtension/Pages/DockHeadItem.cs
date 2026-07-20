@@ -10,6 +10,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 {
     private readonly MediaService _mediaService;
     private readonly SettingsManager _settingsManager;
+    private readonly IIconService _iconService;
     private readonly ThrottledAction _updateMediaInfo;
 
     private readonly Lock _currentMediaSourceLock = new();
@@ -23,13 +24,19 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
     private NiceIconInfo? _lastIcon;
     private bool _disposed;
 
-    public DockHeadItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper) : base(new NoOpCommand())
+    public DockHeadItem(
+        MediaService mediaService,
+        SettingsManager settingsManager,
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._mediaService = mediaService;
         this._settingsManager = settingsManager;
+        this._iconService = iconService;
         this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
 
         this._mediaContextCommands = [
@@ -51,7 +58,9 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         this.Command = this._noOpCommand;
 
         this.Title = string.Empty;
-        this.UpdateIcon(Icons.PlayPause);
+        this.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.PlayPause,
+            IconSurface.Dock));
 
         // Subscribe first, then seed by re-reading inside the lock; see
         // NowPlayingListItem for why the locked re-read cannot go stale.
@@ -117,7 +126,9 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             {
                 this.Title = "";
                 this.Subtitle = "";
-                this.Icon = Icons.NoMedia;
+                this.Icon = this._iconService.GetIcon(
+                    ThemedIcon.NoMedia,
+                    IconSurface.Dock);
                 this._lastIcon = null;
                 this.Command = this._noOpCommand;
                 this.MoreCommands = [];

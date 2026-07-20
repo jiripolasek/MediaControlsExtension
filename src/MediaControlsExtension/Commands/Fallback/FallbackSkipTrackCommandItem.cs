@@ -8,10 +8,11 @@ using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
+internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem, IIconThemeAware
 {
     private readonly SettingsManager _settingsManager;
     private readonly NextTrackInvokableMediaCommand _command;
+    private readonly IIconService _iconService;
     private readonly QueryCommandProcessor _queryProcessor = new([
         new("skip", "Skip track"),
         new("next", "Next track"),
@@ -22,14 +23,21 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
     public FallbackSkipTrackCommandItem(
         Task<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_NextTrack, "com.jpsoftworks.cmdpal.mediacontrols.next")
     {
         this._settingsManager = settingsManager;
-        this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper) { Name = "" };
+        this._iconService = iconService;
+        this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper, iconService) { Name = "" };
         this.Title = "";
         this.Subtitle = Strings.Command_NextTrack_Subtitle!;
     }
+
+    public void RefreshIconTheme()
+        => this._command.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.SkipNext,
+            IconSurface.CommandPalette));
 
     public override void UpdateQuery(string query)
     {

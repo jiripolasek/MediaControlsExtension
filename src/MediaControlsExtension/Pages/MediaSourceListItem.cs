@@ -14,6 +14,8 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
     private static readonly Tag PlayingTag = new() { Text = Strings.Tags_Playing!, Icon = Icons.PlaySolid, Foreground = new(true, new(0, 255, 0, 128)), Background = new(true, new(0, 255, 00, 40)) };
 
     private readonly SettingsManager _settingsManager;
+    private readonly IIconService _iconService;
+    private readonly IconSurface _iconSurface;
     private readonly ThrottledAction _throttledAction;
     private readonly OptimisticPlaybackCommand _command;
     private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
@@ -65,15 +67,21 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         MediaSource mediaSource,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
         bool asBand) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(mediaSource);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._mediaSource = mediaSource;
         this._settingsManager = settingsManager;
+        this._iconService = iconService;
+        this._iconSurface = asBand
+            ? IconSurface.Dock
+            : IconSurface.CommandPalette;
         this._throttledAction = new(100, () => this.Update(this._mediaSource));
 
         this._mediaSource.PropChanged += this.MediaSourceOnPropChanged;
@@ -81,14 +89,31 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
 
         this.Title = Strings.Command_PlayPause!;
-        this.Icon = Icons.PlayPause;
+        this.Icon = iconService.GetIcon(ThemedIcon.PlayPause, this._iconSurface);
 
         this._asBand = asBand;
 
-        this.Command = this._command = new(mediaService, settingsManager, yetAnotherHelper);
+        this.Command = this._command = new(
+            mediaService,
+            settingsManager,
+            yetAnotherHelper,
+            iconService,
+            this._iconSurface);
         this._switchToApplicationCommand = new(mediaSource);
-        this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
-        this._previousTrackCommand = new PreviousTrackInvokableSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
+        this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(
+            mediaService,
+            mediaSource,
+            yetAnotherHelper)
+        {
+            Icon = iconService.GetIcon(ThemedIcon.SkipNext, this._iconSurface),
+        };
+        this._previousTrackCommand = new PreviousTrackInvokableSpecificMediaCommand(
+            mediaService,
+            mediaSource,
+            yetAnotherHelper)
+        {
+            Icon = iconService.GetIcon(ThemedIcon.SkipPrevious, this._iconSurface),
+        };
         var toggleRepeatCommand = new ToggleRepeatSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
         var toggleShuffleCommand = new ToggleShuffleSpecificMediaCommand(mediaService, mediaSource, yetAnotherHelper);
 #if FF_ENABLE_FULL_METADATA_PAGE
@@ -147,6 +172,7 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
         this.Title = (isPlaying && !this._asBand ? "▶️ " : "") + mediaSource.Name;
         this.Subtitle = BuildSubtitle(mediaSource);
         this._command.UpdatePresentation(mediaSource);
+        this.UpdateNavigationCommandIcons();
         this._mediaDetails?.Update(mediaSource);
         this.Tags = BuildTags();
 
@@ -214,6 +240,23 @@ internal sealed partial class MediaSourceListItem : ListItemBase, IDisposable
             MediaPlaybackType.Image => Icons.Image,
             _ => Icons.Unknown
         };
+    }
+
+    private void UpdateNavigationCommandIcons()
+    {
+        if (this._nextTrackCommand is Command nextTrackCommand)
+        {
+            nextTrackCommand.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipNext,
+                this._iconSurface));
+        }
+
+        if (this._previousTrackCommand is Command previousTrackCommand)
+        {
+            previousTrackCommand.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipPrevious,
+                this._iconSurface));
+        }
     }
 
     private bool Equals(MediaSourceListItem other)

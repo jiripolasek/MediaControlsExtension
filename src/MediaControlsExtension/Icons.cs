@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -9,44 +9,46 @@ namespace JPSoftworks.MediaControlsExtension;
 internal static class Icons
 {
     public static IconInfo PlayPause { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\PlayPause_LightTheme.svg",
-        @"Assets\Icons\PlayPause_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\PlayPause.light.svg",
+        @"Assets\IconThemes\colorful\PlayPause.dark.svg");
 
     public static IconInfo PlayColorful { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\Play_LightTheme.svg",
-        @"Assets\Icons\Play_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\Play.light.svg",
+        @"Assets\IconThemes\colorful\Play.dark.svg");
 
     public static IconInfo PauseColorful { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\Pause_LightTheme.svg",
-        @"Assets\Icons\Pause_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\Pause.light.svg",
+        @"Assets\IconThemes\colorful\Pause.dark.svg");
 
     public static IconInfo SkipNextTrack { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\SkipNext_LightTheme.svg",
-        @"Assets\Icons\SkipNext_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\SkipNext.light.svg",
+        @"Assets\IconThemes\colorful\SkipNext.dark.svg");
 
     public static IconInfo SkipPreviousTrack { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\SkipPrevious_LightTheme.svg",
-        @"Assets\Icons\SkipPrevious_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\SkipPrevious.light.svg",
+        @"Assets\IconThemes\colorful\SkipPrevious.dark.svg");
 
     public static IconInfo SkipNextTrackDisabled { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\SkipNext_Disabled_DarkTheme.svg",
-        @"Assets\Icons\SkipNext_Disabled_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\SkipNext.disabled.svg",
+        @"Assets\IconThemes\colorful\SkipNext.disabled.svg");
 
     public static IconInfo SkipPreviousTrackDisabled { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\SkipPrevious_Disabled_DarkTheme.svg",
-        @"Assets\Icons\SkipPrevious_Disabled_DarkTheme.svg");
+        @"Assets\IconThemes\colorful\SkipPrevious.disabled.svg",
+        @"Assets\IconThemes\colorful\SkipPrevious.disabled.svg");
 
     public static IconInfo NoMedia { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\Icons\NoMedia.svg",
-        @"Assets\Icons\NoMedia.svg");
+        @"Assets\IconThemes\colorful\NoMedia.svg",
+        @"Assets\IconThemes\colorful\NoMedia.svg");
 
-    public static IconInfo ToggleMute { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Muted_Color.svg");
+    public static IconInfo ToggleMute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\ToggleMute.svg");
 
-    public static IconInfo Volume_Mute { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Mute.svg");
-    public static IconInfo Volume_Low { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Low.svg");
-    public static IconInfo Volume_Max { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Max.svg");
-    public static IconInfo Volume_Mid { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Mid.svg");
-    public static IconInfo Volume_Unmute { get; } = IconHelpers.FromRelativePath(@"Assets\Icons\Volume_Unmute.svg");
+    public static IconInfo Volume_Mute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeMute.svg");
+    public static IconInfo Volume_Up { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeUp.svg");
+    public static IconInfo Volume_Down { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeDown.svg");
+    public static IconInfo Volume_Low { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeLow.svg");
+    public static IconInfo Volume_Max { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeHigh.svg");
+    public static IconInfo Volume_Mid { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeMedium.svg");
+    public static IconInfo Volume_Unmute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeOff.svg");
 
     public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(@"Assets\Square40x40-lightunplated.png", @"Assets\Square40x40-unplated.png");
 

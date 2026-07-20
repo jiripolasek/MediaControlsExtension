@@ -15,6 +15,8 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
     private readonly MediaService _mediaService;
     private readonly PlayPauseMop _operation;
     private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly IIconService _iconService;
+    private readonly IconSurface _iconSurface;
 
     private PlaybackIntent _intent = PlaybackIntent.Toggle;
     private MediaSource? _target;
@@ -22,22 +24,30 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
     public OptimisticPlaybackCommand(
         MediaService mediaService,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
+        IconSurface iconSurface)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._mediaService = mediaService;
         this._operation = new(settingsManager);
         this._yetAnotherHelper = yetAnotherHelper;
-        this.Icon = Icons.PlayPause;
+        this._iconService = iconService;
+        this._iconSurface = iconSurface;
+        this.Icon = iconService.GetIcon(ThemedIcon.PlayPause, iconSurface);
         this.Name = Strings.TogglePlayPause!;
     }
 
     public PlaybackActionPresentation UpdatePresentation(MediaSource? target, bool showName = true)
     {
-        var presentation = PlaybackActionPolicy.GetPresentation(target);
+        var presentation = PlaybackActionPolicy.GetPresentation(
+            target,
+            this._iconService,
+            this._iconSurface);
         lock (this._presentationLock)
         {
             this._target = target;

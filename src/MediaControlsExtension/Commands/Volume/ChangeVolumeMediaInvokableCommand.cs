@@ -21,7 +21,7 @@ internal sealed partial class ChangeVolumeMediaInvokableCommand : AsyncInvokable
         this._systemVolumeService = systemVolumeService;
         this._yetAnotherHelper = yetAnotherHelper;
         this.Name = change == VolumeChange.Increase ? Strings.Command_VolumeUp! : Strings.Command_VolumeDown!;
-        this.Icon = change == VolumeChange.Increase ? Icons.Volume_Max : Icons.Volume_Low;
+        this.Icon = change == VolumeChange.Increase ? Icons.Volume_Up : Icons.Volume_Down;
     }
 
     protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)

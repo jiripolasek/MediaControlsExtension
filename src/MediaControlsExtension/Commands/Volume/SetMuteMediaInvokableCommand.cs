@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -12,13 +12,19 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
     private readonly SystemVolumeService _systemVolumeService;
     private readonly YetAnotherHelper _yetAnotherHelper;
 
-    public SetMuteMediaInvokableCommand(bool targetMute, SystemVolumeService systemVolumeService, YetAnotherHelper yetAnotherHelper)
+    public SetMuteMediaInvokableCommand(
+        bool targetMute,
+        SystemVolumeService systemVolumeService,
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService)
     {
         this._targetMute = targetMute;
         this._systemVolumeService = systemVolumeService;
         this._yetAnotherHelper = yetAnotherHelper;
         this.Name = targetMute ? Strings.Command_Mute! : Strings.Command_Unmute!;
-        this.Icon = targetMute ? Icons.Volume_Mute : Icons.Volume_Unmute;
+        this.Icon = iconService.GetIcon(
+            targetMute ? ThemedIcon.VolumeMute : ThemedIcon.VolumeOff,
+            IconSurface.CommandPalette);
     }
 
     protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)

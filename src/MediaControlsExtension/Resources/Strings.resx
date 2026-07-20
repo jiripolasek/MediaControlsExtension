@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -468,8 +468,23 @@
   <data name="Settings_Group_PalettePage" xml:space="preserve">
     <value>Command Palette page</value>
   </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Icon theme</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Default ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Choose icons for the Command Palette home page and Media Controls list page.</value>
+  </data>
   <data name="Settings_Group_Dock" xml:space="preserve">
     <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Icon theme</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Choose icons for the Command Palette Dock.</value>
   </data>
   <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
     <value>Appearance and behavior</value>

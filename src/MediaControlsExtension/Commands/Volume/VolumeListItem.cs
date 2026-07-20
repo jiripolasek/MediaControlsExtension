@@ -13,6 +13,8 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
     private readonly Lock _presentationLock = new();
     private readonly SystemVolumeService _systemVolumeService;
     private readonly ToggleMuteMediaInvokableCommand _toggleMuteCommand;
+    private readonly IIconService _iconService;
+    private readonly IconSurface _iconSurface;
 
     private bool _disposed;
     private bool _hasObservedState;
@@ -20,36 +22,46 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
 
     public VolumeListItem(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
+        IconSurface iconSurface)
         : this(
             new(systemVolumeService, yetAnotherHelper),
             systemVolumeService,
-            yetAnotherHelper)
+            yetAnotherHelper,
+            iconService,
+            iconSurface)
     {
     }
 
     private VolumeListItem(
         ToggleMuteMediaInvokableCommand toggleMuteCommand,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
+        IconSurface iconSurface)
         : base(toggleMuteCommand)
     {
         ArgumentNullException.ThrowIfNull(systemVolumeService);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._toggleMuteCommand = toggleMuteCommand;
         this._systemVolumeService = systemVolumeService;
+        this._iconService = iconService;
+        this._iconSurface = iconSurface;
 
         this._toggleMuteCommand.Id = CommandId;
 
         this.Title = Strings.Toast_Volume!;
         this.Subtitle = string.Empty;
-        this.Icon = Icons.ToggleMute;
+        this.Icon = iconService.GetIcon(ThemedIcon.ToggleMute, iconSurface);
         this.MoreCommands = CreateMoreCommands(systemVolumeService, yetAnotherHelper);
 
         // Subscribe before seeding. If a notification wins the race with the initial
         // read, _hasObservedState prevents the older seed from replacing it.
         this._systemVolumeService.StateChanged += this.SystemVolumeServiceOnStateChanged;
+        this._iconService.IconsChanged += this.IconServiceOnIconsChanged;
 
         try
         {
@@ -79,12 +91,12 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
             new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, systemVolumeService, yetAnotherHelper))
             {
                 RequestedShortcut = Chords.VolumeUp,
-                Icon = Icons.Volume_Max,
+                Icon = Icons.Volume_Up,
             },
             new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, systemVolumeService, yetAnotherHelper))
             {
                 RequestedShortcut = Chords.VolumeDown,
-                Icon = Icons.Volume_Low,
+                Icon = Icons.Volume_Down,
             },
             new Separator(),
             .. VolumeCommandFactory.CreatePresetContextItems(systemVolumeService, yetAnotherHelper),
@@ -113,7 +125,10 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         }
 
         this._lastState = state;
-        var icon = VolumePresentation.GetIcon(state);
+        var icon = VolumePresentation.GetThemedIcon(
+            state,
+            this._iconService,
+            this._iconSurface);
         this.Icon = icon;
         this._toggleMuteCommand.UpdateIcon(icon);
 
@@ -134,6 +149,30 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
 
             this._disposed = true;
             this._systemVolumeService.StateChanged -= this.SystemVolumeServiceOnStateChanged;
+            this._iconService.IconsChanged -= this.IconServiceOnIconsChanged;
+        }
+    }
+
+    private void IconServiceOnIconsChanged(object? sender, EventArgs args)
+    {
+        lock (this._presentationLock)
+        {
+            if (this._disposed)
+            {
+                return;
+            }
+
+            if (this._lastState is { } state)
+            {
+                this._lastState = null;
+                this.ApplyState(state);
+            }
+            else
+            {
+                var icon = this._iconService.GetIcon(ThemedIcon.ToggleMute, this._iconSurface);
+                this.Icon = icon;
+                this._toggleMuteCommand.UpdateIcon(icon);
+            }
         }
     }
 }

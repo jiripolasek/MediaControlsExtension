@@ -596,6 +596,42 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Choose icons for the Command Palette home page and Media Controls list page..
+        /// </summary>
+        internal static string Settings_CommandPaletteIconTheme_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_CommandPaletteIconTheme_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Icon theme.
+        /// </summary>
+        internal static string Settings_CommandPaletteIconTheme_Title {
+            get {
+                return ResourceManager.GetString("Settings_CommandPaletteIconTheme_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Choose icons for the Command Palette Dock..
+        /// </summary>
+        internal static string Settings_DockIconTheme_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_DockIconTheme_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Icon theme.
+        /// </summary>
+        internal static string Settings_DockIconTheme_Title {
+            get {
+                return ResourceManager.GetString("Settings_DockIconTheme_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Show this extension&apos;s system volume commands. Turn this off if another extension already provides them..
         /// </summary>
         internal static string Settings_EnableVolumeControls_Subtitle {
@@ -730,6 +766,15 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Default ({0}).
+        /// </summary>
+        internal static string Settings_IconTheme_Default {
+            get {
+                return ResourceManager.GetString("Settings_IconTheme_Default", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Run multiple media commands in sequence without reopening Command Palette. Hold Shift while running a command to temporarily reverse this behavior..
         /// </summary>

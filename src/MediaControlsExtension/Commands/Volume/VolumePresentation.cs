@@ -39,4 +39,29 @@ internal static class VolumePresentation
             _ => Icons.Volume_Max,
         };
     }
+
+    public static IconInfo GetThemedIcon(
+        SystemVolumeState state,
+        IIconService iconService,
+        IconSurface surface)
+        => state.IsMuted
+            ? iconService.GetIcon(ThemedIcon.VolumeMute, surface)
+            : GetThemedIcon(state.VolumePercent, iconService, surface);
+
+    public static IconInfo GetThemedIcon(
+        int volumePercent,
+        IIconService iconService,
+        IconSurface surface)
+    {
+        ArgumentNullException.ThrowIfNull(iconService);
+
+        var icon = volumePercent switch
+        {
+            <= 0 => ThemedIcon.VolumeOff,
+            <= 33 => ThemedIcon.VolumeLow,
+            <= 66 => ThemedIcon.VolumeMedium,
+            _ => ThemedIcon.VolumeHigh,
+        };
+        return iconService.GetIcon(icon, surface);
+    }
 }

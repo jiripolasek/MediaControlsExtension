@@ -67,7 +67,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
         this._targetMode = targetMode;
         this._content = [this._metadata];
         this._previousCommand = new CommandContextItem(previousCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline };
-        this._playPauseCommand = new CommandContextItem(playPauseCommand) { RequestedShortcut = Chords.PlayPause };
+        this._playPauseCommand = new CommandContextItem(playPauseCommand) { RequestedShortcut = Chords.PlayPause, Icon = Icons.PlayPause };
         this._nextCommand = new CommandContextItem(nextCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline };
         this._shuffleCommand = new CommandContextItem(shuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle };
         this._repeatCommand = new CommandContextItem(repeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat };
