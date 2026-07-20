@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
@@ -115,6 +115,20 @@ internal sealed class SettingsManager : JsonSettingsManager
         Strings.Settings_ShowSkipCommandsInDock_Subtitle!,
         true);
 
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _commandPaletteIconTheme = new(
+        Namespaced("CommandPaletteIconTheme"),
+        Resource("Settings_CommandPaletteIconTheme_Title"),
+        Resource("Settings_CommandPaletteIconTheme_Subtitle"),
+        CreateIconThemeChoices());
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _dockIconTheme = new(
+        Namespaced("DockIconTheme"),
+        Resource("Settings_DockIconTheme_Title"),
+        Resource("Settings_DockIconTheme_Subtitle"),
+        CreateIconThemeChoices());
+
     public bool ShowThumbnails => this._showThumbnailsOption.Value;
 
     public bool ShowDetails => this._showDetailsOption.Value;
@@ -146,6 +160,12 @@ internal sealed class SettingsManager : JsonSettingsManager
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
 
+    public string CommandPaletteIconThemeId =>
+        IconThemeCatalog.ResolveSelection(this._commandPaletteIconTheme.Value);
+
+    public string DockIconThemeId =>
+        IconThemeCatalog.ResolveSelection(this._dockIconTheme.Value);
+
     public SettingsManager()
     {
         this.FilePath = SettingsJsonPath();
@@ -154,12 +174,14 @@ internal sealed class SettingsManager : JsonSettingsManager
             Namespaced("Layout.PalettePage"),
             Strings.Settings_Group_PalettePage!,
             showSeparator: false));
+        this.Settings.Add(this._commandPaletteIconTheme);
         this.Settings.Add(this._showCurrentMediaAtTopLevel);
         this.Settings.Add(this._showDetailsOption);
         this.Settings.Add(this._showSkipCommands);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.Dock"),
             Strings.Settings_Group_Dock!));
+        this.Settings.Add(this._dockIconTheme);
         this.Settings.Add(this._showSkipCommandsInDockBand);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.CommandBehavior"),
@@ -198,6 +220,25 @@ internal sealed class SettingsManager : JsonSettingsManager
     {
         return $"{DefaultNamespace}.{propertyName}";
     }
+
+    private static List<ChoiceSetSetting.Choice> CreateIconThemeChoices()
+    {
+        var defaultTheme = IconThemeCatalog.DefaultThemeInfo;
+        var choices = new List<ChoiceSetSetting.Choice>
+        {
+            new(
+                Resource("Settings_IconTheme_Default")
+                    .Replace("{0}", defaultTheme.DisplayName, StringComparison.Ordinal),
+                IconThemeCatalog.DefaultSelectionId),
+        };
+
+        choices.AddRange(IconThemeCatalog.Themes.Select(
+            static theme => new ChoiceSetSetting.Choice(theme.DisplayName, theme.Id)));
+        return choices;
+    }
+
+    private static string Resource(string name)
+        => Strings.ResourceManager.GetString(name, Strings.Culture) ?? name;
 
     private static string SettingsJsonPath()
     {

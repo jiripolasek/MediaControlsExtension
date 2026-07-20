@@ -8,19 +8,36 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal static class PlaybackActionPolicy
 {
-    public static PlaybackActionPresentation GetPresentation(MediaSource? source)
+    public static PlaybackActionPresentation GetPresentation(
+        MediaSource? source,
+        IIconService iconService,
+        IconSurface surface)
     {
+        ArgumentNullException.ThrowIfNull(iconService);
+
         if (source is null)
         {
-            return new(PlaybackIntent.Toggle, Strings.Command_PlayPause!, Icons.PlayPause);
+            return new(
+                PlaybackIntent.Toggle,
+                Strings.Command_PlayPause!,
+                iconService.GetIcon(ThemedIcon.PlayPause, surface));
         }
 
         var intent = ResolveIntent(source.DisplayedIsPlaying, source.CanPause, source.CanStop);
         return intent switch
         {
-            PlaybackIntent.Play => new(intent, Strings.Command_Play!, Icons.PlayColorful),
-            PlaybackIntent.Stop => new(intent, Strings.Command_Stop!, Icons.PauseColorful),
-            _ => new(intent, Strings.Command_Pause!, Icons.PauseColorful)
+            PlaybackIntent.Play => new(
+                intent,
+                Strings.Command_Play!,
+                iconService.GetIcon(ThemedIcon.Play, surface)),
+            PlaybackIntent.Stop => new(
+                intent,
+                Strings.Command_Stop!,
+                iconService.GetIcon(ThemedIcon.Pause, surface)),
+            _ => new(
+                intent,
+                Strings.Command_Pause!,
+                iconService.GetIcon(ThemedIcon.Pause, surface))
         };
     }
 

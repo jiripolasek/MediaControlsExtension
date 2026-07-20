@@ -11,6 +11,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly SettingsManager _settingsManager;
     private readonly YetAnotherHelper _yetAnotherHelper;
     private readonly MediaService _mediaService;
+    private readonly IIconService _iconService;
+    private readonly IconSurface _iconSurface;
     private readonly Lock _refreshLock = new();
     private readonly bool _isBandPage;
 
@@ -28,17 +30,23 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         SystemVolumeService systemVolumeService,
         SettingsManager settingsManager,
         YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
         bool asBandPage = false)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(systemVolumeService);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._isBandPage = asBandPage;
+        this._iconSurface = asBandPage
+            ? IconSurface.Dock
+            : IconSurface.CommandPalette;
         this._settingsManager = settingsManager;
         this._yetAnotherHelper = yetAnotherHelper;
         this._mediaService = mediaService;
+        this._iconService = iconService;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
 
         this.Icon = Icons.MainIcon;
@@ -56,7 +64,16 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
         this._mediaService.MediaSourcesChanged += (_, _) =>
         {
-            List<MediaSourceListItem> mediaSourceListItems = [.. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(this._mediaService, mediaSource, this._settingsManager, this._yetAnotherHelper, this._isBandPage))];
+            List<MediaSourceListItem> mediaSourceListItems =
+            [
+                .. this._mediaService.Sources.Select(mediaSource => new MediaSourceListItem(
+                    this._mediaService,
+                    mediaSource,
+                    this._settingsManager,
+                    this._yetAnotherHelper,
+                    this._iconService,
+                    this._isBandPage)),
+            ];
             MediaSourceListItem[] oldItems;
             lock (this._refreshLock)
             {
@@ -95,15 +112,29 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             Icon = Icons.MainIcon
         };
 
-        this._playPauseCurrentSessionItem = new NowPlayingListItem(this._mediaService, this._settingsManager, this._yetAnotherHelper, this._isBandPage);
+        this._playPauseCurrentSessionItem = new NowPlayingListItem(
+            this._mediaService,
+            this._settingsManager,
+            this._yetAnotherHelper,
+            this._iconService,
+            this._isBandPage);
         this._bandFirstItem = this._isBandPage
-            ? new DockHeadItem(this._mediaService, this._settingsManager, this._yetAnotherHelper)
+            ? new DockHeadItem(
+                this._mediaService,
+                this._settingsManager,
+                this._yetAnotherHelper,
+                this._iconService)
             : null;
-        this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle, Icon = Icons.SkipNextTrack };
-        this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle, Icon = Icons.SkipPreviousTrack };
+        this._nextTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, this._yetAnotherHelper)) { Title = Strings.Command_NextTrack, Subtitle = Strings.Command_NextTrack_Subtitle };
+        this._prevTrackCurrentSessionItem = new(new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, this._yetAnotherHelper)) { Title = Strings.Command_PreviousTrack, Subtitle = Strings.Command_PreviousTrack_Subtitle };
+        this.UpdateTrackNavigationIcons();
         this._volumeItem = this._isBandPage
             ? null
-            : new(systemVolumeService, this._yetAnotherHelper);
+            : new(
+                systemVolumeService,
+                this._yetAnotherHelper,
+                this._iconService,
+                this._iconSurface);
 
         if (this._isBandPage)
         {
@@ -120,11 +151,17 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     {
         if (this._nextTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand nextTrackCommand)
         {
-            this._nextTrackCurrentSessionItem.UpdateIcon(nextTrackCommand.CanExecute() ? Icons.SkipNextTrack : Icons.SkipNextTrackDisabled);
+            this._nextTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipNext,
+                this._iconSurface,
+                nextTrackCommand.CanExecute() ? IconState.Default : IconState.Disabled));
         }
         if (this._prevTrackCurrentSessionItem?.Command is MediaCurrentSessionCommand prevTrackCommand)
         {
-            this._prevTrackCurrentSessionItem.UpdateIcon(prevTrackCommand.CanExecute() ? Icons.SkipPreviousTrack : Icons.SkipPreviousTrackDisabled);
+            this._prevTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipPrevious,
+                this._iconSurface,
+                prevTrackCommand.CanExecute() ? IconState.Default : IconState.Disabled));
         }
 
         this.RebuildAndRaiseIfChanged();
@@ -133,7 +170,17 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
         this.ShowDetails = !this._isBandPage && this._settingsManager.ShowDetails;
-        this.RebuildAndRaiseIfChanged();
+        this.UpdateCurrentMediaItems();
+    }
+
+    private void UpdateTrackNavigationIcons()
+    {
+        this._nextTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.SkipNext,
+            this._iconSurface));
+        this._prevTrackCurrentSessionItem.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.SkipPrevious,
+            this._iconSurface));
     }
 
     /// <summary>

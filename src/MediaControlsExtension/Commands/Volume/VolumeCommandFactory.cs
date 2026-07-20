@@ -12,7 +12,9 @@ internal static class VolumeCommandFactory
 
     public static CommandItem[] CreatePresetCommandItems(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
+        IconSurface iconSurface)
     {
         var items = new CommandItem[PresetPercentagesValues.Length];
         for (var i = 0; i < PresetPercentagesValues.Length; i++)
@@ -21,7 +23,10 @@ internal static class VolumeCommandFactory
             items[i] = new(command)
             {
                 Title = command.Name,
-                Icon = command.Icon,
+                Icon = VolumePresentation.GetThemedIcon(
+                    PresetPercentagesValues[i],
+                    iconService,
+                    iconSurface),
             };
         }
 

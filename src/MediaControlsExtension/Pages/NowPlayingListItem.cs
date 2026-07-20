@@ -18,6 +18,8 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
     private readonly MediaService _mediaService;
     private readonly SettingsManager _settingsManager;
+    private readonly IIconService _iconService;
+    private readonly IconSurface _iconSurface;
     private readonly ThrottledAction _updateMediaInfo;
 
     private readonly Lock _currentMediaSourceLock = new();
@@ -61,24 +63,39 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         }
     }
 
-    public NowPlayingListItem(MediaService mediaService, SettingsManager settingsManager, YetAnotherHelper yetAnotherHelper, bool asBandPage) : base(new NoOpCommand())
+    public NowPlayingListItem(
+        MediaService mediaService,
+        SettingsManager settingsManager,
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService,
+        bool asBandPage) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(settingsManager);
+        ArgumentNullException.ThrowIfNull(iconService);
 
         this._isBandPage = asBandPage;
+        this._iconSurface = asBandPage
+            ? IconSurface.Dock
+            : IconSurface.CommandPalette;
         this._mediaService = mediaService;
         this._settingsManager = settingsManager;
+        this._iconService = iconService;
         this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
 
         this._switchToApplicationCommand = new(this._mediaService);
-        this.Command = this._playPauseCommand = new(this._mediaService, this._settingsManager, yetAnotherHelper)
+        this.Command = this._playPauseCommand = new(
+            this._mediaService,
+            this._settingsManager,
+            yetAnotherHelper,
+            this._iconService,
+            this._iconSurface)
         {
             Id = "com.jpsoftworks.cmdpal.mediacontrols.nowplaying",
-            Icon = Icons.NoMedia
+            Icon = this._iconService.GetIcon(ThemedIcon.NoMedia, this._iconSurface)
         };
-        this._nextTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack, Icon = Icons.SkipNextTrack };
-        this._previousTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack, Icon = Icons.SkipPreviousTrack };
+        this._nextTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipNext, this._iconSurface) };
+        this._previousTrackCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack, Icon = this._iconService.GetIcon(ThemedIcon.SkipPrevious, this._iconSurface) };
         var toggleRepeatCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat };
         var toggleShuffleCommand = new MediaCurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle };
 #if FF_ENABLE_FULL_METADATA_PAGE
@@ -106,7 +123,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         ];
 
         this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;
-        this.UpdateIcon(Icons.PlayPause);
+        this.UpdateIcon(this._iconService.GetIcon(ThemedIcon.PlayPause, this._iconSurface));
 
         // Subscribe first, then seed by re-reading inside the lock: a handler that
         // ran in between installed a value the service already held, so the locked
@@ -176,7 +193,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             if (mediaSource is not { HasProperties: true })
             {
                 this.Title = this._isBandPage ? string.Empty : Strings.NowPlaying_NothingPlaying!;
-                this.Icon = Icons.NoMedia;
+                this.Icon = this._iconService.GetIcon(ThemedIcon.NoMedia, this._iconSurface);
                 this.Subtitle = this._isBandPage ? string.Empty : Strings.NowPlaying_Subtitle!;
 
                 this._playPauseCommand.UpdatePresentation(null, showName: !this._isBandPage);
@@ -186,6 +203,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             }
             else
             {
+                this.UpdateNavigationCommandIcons();
                 var playbackAction = this._playPauseCommand.UpdatePresentation(
                     mediaSource,
                     showName: !this._isBandPage);
@@ -249,6 +267,23 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
         this.ScheduleUpdate();
+    }
+
+    private void UpdateNavigationCommandIcons()
+    {
+        if (this._nextTrackCommand is Command nextTrackCommand)
+        {
+            nextTrackCommand.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipNext,
+                this._iconSurface));
+        }
+
+        if (this._previousTrackCommand is Command previousTrackCommand)
+        {
+            previousTrackCommand.UpdateIcon(this._iconService.GetIcon(
+                ThemedIcon.SkipPrevious,
+                this._iconSurface));
+        }
     }
 
     private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)

@@ -6,10 +6,11 @@
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem
+internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem, IIconThemeAware
 {
     private readonly SettingsManager _settingsManager;
     private readonly SetMuteMediaInvokableCommand _command;
+    private readonly IIconService _iconService;
     private readonly QueryCommandProcessor _queryProcessor = new([
         new("mu", "Mute"),
         new("media", "Media Controls: Mute"),
@@ -19,14 +20,21 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem
     public FallbackMuteCommandItem(
         SettingsManager settingsManager,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_Mute, "com.jpsoftworks.cmdpal.mediacontrols.mute")
     {
         this._settingsManager = settingsManager;
-        this.Command = this._command = new(true, systemVolumeService, yetAnotherHelper) { Name = "" };
+        this._iconService = iconService;
+        this.Command = this._command = new(true, systemVolumeService, yetAnotherHelper, iconService) { Name = "" };
         this.Title = "";
         this.Subtitle = Strings.Command_Mute_Subtitle!;
     }
+
+    public void RefreshIconTheme()
+        => this._command.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.VolumeMute,
+            IconSurface.CommandPalette));
 
     public override void UpdateQuery(string query)
     {

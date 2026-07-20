@@ -6,10 +6,11 @@
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem
+internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem, IIconThemeAware
 {
     private readonly SettingsManager _settingsManager;
     private readonly SetMuteMediaInvokableCommand _command;
+    private readonly IIconService _iconService;
     private readonly QueryCommandProcessor _queryProcessor = new([
         new("un", "Unmute"),
         new("media", "Media Controls: Unmute"),
@@ -19,14 +20,21 @@ internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem
     public FallbackUnmuteCommandItem(
         SettingsManager settingsManager,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_Unmute, "com.jpsoftworks.cmdpal.mediacontrols.unmute")
     {
         this._settingsManager = settingsManager;
-        this.Command = this._command = new(false, systemVolumeService, yetAnotherHelper) { Name = "" };
+        this._iconService = iconService;
+        this.Command = this._command = new(false, systemVolumeService, yetAnotherHelper, iconService) { Name = "" };
         this.Title = "";
         this.Subtitle = Strings.Command_Unmute_Subtitle!;
     }
+
+    public void RefreshIconTheme()
+        => this._command.UpdateIcon(this._iconService.GetIcon(
+            ThemedIcon.VolumeOff,
+            IconSurface.CommandPalette));
 
     public override void UpdateQuery(string query)
     {

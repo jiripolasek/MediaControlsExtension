@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -12,10 +12,11 @@ internal sealed partial class NextTrackInvokableMediaCommand : CurrentMediaSessi
 {
     public NextTrackInvokableMediaCommand(
         Task<GlobalSystemMediaTransportControlsSessionManager> manager,
-        YetAnotherHelper yetAnotherHelper) : base(manager, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)
+        YetAnotherHelper yetAnotherHelper,
+        IIconService iconService) : base(manager, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)
     {
         this.Name = Strings.Command_NextTrack!;
-        this.Icon = Icons.SkipNextTrack;
+        this.Icon = iconService.GetIcon(ThemedIcon.SkipNext, IconSurface.CommandPalette);
     }
 }
 

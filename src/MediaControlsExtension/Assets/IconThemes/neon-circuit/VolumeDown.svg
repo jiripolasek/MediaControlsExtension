@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="speaker" gradientUnits="userSpaceOnUse" x1="4" y1="7" x2="34" y2="41"><stop stop-color="#5ffcff"/><stop offset=".5" stop-color="#13d5ff"/><stop offset="1" stop-color="#835cff"/></linearGradient>
+    <linearGradient id="direction" gradientUnits="userSpaceOnUse" x1="35" y1="23" x2="45" y2="40"><stop stop-color="#ff9b55"/><stop offset=".5" stop-color="#ff5757"/><stop offset="1" stop-color="#ff2d55"/></linearGradient>
+  </defs>
+  <path fill="#111528" stroke="#13d5ff" stroke-opacity=".22" stroke-width="8" stroke-linejoin="bevel" d="M5 18h10L27 8h6v32h-6L15 30H5Z"/>
+  <path fill="#111528" stroke="url(#speaker)" stroke-width="3.5" stroke-linejoin="bevel" d="M5 18h10L27 8h6v32h-6L15 30H5Z"/>
+  <path fill="#a7fbff" d="M8 21h8v4H8zM25 14h3v9h-3z"/>
+  <path fill="#ff4fd8" d="M25 30h3v5h-3z"/>
+  <path fill="#ff3e59" stroke="#ff3e59" stroke-opacity=".22" stroke-width="7" stroke-linejoin="bevel" d="M35 23h11l-5.5 17Z"/>
+  <path fill="url(#direction)" stroke="#ff9b72" stroke-width="2.5" stroke-linejoin="bevel" d="M35 23h11l-5.5 17Z"/>
+</svg>
