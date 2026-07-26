@@ -40,15 +40,15 @@ internal static class Icons
         @"Assets\IconThemes\colorful\NoMedia.svg",
         @"Assets\IconThemes\colorful\NoMedia.svg");
 
-    public static IconInfo ToggleMute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\ToggleMute.svg");
+    public static IconInfo ToggleMute { get; } = new(SegoeFluentIconGlyphs.ToggleMute);
 
-    public static IconInfo Volume_Mute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeMute.svg");
-    public static IconInfo Volume_Up { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeUp.svg");
-    public static IconInfo Volume_Down { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeDown.svg");
-    public static IconInfo Volume_Low { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeLow.svg");
-    public static IconInfo Volume_Max { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeHigh.svg");
-    public static IconInfo Volume_Mid { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeMedium.svg");
-    public static IconInfo Volume_Unmute { get; } = IconHelpers.FromRelativePath(@"Assets\IconThemes\colorful\VolumeOff.svg");
+    public static IconInfo Volume_Mute { get; } = new(SegoeFluentIconGlyphs.VolumeMute);
+    public static IconInfo Volume_Up { get; } = new(SegoeFluentIconGlyphs.VolumeUp);
+    public static IconInfo Volume_Down { get; } = new(SegoeFluentIconGlyphs.VolumeDown);
+    public static IconInfo Volume_Low { get; } = new(SegoeFluentIconGlyphs.VolumeLow);
+    public static IconInfo Volume_Max { get; } = new(SegoeFluentIconGlyphs.VolumeHigh);
+    public static IconInfo Volume_Mid { get; } = new(SegoeFluentIconGlyphs.VolumeMedium);
+    public static IconInfo Volume_Unmute { get; } = new(SegoeFluentIconGlyphs.VolumeOff);
 
     public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(@"Assets\Square40x40-lightunplated.png", @"Assets\Square40x40-unplated.png");
 
@@ -71,4 +71,17 @@ internal static class Icons
 
     public static IconInfo NextApp { get; } = new IconInfo("\uE8B5");
     public static IconInfo PreviousApp { get; } = new IconInfo("\uEA52");
+}
+
+internal static class SegoeFluentIconGlyphs
+{
+    public const string VolumeMute = "\uE74F";
+    public const string VolumeOff = "\uE992";
+    public const string VolumeLow = "\uE993";
+    public const string VolumeMedium = "\uE994";
+    public const string VolumeHigh = "\uE995";
+
+    public const string ToggleMute = VolumeMute;
+    public const string VolumeUp = VolumeHigh;
+    public const string VolumeDown = VolumeLow;
 }
