@@ -5,23 +5,23 @@
 
 </div>
 
-Take full control of your media playback without ever leaving your workflow. Media Controls for [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) lets you manage audio and video seamlessly across your favorite apps—all from one convenient place. Instantly play, pause, skip tracks, or jump back, and easily switch between open media players, so you’re always in charge of what’s playing.
+Take full control of your media playback without leaving your workflow. Media Controls for [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) brings Windows media sessions and system audio controls together in the Command Palette and Dock.
 
-This extension supports popular applications, including:
+The extension works with desktop apps, Microsoft Store apps, and browser tabs that publish a Windows Global System Media Transport Controls (GSMTC) session.
 
-- Apple Music
-- Spotify
-- foobar2000
-- VLC UWP
-- Media Player
-- Microsoft Edge, Google Chrome and other web browsers
-- Netflix, Disney+, HBO Max, SkyShowtime, Amazon Prime Video and other video players
-- YouTube, SoundCloud and other web players
-- and many more
+## Features
 
-With intuitive commands for shuffle, loop, and quick player switching, it’s the perfect companion for anyone who juggles multiple media sources while working.
+- **Playback controls** — Play, pause, stop, skip tracks, and change shuffle or repeat mode when the active player makes those actions available.
+- **Multiple media sessions** — Browse every active session, switch to its application, and move between players. Optionally pause other sessions when starting a new one.
+- **Rich media details** — View title, artist, album, artwork, player, track length, playback state, and additional metadata supplied by the player.
+- **System volume controls** — See the volume of the default Windows playback device, mute or unmute, adjust the level, or jump to 0%, 25%, 50%, 75%, or 100%.
+- **Command Palette integration** — Put Now Playing and volume actions on the home page, surface media commands in global search, keep the palette open for consecutive actions, and show action notifications.
+- **Dock controls** — Add a compact media band with current playback and optional previous/next controls.
+- **Personalization** — Choose separate icon themes for the Command Palette and Dock, use album art in the session list, and configure which commands appear on each surface.
 
-Enhance your productivity and streamline your listening or viewing experience by bringing powerful media controls right into your Command Palette.
+Popular compatible players include Spotify, Apple Music, foobar2000, Media Player, VLC UWP, and media websites running in Edge, Chrome, other Chromium-based browsers, or Firefox. Exact controls and metadata depend on what each player exposes to Windows.
+
+See the [player compatibility and GSMTC guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, optional integrations, and troubleshooting.
 
 ## Installation
 
@@ -40,13 +40,17 @@ Enhance your productivity and streamline your listening or viewing experience by
 - From the list of extensions, select *Media Controls for Command Palette*.
 
 ### WinGet
-- Open command line 
-- Enter the following command:
-	```pwsh
-	winget install -e --id JiriPolasek.MediaControlsforCommandPalette
-	```
+
+- Open a terminal.
+- Run:
+
+  ```pwsh
+  winget install -e --id JiriPolasek.MediaControlsforCommandPalette
+  ```
+
 ### Manual installation
-- Download the MSIX installer from the [Releases](https://github.com/jiripolasek/MediaControlsExtension/releases) section and run it
+
+- Download the MSIX installer from the [Releases](https://github.com/jiripolasek/MediaControlsExtension/releases) section and run it.
 
 ## Licence
 
