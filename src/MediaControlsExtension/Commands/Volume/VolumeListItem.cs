@@ -22,13 +22,13 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
 
     public VolumeListItem(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface)
         : this(
-            new(systemVolumeService, yetAnotherHelper),
+            new(systemVolumeService, resultFactory),
             systemVolumeService,
-            yetAnotherHelper,
+            resultFactory,
             iconService,
             iconSurface)
     {
@@ -37,13 +37,13 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
     private VolumeListItem(
         ToggleMuteMediaInvokableCommand toggleMuteCommand,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface)
         : base(toggleMuteCommand)
     {
         ArgumentNullException.ThrowIfNull(systemVolumeService);
-        ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
 
         this._toggleMuteCommand = toggleMuteCommand;
@@ -54,9 +54,8 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         this._toggleMuteCommand.Id = CommandId;
 
         this.Title = Strings.Toast_Volume!;
-        this.Subtitle = string.Empty;
         this.Icon = iconService.GetIcon(ThemedIcon.ToggleMute, iconSurface);
-        this.MoreCommands = CreateMoreCommands(systemVolumeService, yetAnotherHelper);
+        this.MoreCommands = CreateMoreCommands(systemVolumeService, resultFactory);
 
         // Subscribe before seeding. If a notification wins the race with the initial
         // read, _hasObservedState prevents the older seed from replacing it.
@@ -84,22 +83,22 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
 
     private static IContextItem[] CreateMoreCommands(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        MediaCommandResultFactory resultFactory)
     {
         return
         [
-            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, systemVolumeService, yetAnotherHelper))
+            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, systemVolumeService, resultFactory))
             {
                 RequestedShortcut = Chords.VolumeUp,
                 Icon = Icons.Volume_Up,
             },
-            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, systemVolumeService, yetAnotherHelper))
+            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, systemVolumeService, resultFactory))
             {
                 RequestedShortcut = Chords.VolumeDown,
                 Icon = Icons.Volume_Down,
             },
             new Separator(),
-            .. VolumeCommandFactory.CreatePresetContextItems(systemVolumeService, yetAnotherHelper),
+            .. VolumeCommandFactory.CreatePresetContextItems(systemVolumeService, resultFactory),
         ];
     }
 

@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Łatwo zarządzaj odtwarzaniem i przełączaj się między aplikacjami multimedialnymi</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Odtwarzanie</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Głośność systemowa</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sesje multimedialne</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Polecenia globalne</value>
   </data>

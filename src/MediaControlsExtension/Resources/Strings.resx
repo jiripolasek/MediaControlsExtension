@@ -339,6 +339,15 @@
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Now playing {0}</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Playback</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>System volume</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Media sessions</value>
+  </data>
   <data name="Toast_Muted" xml:space="preserve">
     <value>Muted</value>
   </data>

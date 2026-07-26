@@ -20,15 +20,14 @@ internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem, I
     public FallbackUnmuteCommandItem(
         SettingsManager settingsManager,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_Unmute, "com.jpsoftworks.cmdpal.mediacontrols.unmute")
     {
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this.Command = this._command = new(false, systemVolumeService, yetAnotherHelper, iconService) { Name = "" };
+        this.Command = this._command = new(false, systemVolumeService, resultFactory, iconService) { Name = "" };
         this.Title = "";
-        this.Subtitle = Strings.Command_Unmute_Subtitle!;
     }
 
     public void RefreshIconTheme()

@@ -10,7 +10,7 @@ internal sealed class NiceIconInfo : IEquatable<NiceIconInfo>
 {
     private readonly IconDataSource _source;
     private readonly string? _stringIcon;
-    private readonly ThumbnailInfo? _thumbnailInfo;
+    private readonly string? _thumbnailHash;
 
     public IconInfo? IconInfo { get; }
 
@@ -18,7 +18,7 @@ internal sealed class NiceIconInfo : IEquatable<NiceIconInfo>
     {
         this._source = IconDataSource.String;
         this._stringIcon = icon;
-        this._thumbnailInfo = null;
+        this._thumbnailHash = null;
         this.IconInfo = new(icon);
     }
 
@@ -33,17 +33,17 @@ internal sealed class NiceIconInfo : IEquatable<NiceIconInfo>
         this.IconInfo = iconInfo;
         this._source = IconDataSource.DoubleString;
         this._stringIcon = null;
-        this._thumbnailInfo = null;
+        this._thumbnailHash = null;
     }
 
     public NiceIconInfo(ThumbnailInfo thumbnailInfo)
     {
         ArgumentNullException.ThrowIfNull(thumbnailInfo);
 
-        this._thumbnailInfo = thumbnailInfo;
+        this._thumbnailHash = thumbnailInfo.Hash;
         this._source = IconDataSource.Binary;
         this._stringIcon = null;
-        this.IconInfo = thumbnailInfo.Stream != null ? IconInfo.FromStream(thumbnailInfo.Stream) : null;
+        this.IconInfo = thumbnailInfo.GetIcon();
     }
 
     public bool Equals(NiceIconInfo? other)
@@ -66,7 +66,7 @@ internal sealed class NiceIconInfo : IEquatable<NiceIconInfo>
         return this._source switch
         {
             IconDataSource.String => StringComparer.Ordinal.Equals(this._stringIcon, other._stringIcon),
-            IconDataSource.Binary => StringComparer.Ordinal.Equals(this._thumbnailInfo?.Hash, other._thumbnailInfo?.Hash),
+            IconDataSource.Binary => StringComparer.Ordinal.Equals(this._thumbnailHash, other._thumbnailHash),
             IconDataSource.DoubleString => this.IconInfo!.Light.Icon == other.IconInfo!.Light.Icon && this.IconInfo.Dark.Icon == other.IconInfo.Dark.Icon,
             _ => false
         };
@@ -82,7 +82,7 @@ internal sealed class NiceIconInfo : IEquatable<NiceIconInfo>
         return this._source switch
         {
             IconDataSource.String => HashCode.Combine(this._source, this._stringIcon),
-            IconDataSource.Binary => HashCode.Combine(this._source, this._thumbnailInfo?.Hash),
+            IconDataSource.Binary => HashCode.Combine(this._source, this._thumbnailHash),
             IconDataSource.DoubleString => HashCode.Combine(this._source, this.IconInfo!.Light.Icon, this.IconInfo.Dark.Icon),
             _ => this._source.GetHashCode()
         };

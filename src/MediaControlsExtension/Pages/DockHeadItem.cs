@@ -8,53 +8,59 @@ namespace JPSoftworks.MediaControlsExtension.Pages;
 
 internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 {
-    private readonly MediaService _mediaService;
+    private readonly IMediaService _mediaService;
+    private readonly MediaSessionViewModelCache _viewModels;
     private readonly SettingsManager _settingsManager;
     private readonly IIconService _iconService;
     private readonly ThrottledAction _updateMediaInfo;
 
-    private readonly Lock _currentMediaSourceLock = new();
+    private readonly Lock _currentSessionLock = new();
     private readonly Lock _updateLock = new();
     private readonly IContextItem[] _mediaContextCommands;
 
     private readonly BringAssociatedAppToFrontCommand _primaryMediaCommand;
     private readonly NoOpCommand _noOpCommand = new();
 
-    private MediaSource? _currentMediaSource;
+    private MediaSessionViewModel? _currentSession;
     private NiceIconInfo? _lastIcon;
     private bool _disposed;
 
     public DockHeadItem(
-        MediaService mediaService,
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(iconService);
 
         this._mediaService = mediaService;
+        this._viewModels = viewModels;
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this._updateMediaInfo = new(150, this.UpdateCurrentMediaSource);
+        this._updateMediaInfo = new(150, "DockHeadItem.Update", this.UpdateCurrentSession);
 
         this._mediaContextCommands = [
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, yetAnotherHelper) { Name = Strings.Command_NextTrack }) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper) { Name = Strings.Command_PreviousTrack }) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, resultFactory) { Name = Strings.Command_NextTrack }) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, resultFactory) { Name = Strings.Command_PreviousTrack }) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, yetAnotherHelper) { Name = Strings.Command_ToggleRepeat }) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, yetAnotherHelper) { Name = Strings.Command_ToggleShuffle }) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, resultFactory) { Name = Strings.Command_ToggleRepeat }) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, resultFactory) { Name = Strings.Command_ToggleShuffle }) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._settingsManager, this._mediaService), yetAnotherHelper) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
 
-        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(this._mediaService);
+        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(
+            this._mediaService,
+            this._viewModels);
         this.Command = this._noOpCommand;
 
         this.Title = string.Empty;
@@ -64,56 +70,74 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
         // Subscribe first, then seed by re-reading inside the lock; see
         // NowPlayingListItem for why the locked re-read cannot go stale.
-        this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
+        this._mediaService.CurrentSessionChanged += this.MediaServiceOnCurrentSessionChanged;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-        lock (this._currentMediaSourceLock)
+        lock (this._currentSessionLock)
         {
-            this.SetCurrentMediaSourceUnderLock(this._mediaService.CurrentSource);
+            this.SetCurrentSessionUnderLock(this.ResolveCurrentSession());
         }
     }
 
-    private void CurrentMediaSourceChanged(object? sender, MediaSource? arg)
+    private void MediaServiceOnCurrentSessionChanged(object? sender, EventArgs args)
     {
-        lock (this._currentMediaSourceLock)
+        lock (this._currentSessionLock)
         {
-            this.SetCurrentMediaSourceUnderLock(arg);
+            if (!this._disposed)
+            {
+                this.SetCurrentSessionUnderLock(this.ResolveCurrentSession());
+            }
         }
     }
 
-    private void SetCurrentMediaSourceUnderLock(MediaSource? mediaSource)
+    private MediaSessionViewModel? ResolveCurrentSession() =>
+        this._mediaService.CurrentSession is { } session
+            ? this._viewModels.GetOrCreate(session)
+            : null;
+
+    private void SetCurrentSessionUnderLock(MediaSessionViewModel? viewModel)
     {
         if (this._disposed)
         {
             return;
         }
 
-        if (this._currentMediaSource != null)
+        if (ReferenceEquals(this._currentSession, viewModel))
         {
-            this._currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            this._updateMediaInfo.Invoke();
+            return;
         }
 
-        this._currentMediaSource = mediaSource;
-
-        if (this._currentMediaSource != null)
+        if (this._currentSession is not null)
         {
-            this._currentMediaSource.PropChanged += this.MediaSourceOnPropChanged;
+            this._currentSession.Changed -= this.CurrentSessionOnChanged;
+        }
+
+        this._currentSession = viewModel;
+        if (viewModel is not null)
+        {
+            viewModel.Changed += this.CurrentSessionOnChanged;
         }
 
         this._updateMediaInfo.Invoke();
     }
 
-    private void UpdateCurrentMediaSource()
+    private void UpdateCurrentSession()
     {
-        lock (this._currentMediaSourceLock)
+        MediaSessionViewModel? currentSession;
+        lock (this._currentSessionLock)
         {
-            if (!this._disposed)
+            if (this._disposed)
             {
-                this.Update(this._currentMediaSource);
+                return;
             }
+
+            currentSession = this._currentSession;
         }
+
+        this.Update(currentSession);
     }
 
-    private void Update(MediaSource? mediaSource)
+    private void Update(MediaSessionViewModel? viewModel)
     {
         lock (this._updateLock)
         {
@@ -122,7 +146,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 return;
             }
 
-            if (mediaSource is not { HasProperties: true })
+            if (viewModel is not { IsAvailable: true })
             {
                 this.Title = "";
                 this.Subtitle = "";
@@ -136,36 +160,30 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             }
             else
             {
-                this.Title = mediaSource.Name;
-                this.Subtitle = StringHelper.JoinNonEmpty(" • ", mediaSource.Artist, mediaSource.ApplicationName);
+                var properties = viewModel.MediaProperties;
+                this.Title = properties.Title;
+                this.Subtitle = StringHelper.JoinNonEmpty(
+                    " • ",
+                    properties.Artist,
+                    viewModel.ApplicationName);
 
-                var iconBuildTask = BuildIcon(mediaSource, this._settingsManager.ShowThumbnails);
-                if (this._lastIcon != iconBuildTask && iconBuildTask?.IconInfo != null)
+                if (this._settingsManager.ShowThumbnails)
                 {
-                    this._lastIcon = iconBuildTask;
-                    this.UpdateIcon(iconBuildTask.IconInfo);
+                    viewModel.RequestArtwork();
+                }
+
+                var icon = MediaSessionIcons.CreateDisplayIcon(
+                    viewModel,
+                    this._settingsManager.ShowThumbnails);
+                if (this._lastIcon != icon && icon.IconInfo is not null)
+                {
+                    this._lastIcon = icon;
+                    this.UpdateIcon(icon.IconInfo);
                 }
 
                 this.Command = this._primaryMediaCommand;
                 this.MoreCommands = this._mediaContextCommands;
             }
-        }
-
-        return;
-
-        static NiceIconInfo? BuildIcon(MediaSource mediaSource, bool showThumbnail)
-        {
-            if (showThumbnail && mediaSource.ThumbnailInfo?.Stream != null)
-            {
-                return new(mediaSource.ThumbnailInfo!);
-            }
-
-            if (mediaSource.ApplicationIconPath != null)
-            {
-                return new(mediaSource.ApplicationIconPath);
-            }
-
-            return null;
         }
     }
 
@@ -174,14 +192,20 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         this.ScheduleUpdate();
     }
 
-    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)
+    private void CurrentSessionOnChanged(object? sender, EventArgs args)
     {
-        this.ScheduleUpdate();
+        lock (this._currentSessionLock)
+        {
+            if (!this._disposed && ReferenceEquals(sender, this._currentSession))
+            {
+                this._updateMediaInfo.Invoke();
+            }
+        }
     }
 
     private void ScheduleUpdate()
     {
-        lock (this._currentMediaSourceLock)
+        lock (this._currentSessionLock)
         {
             if (!this._disposed)
             {
@@ -192,8 +216,8 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
     public void Dispose()
     {
-        MediaSource? currentMediaSource;
-        lock (this._currentMediaSourceLock)
+        MediaSessionViewModel? currentSession;
+        lock (this._currentSessionLock)
         {
             lock (this._updateLock)
             {
@@ -203,17 +227,17 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 }
 
                 this._disposed = true;
-                currentMediaSource = this._currentMediaSource;
-                this._currentMediaSource = null;
+                currentSession = this._currentSession;
+                this._currentSession = null;
             }
         }
 
         this._updateMediaInfo.Dispose();
         this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-        this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
-        if (currentMediaSource != null)
+        this._mediaService.CurrentSessionChanged -= this.MediaServiceOnCurrentSessionChanged;
+        if (currentSession is not null)
         {
-            currentMediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            currentSession.Changed -= this.CurrentSessionOnChanged;
         }
     }
 }

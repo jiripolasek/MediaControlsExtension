@@ -4,26 +4,24 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class PreviousTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
     public PreviousTrackInvokableMediaCommand(
-        Task<GlobalSystemMediaTransportControlsSessionManager> manager,
-        YetAnotherHelper yetAnotherHelper,
-        IIconService iconService) : base(manager, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper)
+        IMediaService mediaService,
+        Task initialization,
+        MediaCommandResultFactory resultFactory,
+        IIconService iconService) : base(mediaService, initialization, MediaSessionOperations.SkipPreviousTrack, resultFactory)
     {
         this.Name = Strings.Command_PreviousTrack!;
         this.Icon = iconService.GetIcon(ThemedIcon.SkipPrevious, IconSurface.CommandPalette);
     }
 }
-internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSourceCommand
+internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSessionCommand
 {
-    public PreviousTrackInvokableSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
-        : base(mediaService, mediaSource, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper)
+    public PreviousTrackInvokableSpecificMediaCommand(IMediaService mediaService, MediaSession mediaSession, MediaCommandResultFactory resultFactory)
+        : base(mediaService, mediaSession, MediaSessionOperations.SkipPreviousTrack, resultFactory)
     {
         this.Name = Strings.Command_PreviousTrack!;
         this.Icon = Icons.SkipPreviousTrack;

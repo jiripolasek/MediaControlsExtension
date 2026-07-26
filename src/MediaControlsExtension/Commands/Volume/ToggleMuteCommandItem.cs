@@ -12,11 +12,11 @@ internal sealed partial class ToggleMuteCommandItem : CommandItem, IDisposable
 
     public ToggleMuteCommandItem(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface)
         : this(
-            new(systemVolumeService, yetAnotherHelper),
+            new(systemVolumeService, resultFactory),
             systemVolumeService,
             iconService,
             iconSurface)

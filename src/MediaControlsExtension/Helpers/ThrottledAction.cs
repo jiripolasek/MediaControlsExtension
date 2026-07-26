@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -14,21 +14,24 @@ internal sealed partial class ThrottledAction : IDisposable
     // Prevent disposal from overtaking an action that has been approved but not started.
     private readonly object _executionLock = new();
     private readonly Func<Task> _action;
+    private readonly string _operationName;
     private readonly Timer _timer;
     private bool _disposed;
     private bool _isRunning;
     private bool _runPending;
 
-    public ThrottledAction(int interval, Action action)
-        : this(interval, WrapAction(action))
+    public ThrottledAction(int interval, string operationName, Action action)
+        : this(interval, operationName, WrapAction(action))
     {
     }
 
-    public ThrottledAction(int interval, Func<Task> action)
+    public ThrottledAction(int interval, string operationName, Func<Task> action)
     {
         ArgumentNullException.ThrowIfNull(action);
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
 
         this._action = action;
+        this._operationName = operationName;
         this._timer = new Timer(interval) { AutoReset = false };
         this._timer.Elapsed += this.TimerOnElapsed;
     }
@@ -46,8 +49,12 @@ internal sealed partial class ThrottledAction : IDisposable
 
     public void Dispose()
     {
+        using var diagnostics = new ExtensionOperationDiagnostics(
+            $"throttled action disposal {this._operationName}");
+        diagnostics.SetStage("waiting for the execution lock");
         lock (this._executionLock)
         {
+            diagnostics.SetStage("waiting for the state lock");
             lock (this._lock)
             {
                 if (this._disposed)
@@ -62,7 +69,9 @@ internal sealed partial class ThrottledAction : IDisposable
             }
         }
 
+        diagnostics.SetStage("disposing timer");
         this._timer.Dispose();
+        diagnostics.Complete();
     }
 
     private static Func<Task> WrapAction(Action action)
@@ -104,39 +113,58 @@ internal sealed partial class ThrottledAction : IDisposable
 
         while (true)
         {
+            using var diagnostics = new ExtensionOperationDiagnostics(
+                $"throttled action {this._operationName}");
+            var outcome = "completed";
             try
             {
                 Task actionTask;
+                diagnostics.SetStage("waiting for the execution lock");
                 lock (this._executionLock)
                 {
+                    diagnostics.SetStage("waiting for the state lock");
                     lock (this._lock)
                     {
                         if (this._disposed)
                         {
                             this._isRunning = false;
+                            outcome = "stopped after disposal";
                             return;
                         }
                     }
 
+                    diagnostics.SetStage("invoking callback");
                     actionTask = this._action();
                 }
 
+                diagnostics.SetStage("awaiting callback completion");
                 await actionTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
+                outcome = "failed";
                 Logger.LogError(ex);
             }
 
+            diagnostics.SetStage("waiting for the state lock after callback");
+            var stopAfterCallback = false;
             lock (this._lock)
             {
                 if (this._disposed || !this._runPending)
                 {
                     this._isRunning = false;
-                    return;
+                    stopAfterCallback = true;
                 }
+                else
+                {
+                    this._runPending = false;
+                }
+            }
 
-                this._runPending = false;
+            diagnostics.Complete(outcome);
+            if (stopAfterCallback)
+            {
+                return;
             }
         }
     }

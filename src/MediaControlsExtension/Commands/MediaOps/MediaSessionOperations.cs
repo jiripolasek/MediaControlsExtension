@@ -1,10 +1,8 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
-
-using Windows.Media.Control;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 

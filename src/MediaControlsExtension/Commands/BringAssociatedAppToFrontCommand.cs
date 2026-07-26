@@ -1,56 +1,69 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
 // ------------------------------------------------------------
 
-using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
-using MediaSource = JPSoftworks.MediaControlsExtension.Model.MediaSource;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class BringAssociatedAppToFrontCommand : InvokableCommand
 {
-    private readonly MediaService? _mediaService;
-    private readonly MediaSource? _mediaSource;
+    private readonly IMediaService _mediaService;
+    private readonly MediaSessionViewModelCache _viewModels;
+    private readonly MediaSessionId? _sessionId;
 
-    private BringAssociatedAppToFrontCommand()
+    private BringAssociatedAppToFrontCommand(
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels,
+        MediaSessionId? sessionId)
     {
+        ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(viewModels);
+
+        this._mediaService = mediaService;
+        this._viewModels = viewModels;
+        this._sessionId = sessionId;
         this.Icon = Icons.SwitchApps;
         this.Name = Strings.Command_SwitchToApplication!;
     }
-    
-    public BringAssociatedAppToFrontCommand(MediaSource mediaSource) : this()
-    {
-        ArgumentNullException.ThrowIfNull(mediaSource);
 
-        this._mediaSource = mediaSource;
+    public BringAssociatedAppToFrontCommand(
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels)
+        : this(mediaService, viewModels, null)
+    {
     }
 
-    public BringAssociatedAppToFrontCommand(MediaService mediaService) : this()
+    public BringAssociatedAppToFrontCommand(
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels,
+        MediaSessionId sessionId)
+        : this(mediaService, viewModels, (MediaSessionId?)sessionId)
     {
-        ArgumentNullException.ThrowIfNull(mediaService);
-
-        this._mediaService = mediaService;
     }
 
     public override ICommandResult Invoke()
     {
-        var mediaSource = this._mediaSource;
-
-        if (this._mediaService != null && mediaSource == null)
+        var session = this._sessionId is { } sessionId
+            ? this._mediaService.Sessions.FirstOrDefault(
+                session => session.Id == sessionId)
+            : this._mediaService.CurrentSession;
+        if (session is null)
         {
-            mediaSource = this._mediaService.CurrentSource;
+            return CommandResult.Dismiss();
         }
 
-        if (mediaSource?.AppInfo == null)
+        var viewModel = this._viewModels.GetOrCreate(session);
+        if (viewModel?.AppInfo == null)
         {
             return CommandResult.Dismiss();
         }
 
         try
         {
-            AppWindowHelper.TryBringToFront(mediaSource.AppInfo, mediaSource.Name);
+            AppWindowHelper.TryBringToFront(
+                viewModel.AppInfo,
+                viewModel.MediaProperties.Title);
         }
         catch (Exception ex)
         {

@@ -40,6 +40,10 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		</Content>
+		<Content Update="Assets\MediaHeroPlaceholder.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
 		<Content Include="Resources\app.ico" />
 	</ItemGroup>
 
@@ -65,6 +69,10 @@
 		<PackageReference Include="Serilog.Sinks.File" />
 		<PackageReference Include="System.Text.Json" />
 		<PackageReference Include="Shmuelie.WinRTServer" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
 	</ItemGroup>
 
 	<!--

@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
@@ -7,22 +7,24 @@
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 /// <summary>
-/// Base for commands that talk to GSMTC. Maps the shared failure modes — an
-/// open operation-gate circuit and dead sessions (E_BOUNDS) — to user-facing
-/// toasts, so subclasses only implement the media operation itself.
+/// Base for commands submitted through the media service. Maps unexpected
+/// failures to user-facing toasts so subclasses only implement the operation.
 /// Cancellation is rethrown to preserve <see cref="AsyncInvokableCommand"/>'s
 /// timeout semantics.
 /// </summary>
 internal abstract class MediaInvokableCommand : AsyncInvokableCommand
 {
-    private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly MediaCommandResultFactory _resultFactory;
 
-    protected MediaInvokableCommand(YetAnotherHelper yetAnotherHelper)
+    protected MediaInvokableCommand(MediaCommandResultFactory resultFactory)
     {
-        ArgumentNullException.ThrowIfNull(yetAnotherHelper);
+        ArgumentNullException.ThrowIfNull(resultFactory);
 
-        this._yetAnotherHelper = yetAnotherHelper;
+        this._resultFactory = resultFactory;
     }
+
+    protected override ICommandResult CreateTimeoutResult() =>
+        this.CreateMediaCommandResult($"😢 {Strings.Toast_NothingHappened}");
 
     protected sealed override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
@@ -34,14 +36,8 @@ internal abstract class MediaInvokableCommand : AsyncInvokableCommand
         {
             throw;
         }
-        catch (GsmtcCircuitOpenException)
-        {
-            return this.CreateMediaCommandResult($"🚫 {Strings.Toast_MediaControlsUnavailable}");
-        }
         catch (Exception ex)
         {
-            // Typically a stale GSMTC session (E_BOUNDS); the next refresh
-            // rebinds it. Fail this press with a toast instead of leaking.
             Logger.LogError(ex);
             return this.CreateMediaCommandResult($"😢 {Strings.Toast_NothingHappened}");
         }
@@ -49,8 +45,8 @@ internal abstract class MediaInvokableCommand : AsyncInvokableCommand
 
     protected abstract Task<ICommandResult> InvokeMediaAsync(CancellationToken cancellationToken);
 
-    protected ICommandResult CreateMediaCommandResult(string message)
+    protected ICommandResult CreateMediaCommandResult(string? message)
     {
-        return this._yetAnotherHelper.GetMediaCommandResult(message);
+        return this._resultFactory.Create(message);
     }
 }

@@ -52,6 +52,8 @@ internal static class Icons
 
     public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(@"Assets\Square40x40-lightunplated.png", @"Assets\Square40x40-unplated.png");
 
+    public static IconInfo MediaHeroPlaceholder { get; } = IconHelpers.FromRelativePath(@"Assets\MediaHeroPlaceholder.png");
+
     public static IconInfo Music { get; } = new IconInfo("\uEC4F");
     public static IconInfo Video { get; } = new IconInfo("\uE714");
     public static IconInfo Image { get; } = new IconInfo("\uE8BA");

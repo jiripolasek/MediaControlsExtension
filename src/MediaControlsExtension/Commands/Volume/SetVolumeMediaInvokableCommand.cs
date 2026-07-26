@@ -10,19 +10,19 @@ internal sealed partial class SetVolumeMediaInvokableCommand : AsyncInvokableCom
 {
     private readonly int _volumePercent;
     private readonly SystemVolumeService _systemVolumeService;
-    private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly MediaCommandResultFactory _resultFactory;
 
     public SetVolumeMediaInvokableCommand(
         int volumePercent,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        MediaCommandResultFactory resultFactory)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(volumePercent);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(volumePercent, 100);
 
         this._volumePercent = volumePercent;
         this._systemVolumeService = systemVolumeService;
-        this._yetAnotherHelper = yetAnotherHelper;
+        this._resultFactory = resultFactory;
         this.Name = VolumePresentation.FormatSetVolumeName(volumePercent);
         this.Icon = VolumePresentation.GetIcon(volumePercent);
     }
@@ -33,13 +33,13 @@ internal sealed partial class SetVolumeMediaInvokableCommand : AsyncInvokableCom
         {
             var state = this._systemVolumeService.SetVolume(this._volumePercent, cancellationToken);
             var message = $"{Strings.Toast_Volume}: {VolumePresentation.FormatLevel(state.VolumePercent)}";
-            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult($"{(state.IsMuted ? "🔇" : "🔊")} {message}"));
+            return Task.FromResult(this._resultFactory.Create($"{(state.IsMuted ? "🔇" : "🔊")} {message}"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
 
-        return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!));
+        return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));
     }
 }

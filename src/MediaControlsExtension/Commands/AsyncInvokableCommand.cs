@@ -1,58 +1,67 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
-using System.Diagnostics;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class AsyncInvokableCommand : InvokableCommand
 {
-    protected virtual ICommandResult TimeoutResult { get; set; } = CommandResult.Dismiss();
-
     protected virtual TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
     public override ICommandResult Invoke()
     {
+        var diagnostics = new ExtensionOperationDiagnostics(
+            $"async command {this.GetType().FullName ?? this.GetType().Name}");
+        diagnostics.SetStage("capturing command invocation");
         var invocation = this.CreateInvocation();
-        Logger.LogDebug("Invoking async command " + this.GetType().FullName);
-        var stopwatch = Stopwatch.StartNew();
+        diagnostics.SetStage("creating timeout result");
+        var timeoutResult = this.CreateTimeoutResult();
+        diagnostics.SetStage("scheduling command body");
 
         using var timeoutCts = new CancellationTokenSource();
-        var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, timeoutCts.Token));
+        var cmdResult = Task.Run(() => SafeInvokeAsync(invocation, diagnostics, timeoutResult, timeoutCts.Token));
         if (cmdResult.Wait(this.Timeout))
         {
-            Logger.LogDebug("Async command " + this.GetType().FullName + " returned after " + stopwatch.Elapsed);
             return cmdResult.Result;
         }
 
+        diagnostics.ReportCallerTimeout(this.Timeout);
         timeoutCts.Cancel();
-        Logger.LogDebug("Async command " + this.GetType().FullName + " timed out " + stopwatch.Elapsed);
-        return this.TimeoutResult;
+        return timeoutResult;
     }
 
-    private async Task<ICommandResult> SafeInvokeAsync(
-        Func<CancellationToken, Task<ICommandResult>> invocation,
+    private static async Task<ICommandResult> SafeInvokeAsync(
+        Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> invocation,
+        ExtensionOperationDiagnostics diagnostics,
+        ICommandResult timeoutResult,
         CancellationToken cancellationToken)
     {
         try
         {
-            return await invocation(cancellationToken).ConfigureAwait(false);
+            diagnostics.SetStage("executing command body");
+            return await invocation(diagnostics, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            return this.TimeoutResult;
+            return timeoutResult;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
             return CommandResult.KeepOpen();
         }
+        finally
+        {
+            diagnostics.Complete();
+        }
     }
 
-    protected virtual Func<CancellationToken, Task<ICommandResult>> CreateInvocation() => this.InvokeAsync;
+    protected virtual Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> CreateInvocation() =>
+        (_, cancellationToken) => this.InvokeAsync(cancellationToken);
+
+    protected virtual ICommandResult CreateTimeoutResult() => CommandResult.Dismiss();
 
     protected abstract Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken);
 }

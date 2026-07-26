@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>미디어 앱 간에 쉽게 전환하고 재생을 관리하세요</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>재생</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>시스템 볼륨</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>미디어 세션</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>글로벌 명령어</value>
   </data>

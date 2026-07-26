@@ -4,18 +4,16 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class PlayPauseMediaCommand : StandaloneCurrentSessionCommand
 {
     public PlayPauseMediaCommand(
-        Task<GlobalSystemMediaTransportControlsSessionManager> sessionManager,
-        SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper,
+        IMediaService mediaService,
+        Task initialization,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService)
-        : base(sessionManager, new PlayPauseMop(settingsManager), yetAnotherHelper)
+        : base(mediaService, initialization, new PlayPauseMop(), resultFactory)
     {
         // FallbackPlayCommandItem is using this command to update the name
         // so we can't override the Name property and we've to allow to set it to empty string

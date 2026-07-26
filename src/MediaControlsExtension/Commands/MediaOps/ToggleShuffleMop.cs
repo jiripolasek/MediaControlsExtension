@@ -1,27 +1,24 @@
-﻿// ------------------------------------------------------------
-// 
+// ------------------------------------------------------------
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
+using JPSoftworks.MediaControlsExtension.Media;
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed class ToggleShuffleMop : MediaSessionOp
 {
-    public override bool CanExecute(MediaSource source) => source.CanToggleShuffle;
+    public override MediaOperation Operation => MediaOperation.ToggleShuffle;
 
-    protected override async Task<MediaSessionOperationResult> InvokeUnderGateAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
-    {
-        var canControlShuffle = session.GetPlaybackInfo().Controls.IsShuffleEnabled;
-        if (!canControlShuffle)
-        {
-            return new($"🚫 {Strings.Toast_ShuffleNotAvailable}", false);
-        }
+    public override bool CanExecute(MediaSession session) =>
+        session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.ToggleShuffle);
 
-        var isShuffleActive = session.GetPlaybackInfo().IsShuffleActive ?? false;
-        bool success = await session.TryChangeShuffleActiveAsync(!isShuffleActive);
-        return new(success ? (isShuffleActive ? $"🔀 {Strings.Toast_ShuffleDisabled}" : $"🔀 {Strings.Toast_ShuffleEnabled}") : $"🚫 {Strings.Toast_CouldNotToggleShuffle}", success);
-    }
+    protected override ValueTask<string> GetSuccessMessageAsync(
+        IMediaService mediaService,
+        MediaCommandOutcome outcome,
+        CancellationToken cancellationToken) =>
+        ValueTask.FromResult($"🔀 {Strings.Command_ToggleShuffle}");
+
+    protected override string GetFailureMessage(object status) => $"🚫 {Strings.Toast_CouldNotToggleShuffle}";
 }

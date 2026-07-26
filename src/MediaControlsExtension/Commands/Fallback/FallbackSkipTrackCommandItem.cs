@@ -4,8 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem, IIconThemeAware
@@ -21,17 +19,17 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
     ]);
 
     public FallbackSkipTrackCommandItem(
-        Task<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
+        IMediaService mediaService,
+        Task initialization,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_NextTrack, "com.jpsoftworks.cmdpal.mediacontrols.next")
     {
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper, iconService) { Name = "" };
+        this.Command = this._command = new(mediaService, initialization, resultFactory, iconService) { Name = "" };
         this.Title = "";
-        this.Subtitle = Strings.Command_NextTrack_Subtitle!;
     }
 
     public void RefreshIconTheme()

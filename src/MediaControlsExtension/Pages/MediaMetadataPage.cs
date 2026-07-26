@@ -13,16 +13,11 @@ namespace JPSoftworks.MediaControlsExtension.Pages;
 [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The visibility lifecycle cancels and disposes artwork work when the page unloads.")]
 internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
 {
-    private enum TargetMode
-    {
-        FixedSource,
-        CurrentSource
-    }
-
     private readonly Lock _stateLock = new();
-    private readonly MediaService _mediaService;
-    private readonly MediaSource? _fixedSource;
-    private readonly TargetMode _targetMode;
+    private readonly IMediaService _mediaService;
+    private readonly MediaSessionViewModelCache _viewModels;
+    private readonly MediaSessionId _sessionId;
+    private readonly OptimisticPlaybackCommand _playPauseAction;
     // Separate content blocks are always stacked vertically. FormContent keeps the
     // artwork and metadata in one Adaptive Card so they can share a column layout.
     // CmdPal's current Adaptive Cards renderer has no width breakpoint contract, so
@@ -36,7 +31,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
     private readonly IContextItem _repeatCommand;
     private readonly IContextItem _switchToApplicationCommand;
 
-    private MediaSource? _mediaSource;
+    private MediaSessionViewModel? _viewModel;
     private ThumbnailInfo? _artworkThumbnail;
     private CancellationTokenSource? _artworkCancellation;
     private string? _artworkDataUri;
@@ -44,17 +39,18 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
     private bool _isLoaded;
 
     private MediaMetadataPage(
-        MediaService mediaService,
-        MediaSource? fixedSource,
-        TargetMode targetMode,
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels,
+        MediaSessionId sessionId,
         ICommand previousCommand,
-        ICommand playPauseCommand,
+        OptimisticPlaybackCommand playPauseCommand,
         ICommand nextCommand,
         ICommand shuffleCommand,
         ICommand repeatCommand,
         ICommand switchToApplicationCommand)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(previousCommand);
         ArgumentNullException.ThrowIfNull(playPauseCommand);
         ArgumentNullException.ThrowIfNull(nextCommand);
@@ -63,8 +59,9 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
         ArgumentNullException.ThrowIfNull(switchToApplicationCommand);
 
         this._mediaService = mediaService;
-        this._fixedSource = fixedSource;
-        this._targetMode = targetMode;
+        this._viewModels = viewModels;
+        this._sessionId = sessionId;
+        this._playPauseAction = playPauseCommand;
         this._content = [this._metadata];
         this._previousCommand = new CommandContextItem(previousCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline };
         this._playPauseCommand = new CommandContextItem(playPauseCommand) { RequestedShortcut = Chords.PlayPause, Icon = Icons.PlayPause };
@@ -80,49 +77,51 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
         this._metadata.DataJson = BuildCardData(null, null);
     }
 
-    public static MediaMetadataPage ForSource(
-        MediaService mediaService,
-        MediaSource mediaSource,
-        ICommand previousCommand,
-        ICommand playPauseCommand,
-        ICommand nextCommand,
-        ICommand shuffleCommand,
-        ICommand repeatCommand,
-        ICommand switchToApplicationCommand)
+    public static MediaMetadataPage ForSession(
+        IMediaService mediaService,
+        MediaSessionViewModelCache viewModels,
+        MediaSessionViewModel viewModel,
+        MediaCommandResultFactory resultFactory,
+        IIconService iconService)
     {
-        ArgumentNullException.ThrowIfNull(mediaSource);
+        ArgumentNullException.ThrowIfNull(mediaService);
+        ArgumentNullException.ThrowIfNull(viewModels);
+        ArgumentNullException.ThrowIfNull(viewModel);
+        ArgumentNullException.ThrowIfNull(resultFactory);
+        ArgumentNullException.ThrowIfNull(iconService);
 
+        var session = viewModel.Session;
+        var playPauseCommand = new OptimisticPlaybackCommand(
+            mediaService,
+            resultFactory,
+            iconService,
+            IconSurface.CommandPalette);
+        playPauseCommand.UpdatePresentation(session);
         return new(
             mediaService,
-            mediaSource,
-            TargetMode.FixedSource,
-            previousCommand,
+            viewModels,
+            session.Id,
+            new PreviousTrackInvokableSpecificMediaCommand(
+                mediaService,
+                session,
+                resultFactory),
             playPauseCommand,
-            nextCommand,
-            shuffleCommand,
-            repeatCommand,
-            switchToApplicationCommand);
-    }
-
-    public static MediaMetadataPage ForNowPlaying(
-        MediaService mediaService,
-        ICommand previousCommand,
-        ICommand playPauseCommand,
-        ICommand nextCommand,
-        ICommand shuffleCommand,
-        ICommand repeatCommand,
-        ICommand switchToApplicationCommand)
-    {
-        return new(
-            mediaService,
-            null,
-            TargetMode.CurrentSource,
-            previousCommand,
-            playPauseCommand,
-            nextCommand,
-            shuffleCommand,
-            repeatCommand,
-            switchToApplicationCommand);
+            new NextTrackInvokableSpecificMediaCommand(
+                mediaService,
+                session,
+                resultFactory),
+            new ToggleShuffleSpecificMediaCommand(
+                mediaService,
+                session,
+                resultFactory),
+            new ToggleRepeatSpecificMediaCommand(
+                mediaService,
+                session,
+                resultFactory),
+            new BringAssociatedAppToFrontCommand(
+                mediaService,
+                viewModels,
+                session.Id));
     }
 
     public override IContent[] GetContent() => this._content;
@@ -137,16 +136,8 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             }
 
             this._isLoaded = true;
-            if (this._targetMode == TargetMode.CurrentSource)
-            {
-                this._mediaService.CurrentMediaSourceChanged += this.CurrentMediaSourceChanged;
-            }
-            else
-            {
-                this._mediaService.MediaSourcesChanged += this.MediaSourcesChanged;
-            }
-
-            this.SetMediaSourceUnderLock(this.ResolveMediaSource());
+            this._mediaService.SessionsChanged += this.MediaServiceOnSessionsChanged;
+            this.SetViewModelUnderLock(this.ResolveViewModel());
         }
     }
 
@@ -160,79 +151,64 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             }
 
             this._isLoaded = false;
-            this._mediaService.CurrentMediaSourceChanged -= this.CurrentMediaSourceChanged;
-            this._mediaService.MediaSourcesChanged -= this.MediaSourcesChanged;
-            this.SetMediaSourceUnderLock(null);
+            this._mediaService.SessionsChanged -= this.MediaServiceOnSessionsChanged;
+            this.SetViewModelUnderLock(null);
             this._snapshot = null;
             this.CancelArtworkLoadUnderLock();
         }
     }
 
-    private MediaSource? ResolveMediaSource()
+    private MediaSessionViewModel? ResolveViewModel()
     {
-        if (this._targetMode == TargetMode.CurrentSource)
-        {
-            return this._mediaService.CurrentSource;
-        }
-
-        return this._fixedSource is not null && this._mediaService.Sources.Contains(this._fixedSource)
-            ? this._fixedSource
+        var session = this._mediaService.Sessions.FirstOrDefault(
+            session => session.Id == this._sessionId);
+        return session is not null
+            ? this._viewModels.GetOrCreate(session)
             : null;
     }
 
-    private void CurrentMediaSourceChanged(object? sender, MediaSource? mediaSource)
+    private void MediaServiceOnSessionsChanged(object? sender, EventArgs args)
     {
         lock (this._stateLock)
         {
             if (this._isLoaded)
             {
-                this.SetMediaSourceUnderLock(mediaSource);
+                this.SetViewModelUnderLock(this.ResolveViewModel());
             }
         }
     }
 
-    private void MediaSourcesChanged(object? sender, EventArgs args)
+    private void SetViewModelUnderLock(MediaSessionViewModel? viewModel)
     {
-        lock (this._stateLock)
-        {
-            if (this._isLoaded)
-            {
-                this.SetMediaSourceUnderLock(this.ResolveMediaSource());
-            }
-        }
-    }
-
-    private void SetMediaSourceUnderLock(MediaSource? mediaSource)
-    {
-        if (ReferenceEquals(this._mediaSource, mediaSource))
+        if (ReferenceEquals(this._viewModel, viewModel))
         {
             this.UpdateUnderLock();
             return;
         }
 
-        if (this._mediaSource is not null)
+        if (this._viewModel is not null)
         {
-            this._mediaSource.PropChanged -= this.MediaSourceOnPropChanged;
+            this._viewModel.Changed -= this.ViewModelOnChanged;
         }
 
-        this._mediaSource = mediaSource;
+        this._viewModel = viewModel;
         this._snapshot = null;
         this.CancelArtworkLoadUnderLock();
 
-        if (mediaSource is not null)
+        if (viewModel is not null)
         {
-            mediaSource.PropChanged += this.MediaSourceOnPropChanged;
-            mediaSource.RequestHeroThumbnail();
+            viewModel.Changed += this.ViewModelOnChanged;
+            viewModel.RequestArtwork();
         }
 
         this.UpdateUnderLock();
     }
 
-    private void MediaSourceOnPropChanged(object sender, IPropChangedEventArgs args)
+    private void ViewModelOnChanged(object? sender, EventArgs args)
     {
         lock (this._stateLock)
         {
-            if (this._isLoaded && ReferenceEquals(sender, this._mediaSource))
+            if (this._isLoaded && ReferenceEquals(sender, this._viewModel))
             {
                 this.UpdateUnderLock();
             }
@@ -241,7 +217,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
 
     private void UpdateUnderLock()
     {
-        if (this._mediaSource is not { HasProperties: true } mediaSource)
+        if (this._viewModel is not { IsAvailable: true } viewModel)
         {
             this.Title = Strings.Metadata_PageTitle!;
             this.Commands = [];
@@ -250,7 +226,8 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             return;
         }
 
-        var snapshot = MediaMetadataSnapshot.FromMediaSource(mediaSource);
+        this._playPauseAction.UpdatePresentation(viewModel.Session);
+        var snapshot = MediaMetadataSnapshot.FromViewModel(viewModel);
         if (this._snapshot != snapshot)
         {
             this._snapshot = snapshot;
@@ -259,8 +236,8 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             this.Commands = this.BuildCommands(snapshot);
         }
 
-        var artworkThumbnail = mediaSource.HeroThumbnailInfo?.Stream is not null
-            ? mediaSource.HeroThumbnailInfo
+        var artworkThumbnail = viewModel.Artwork?.Stream is not null
+            ? viewModel.Artwork
             : null;
         if (!ReferenceEquals(this._artworkThumbnail, artworkThumbnail))
         {
@@ -270,7 +247,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             if (artworkThumbnail is not null)
             {
                 this._artworkCancellation = new();
-                _ = this.LoadArtworkAsync(mediaSource, artworkThumbnail, this._artworkCancellation.Token);
+                _ = this.LoadArtworkAsync(viewModel, artworkThumbnail, this._artworkCancellation.Token);
             }
         }
     }
@@ -304,7 +281,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
     }
 
     private async Task LoadArtworkAsync(
-        MediaSource mediaSource,
+        MediaSessionViewModel viewModel,
         ThumbnailInfo artworkThumbnail,
         CancellationToken cancellationToken)
     {
@@ -314,7 +291,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             lock (this._stateLock)
             {
                 if (!this._isLoaded ||
-                    !ReferenceEquals(this._mediaSource, mediaSource) ||
+                    !ReferenceEquals(this._viewModel, viewModel) ||
                     !ReferenceEquals(this._artworkThumbnail, artworkThumbnail) ||
                     this._snapshot is not { } snapshot)
                 {

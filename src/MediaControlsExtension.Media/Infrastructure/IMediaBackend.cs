@@ -1,0 +1,68 @@
+// ------------------------------------------------------------
+//
+// Copyright (c) Jiří Polášek. All rights reserved.
+//
+// ------------------------------------------------------------
+
+using System.Collections.Immutable;
+
+namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure;
+
+internal readonly record struct MediaBackendSessionId(long Value);
+
+internal enum MediaBackendSignal
+{
+    StateChanged,
+}
+
+internal enum MediaBackendCommandStatus
+{
+    Completed,
+    Failed,
+    Unavailable,
+    Unsupported,
+    SessionGone,
+}
+
+internal sealed record MediaBackendSessionSnapshot(
+    MediaBackendSessionId Id,
+    long BindingGeneration,
+    MediaPropertiesSnapshot MediaProperties,
+    MediaTimelinePropertiesSnapshot TimelineProperties,
+    MediaPlaybackState PlaybackState,
+    MediaCapabilities Capabilities);
+
+internal sealed record MediaBackendSnapshot(
+    long Revision,
+    ImmutableArray<MediaBackendSessionSnapshot> Sessions,
+    MediaBackendSessionId? CurrentSessionId,
+    MediaControlAvailability Availability);
+
+internal sealed record MediaBackendCommand(
+    MediaBackendSessionId SessionId,
+    long BindingGeneration,
+    MediaOperation Operation,
+    ImmutableArray<MediaBackendSessionId> SessionsToPause);
+
+internal sealed record MediaBackendCommandResult(
+    MediaBackendCommandStatus Status,
+    string? DiagnosticMessage);
+
+internal interface IMediaBackend : IAsyncDisposable
+{
+    Task StartAsync(CancellationToken cancellationToken);
+
+    IAsyncEnumerable<MediaBackendSignal> WatchAsync(CancellationToken cancellationToken);
+
+    Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken);
+
+    void InvalidateObservations();
+
+    Task<MediaBackendCommandResult> ExecuteAsync(
+        MediaBackendCommand command,
+        CancellationToken cancellationToken);
+
+    ValueTask<MediaArtworkContent?> GetArtworkAsync(
+        MediaArtworkKey key,
+        CancellationToken cancellationToken);
+}

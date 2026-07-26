@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Gérez la lecture et passez facilement d'une application multimédia à l'autre</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Lecture</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Volume système</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sessions multimédias</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Commandes globales</value>
   </data>

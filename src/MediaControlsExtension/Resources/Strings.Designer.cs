@@ -574,6 +574,33 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Media sessions.
+        /// </summary>
+        internal static string Page_Section_MediaSessions {
+            get {
+                return ResourceManager.GetString("Page_Section_MediaSessions", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Playback.
+        /// </summary>
+        internal static string Page_Section_Playback {
+            get {
+                return ResourceManager.GetString("Page_Section_Playback", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to System volume.
+        /// </summary>
+        internal static string Page_Section_SystemVolume {
+            get {
+                return ResourceManager.GetString("Page_Section_SystemVolume", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Search media commands or sessions….
         /// </summary>
         internal static string SearchPlaceholder {

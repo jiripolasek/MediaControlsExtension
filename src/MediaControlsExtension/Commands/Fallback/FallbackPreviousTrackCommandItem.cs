@@ -4,8 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommandItem, IIconThemeAware
@@ -19,17 +17,17 @@ internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommand
     ]);
 
     public FallbackPreviousTrackCommandItem(
-        Task<GlobalSystemMediaTransportControlsSessionManager> getSessionManagerOperation,
+        IMediaService mediaService,
+        Task initialization,
         SettingsManager settingsManager,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService)
         : base(new NoOpCommand(), Strings.Command_PreviousTrack, "com.jpsoftworks.cmdpal.mediacontrols.previous")
     {
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this.Command = this._command = new(getSessionManagerOperation, yetAnotherHelper, iconService) { Name = "" };
+        this.Command = this._command = new(mediaService, initialization, resultFactory, iconService) { Name = "" };
         this.Title = "";
-        this.Subtitle = Strings.Command_PreviousTrack_Subtitle!;
     }
 
     public void RefreshIconTheme()

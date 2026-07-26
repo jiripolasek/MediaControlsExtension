@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Snadno ovládejte přehrávání a přepínejte mezi aplikacemi pro média</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Přehrávání</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Hlasitost systému</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Mediální relace</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Globální příkazy</value>
   </data>

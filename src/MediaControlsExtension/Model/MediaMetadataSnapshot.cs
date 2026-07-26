@@ -27,27 +27,29 @@ internal readonly record struct MediaMetadataSnapshot(
     bool CanToggleShuffle,
     bool CanToggleRepeat)
 {
-    public static MediaMetadataSnapshot FromMediaSource(MediaSource mediaSource)
+    public static MediaMetadataSnapshot FromViewModel(MediaSessionViewModel viewModel)
     {
-        ArgumentNullException.ThrowIfNull(mediaSource);
+        ArgumentNullException.ThrowIfNull(viewModel);
 
+        var properties = viewModel.MediaProperties;
+        var playback = viewModel.PlaybackInfo;
         return new(
-            mediaSource.Name,
-            mediaSource.AlbumTitle,
-            mediaSource.AlbumArtist,
-            mediaSource.Artist,
-            mediaSource.Subtitle,
-            mediaSource.Genres,
-            mediaSource.TrackNumber > 0 ? mediaSource.TrackNumber : null,
-            mediaSource.AlbumTrackCount > 0 ? mediaSource.AlbumTrackCount : null,
-            mediaSource.TrackLength,
-            mediaSource.ApplicationName ?? string.Empty,
-            mediaSource.SourceAppUserModelId,
-            mediaSource.PlaybackType,
-            mediaSource.DisplayedIsPlaying,
-            mediaSource.CanSkipPrevious,
-            mediaSource.CanSkipNext,
-            mediaSource.CanToggleShuffle,
-            mediaSource.CanToggleRepeat);
+            properties.Title,
+            properties.AlbumTitle,
+            properties.AlbumArtist,
+            properties.Artist,
+            properties.Subtitle,
+            string.Join(", ", properties.Genres),
+            properties.TrackNumber > 0 ? properties.TrackNumber : null,
+            properties.AlbumTrackCount > 0 ? properties.AlbumTrackCount : null,
+            viewModel.TimelineProperties.Duration,
+            viewModel.ApplicationName,
+            properties.Application.ApplicationId,
+            viewModel.PlaybackType,
+            playback.EffectiveState == MediaPlaybackState.Playing,
+            playback.Capabilities.HasFlag(MediaCapabilities.SkipPrevious),
+            playback.Capabilities.HasFlag(MediaCapabilities.SkipNext),
+            playback.Capabilities.HasFlag(MediaCapabilities.ToggleShuffle),
+            playback.Capabilities.HasFlag(MediaCapabilities.ToggleRepeat));
     }
 }

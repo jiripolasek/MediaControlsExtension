@@ -4,18 +4,20 @@
 //
 // ------------------------------------------------------------
 
+using JPSoftworks.MediaControlsExtension.Media;
+
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal static class PlaybackActionPolicy
 {
     public static PlaybackActionPresentation GetPresentation(
-        MediaSource? source,
+        MediaSession? session,
         IIconService iconService,
         IconSurface surface)
     {
         ArgumentNullException.ThrowIfNull(iconService);
 
-        if (source is null)
+        if (session is null)
         {
             return new(
                 PlaybackIntent.Toggle,
@@ -23,12 +25,15 @@ internal static class PlaybackActionPolicy
                 iconService.GetIcon(ThemedIcon.PlayPause, surface));
         }
 
-        var state = source.GetPlaybackPresentationState();
-        var intent = state.IsPredictionPending
-            ? state.DisplayedIsPlaying
+        var playback = session.PlaybackInfo;
+        var intent = playback.IsOptimistic
+            ? playback.EffectiveState == MediaPlaybackState.Playing
                 ? PlaybackIntent.Pause
                 : PlaybackIntent.Play
-            : ResolveIntent(state.IsPlaying, state.CanPause, state.CanStop);
+            : ResolveIntent(
+                playback.ConfirmedState == MediaPlaybackState.Playing,
+                playback.Capabilities.HasFlag(MediaCapabilities.Pause),
+                playback.Capabilities.HasFlag(MediaCapabilities.Stop));
         return intent switch
         {
             PlaybackIntent.Play => new(

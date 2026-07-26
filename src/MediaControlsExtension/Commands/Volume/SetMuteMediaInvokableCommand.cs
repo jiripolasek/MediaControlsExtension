@@ -10,17 +10,17 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
 {
     private readonly bool _targetMute;
     private readonly SystemVolumeService _systemVolumeService;
-    private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly MediaCommandResultFactory _resultFactory;
 
     public SetMuteMediaInvokableCommand(
         bool targetMute,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService)
     {
         this._targetMute = targetMute;
         this._systemVolumeService = systemVolumeService;
-        this._yetAnotherHelper = yetAnotherHelper;
+        this._resultFactory = resultFactory;
         this.Name = targetMute ? Strings.Command_Mute! : Strings.Command_Unmute!;
         this.Icon = iconService.GetIcon(
             targetMute ? ThemedIcon.VolumeMute : ThemedIcon.VolumeOff,
@@ -32,13 +32,13 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
         try
         {
             var state = this._systemVolumeService.SetMute(this._targetMute, cancellationToken);
-            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
+            return Task.FromResult(this._resultFactory.Create(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
 
-        return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!));
+        return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));
     }
 }

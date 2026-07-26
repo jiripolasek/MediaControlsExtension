@@ -1,32 +1,26 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
 // ------------------------------------------------------------
 
-using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
-
+using JPSoftworks.MediaControlsExtension.Media;
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-/// <summary>
-/// Runs a <see cref="MediaSessionOp"/> against the GSMTC current session,
-/// resolved through an initialized <see cref="MediaService"/>.
-/// </summary>
 internal sealed partial class CurrentSessionCommand : MediaInvokableCommand
 {
-    private readonly MediaService _mediaService;
+    private readonly IMediaService _mediaService;
     private readonly MediaSessionOp _mediaSessionOp;
 
-    public MediaSessionOp MediaSessionOp => this._mediaSessionOp;
-
-    public CurrentSessionCommand(MediaService mediaService, MediaSessionOp mediaSessionOp, YetAnotherHelper yetAnotherHelper, string? id = null)
-        : base(yetAnotherHelper)
+    public CurrentSessionCommand(
+        IMediaService mediaService,
+        MediaSessionOp mediaSessionOp,
+        MediaCommandResultFactory resultFactory,
+        string? id = null)
+        : base(resultFactory)
     {
-        ArgumentNullException.ThrowIfNull(mediaService);
-        ArgumentNullException.ThrowIfNull(mediaSessionOp);
-
-        this._mediaService = mediaService;
-        this._mediaSessionOp = mediaSessionOp;
+        this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
+        this._mediaSessionOp = mediaSessionOp ?? throw new ArgumentNullException(nameof(mediaSessionOp));
 
         if (!string.IsNullOrWhiteSpace(id))
         {
@@ -34,28 +28,25 @@ internal sealed partial class CurrentSessionCommand : MediaInvokableCommand
         }
     }
 
+    public MediaSessionOp MediaSessionOp => this._mediaSessionOp;
+
     public bool CanExecute()
     {
-        var source = this._mediaService.CurrentSource;
-        return source != null && this._mediaSessionOp.CanExecute(source);
+        var session = this._mediaService.CurrentSession;
+        return session is not null && this._mediaSessionOp.CanExecute(session);
     }
 
     protected override async Task<ICommandResult> InvokeMediaAsync(CancellationToken cancellationToken)
     {
-        if (!this._mediaService.TryGetSessionManager(out var manager))
+        if (this._mediaService.CurrentSession is null)
         {
-            return this.CreateMediaCommandResult($"😢 {Strings.Toast_NoSessionManager}");
+            return this.CreateMediaCommandResult($"😢 {Strings.Toast_NoCurrentSession}");
         }
 
-        var result = await GsmtcOperationGate.RunAsync(
-            async _ =>
-            {
-                var session = manager.GetCurrentSession();
-                return session == null
-                    ? new MediaSessionOperationResult($"😢 {Strings.Toast_NoCurrentSession}", false)
-                    : await this._mediaSessionOp.InvokeAsync(manager, session);
-            },
-            cancellationToken);
-        return this.CreateMediaCommandResult(result.Message);
+        var message = await this._mediaSessionOp.InvokeAsync(
+            this._mediaService,
+            MediaCommandTarget.CurrentSession,
+            cancellationToken).ConfigureAwait(false);
+        return this.CreateMediaCommandResult(message);
     }
 }

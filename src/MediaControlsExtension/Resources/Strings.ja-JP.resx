@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>再生を管理し、メディアアプリを簡単に切り替えられる</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>再生</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>システム音量</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>メディア セッション</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>グローバルコマンド</value>
   </data>

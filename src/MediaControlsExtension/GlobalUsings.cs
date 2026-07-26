@@ -13,11 +13,12 @@ global using JPSoftworks.CommandPalette.Extensions.Toolkit.Helpers;
 global using JPSoftworks.CommandPalette.Extensions.Toolkit.Logging;
 global using JPSoftworks.MediaControlsExtension.Commands;
 global using JPSoftworks.MediaControlsExtension.Helpers;
+global using JPSoftworks.MediaControlsExtension.Media;
 global using JPSoftworks.MediaControlsExtension.Model;
 global using JPSoftworks.MediaControlsExtension.Pages;
 global using JPSoftworks.MediaControlsExtension.Resources;
 global using JPSoftworks.MediaControlsExtension.Services;
-global using JPSoftworks.MediaControlsExtension.Threading;
+global using JPSoftworks.MediaControlsExtension.ViewModels;
 
 global using Microsoft.CommandPalette.Extensions;
 global using Microsoft.CommandPalette.Extensions.Toolkit;

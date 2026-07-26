@@ -4,14 +4,14 @@
 // 
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension;
 
 public sealed partial class MediaControlsExtensionCommandsProvider : CommandProvider, IDisposable
 {
-    private readonly YetAnotherHelper _yetAnotherHelper;
-    private readonly MediaService _mediaService = new();
+    private readonly MediaCommandResultFactory _resultFactory;
+    private readonly MediaService _mediaService;
+    private readonly MediaSessionViewModelCache _mediaSessionViewModels;
+    private readonly MediaMetadataPageCache _metadataPages;
     private readonly SystemVolumeService _systemVolumeService = new();
     private readonly SettingsManager _settingsManager = new();
     private readonly IconService _iconService;
@@ -30,6 +30,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
     public MediaControlsExtensionCommandsProvider()
     {
+        this._mediaService = new MediaService(ExtensionLoggerFactory.Instance);
+        this._mediaSessionViewModels = new(this._mediaService);
         this._iconService = new IconService(this._settingsManager);
         this.Id = "JPSoftworks.CmdPal.MediaControls";
         this.DisplayName = Strings.Name!;
@@ -38,24 +40,38 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
         this._iconService.IconsChanged += this.IconServiceOnIconsChanged;
-        this._yetAnotherHelper = new(this._settingsManager);
+        this._resultFactory = new(this._settingsManager);
+        this._metadataPages = new(
+            this._mediaService,
+            this._mediaSessionViewModels,
+            this._resultFactory,
+            this._iconService);
+        this.UpdateMediaServiceOptions();
 
         this._mediaControlsExtensionPage = new(
             this._mediaService,
+            this._mediaSessionViewModels,
+            this._metadataPages,
             this._systemVolumeService,
             this._settingsManager,
-            this._yetAnotherHelper,
+            this._resultFactory,
             this._iconService);
-        this._mediaControlsPageItem = new(this._mediaControlsExtensionPage) { Title = this.DisplayName, Subtitle = Strings.MediaControls_Subtitle!, MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)] };
+        this._mediaControlsPageItem = new(this._mediaControlsExtensionPage)
+        {
+            Title = this.DisplayName,
+            MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)]
+        };
         this._nowPlayingItem = new NowPlayingListItem(
             this._mediaService,
+            this._mediaSessionViewModels,
+            this._metadataPages,
             this._settingsManager,
-            this._yetAnotherHelper,
+            this._resultFactory,
             this._iconService,
             false);
         this._toggleMuteCommandItem = new(
             this._systemVolumeService,
-            this._yetAnotherHelper,
+            this._resultFactory,
             this._iconService,
             IconSurface.CommandPalette)
         {
@@ -63,14 +79,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         };
         this._volumeCommands =
         [
-            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, this._systemVolumeService, this._yetAnotherHelper))
+            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, this._systemVolumeService, this._resultFactory))
             {
                 Title = Strings.Command_VolumeUp!,
                 Icon = this._iconService.GetIcon(
                     ThemedIcon.VolumeUp,
                     IconSurface.CommandPalette),
             },
-            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, this._systemVolumeService, this._yetAnotherHelper))
+            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, this._systemVolumeService, this._resultFactory))
             {
                 Title = Strings.Command_VolumeDown!,
                 Icon = this._iconService.GetIcon(
@@ -80,60 +96,64 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._toggleMuteCommandItem,
             .. VolumeCommandFactory.CreatePresetCommandItems(
                 this._systemVolumeService,
-                this._yetAnotherHelper,
+                this._resultFactory,
                 this._iconService,
                 IconSurface.CommandPalette),
         ];
         this._mediaControlsBand = new(
             this._mediaService,
+            this._mediaSessionViewModels,
+            this._metadataPages,
             this._systemVolumeService,
             this._settingsManager,
-            this._yetAnotherHelper,
+            this._resultFactory,
             this._iconService,
             true);
         this._bands = [new CommandItem(this._mediaControlsBand) { Title = Strings.Name! }];
         this.UpdateTopLevelCommands();
 
-        _ = Task.Run(this.InitializeMediaServiceSafe);
-        _ = Task.Run(this.InitializeFallbackCommands);
+        var initializationTask = Task.Run(this.InitializeMediaServiceAsync);
+        _ = Task.Run(() => this.InitializeFallbackCommands(initializationTask));
     }
 
-    private async Task InitializeMediaServiceSafe()
+    private async Task InitializeMediaServiceAsync()
     {
         try
         {
-            await this._mediaService.InitializeAsync();
+            await this._mediaService.StartAsync();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
+            throw;
         }
     }
 
-    private Task? InitializeFallbackCommands()
+    private void InitializeFallbackCommands(
+        Task initializationTask)
     {
         try
         {
-            var sessionManagerTask = GsmtcOperationGate.RunAsync(
-                static async _ => await GlobalSystemMediaTransportControlsSessionManager.RequestAsync());
             var play = new FallbackPlayCommandItem(
                 new PlayPauseMediaCommand(
-                    sessionManagerTask!,
-                    this._settingsManager,
-                    this._yetAnotherHelper,
+                    this._mediaService,
+                    initializationTask,
+                    this._resultFactory,
                     this._iconService),
                 Strings.TogglePlayPause!,
                 this._settingsManager,
                 this._iconService);
             var skipNext = new FallbackSkipTrackCommandItem(
-                sessionManagerTask,
+                this._mediaService,
+                initializationTask,
                 this._settingsManager,
-                this._yetAnotherHelper,
+                this._resultFactory,
                 this._iconService);
             var skipPrevious = new FallbackPreviousTrackCommandItem(
-                sessionManagerTask,
+                this._mediaService,
+                initializationTask,
                 this._settingsManager,
-                this._yetAnotherHelper,
+                this._resultFactory,
                 this._iconService);
             this._fallbackCommandsWithoutVolume = [play, skipNext, skipPrevious];
             this._fallbackCommandsWithVolume =
@@ -142,12 +162,12 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 new FallbackUnmuteCommandItem(
                     this._settingsManager,
                     this._systemVolumeService,
-                    this._yetAnotherHelper,
+                    this._resultFactory,
                     this._iconService),
                 new FallbackMuteCommandItem(
                     this._settingsManager,
                     this._systemVolumeService,
-                    this._yetAnotherHelper,
+                    this._resultFactory,
                     this._iconService),
                 skipNext,
                 skipPrevious,
@@ -160,11 +180,11 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             Logger.LogError(ex);
         }
 
-        return Task.CompletedTask;
     }
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
+        this.UpdateMediaServiceOptions();
         this.UpdateTopLevelCommands();
         this.UpdateFallbackCommands();
         this.RaiseItemsChanged();
@@ -220,6 +240,12 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             ? this._fallbackCommandsWithVolume
             : this._fallbackCommandsWithoutVolume;
 
+    private void UpdateMediaServiceOptions()
+    {
+        this._mediaService.UpdateOptions(new(
+            this._settingsManager.PauseOthersOnPlay));
+    }
+
     public override ICommandItem[] TopLevelCommands() => this._commands;
 
     public override IFallbackCommandItem[]? FallbackCommands() => this._fallbackCommands;
@@ -252,6 +278,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._mediaControlsExtensionPage.Dispose();
             this._mediaControlsBand.Dispose();
             ((IDisposable)this._nowPlayingItem).Dispose();
+            this._metadataPages.Dispose();
+            this._mediaSessionViewModels.Dispose();
             this._mediaService.Dispose();
             this._systemVolumeService.Dispose();
             this._iconService.Dispose();

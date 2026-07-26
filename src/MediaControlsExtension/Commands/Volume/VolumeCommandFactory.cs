@@ -12,14 +12,14 @@ internal static class VolumeCommandFactory
 
     public static CommandItem[] CreatePresetCommandItems(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper,
+        MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface)
     {
         var items = new CommandItem[PresetPercentagesValues.Length];
         for (var i = 0; i < PresetPercentagesValues.Length; i++)
         {
-            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, yetAnotherHelper);
+            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, resultFactory);
             items[i] = new(command)
             {
                 Title = command.Name,
@@ -35,12 +35,12 @@ internal static class VolumeCommandFactory
 
     public static CommandContextItem[] CreatePresetContextItems(
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
+        MediaCommandResultFactory resultFactory)
     {
         var items = new CommandContextItem[PresetPercentagesValues.Length];
         for (var i = 0; i < PresetPercentagesValues.Length; i++)
         {
-            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, yetAnotherHelper);
+            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, resultFactory);
             items[i] = new(command)
             {
                 Icon = command.Icon,
@@ -53,6 +53,6 @@ internal static class VolumeCommandFactory
     private static SetVolumeMediaInvokableCommand CreatePresetCommand(
         int volumePercent,
         SystemVolumeService systemVolumeService,
-        YetAnotherHelper yetAnotherHelper)
-        => new(volumePercent, systemVolumeService, yetAnotherHelper);
+        MediaCommandResultFactory resultFactory)
+        => new(volumePercent, systemVolumeService, resultFactory);
 }

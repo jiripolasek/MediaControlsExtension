@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed class SettingsManager : JsonSettingsManager
+internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 {
     private const string DefaultNamespace = "jpsoftworks.mediacontrols";
 

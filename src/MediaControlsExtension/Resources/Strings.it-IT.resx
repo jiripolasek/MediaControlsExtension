@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Gestire la riproduzione e passare da un'app multimediale all'altra con facilità</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Riproduzione</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Volume di sistema</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sessioni multimediali</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Comandi globali</value>
   </data>

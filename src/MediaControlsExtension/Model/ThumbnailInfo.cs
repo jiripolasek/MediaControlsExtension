@@ -5,12 +5,46 @@
 // ------------------------------------------------------------
 
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Security.Cryptography;
 using Windows.Storage.Streams;
 
 namespace JPSoftworks.MediaControlsExtension.Model;
 
-internal sealed record ThumbnailInfo(string? Hash, IRandomAccessStream? Stream)
+internal sealed class ThumbnailInfo
 {
+    private readonly Lock _iconLock = new();
+    private IconInfo? _icon;
+    private int _released;
+
+    public ThumbnailInfo(
+        string? hash,
+        string contentType,
+        IRandomAccessStream? stream)
+    {
+        this.Hash = hash;
+        this.ContentType = contentType;
+        this.Stream = stream;
+    }
+
+    public string? Hash { get; }
+
+    public string ContentType { get; }
+
+    public IRandomAccessStream? Stream { get; }
+
+    public IconInfo? GetIcon()
+    {
+        if (this.Stream is null)
+        {
+            return null;
+        }
+
+        lock (this._iconLock)
+        {
+            return this._icon ??= IconInfo.FromStream(this.Stream);
+        }
+    }
+
     public async Task<string?> GetDataUriAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -25,44 +59,33 @@ internal sealed record ThumbnailInfo(string? Hash, IRandomAccessStream? Stream)
             return null;
         }
 
-        var bytes = new byte[(int)stream.Size];
+        string base64;
         using (var reader = new DataReader(stream.GetInputStreamAt(0)))
         {
-            await reader.LoadAsync((uint)stream.Size).AsTask(cancellationToken);
-            reader.ReadBytes(bytes);
+            var loaded = await reader.LoadAsync((uint)stream.Size).AsTask(cancellationToken);
+            if (loaded == 0)
+            {
+                return null;
+            }
+
+            base64 = CryptographicBuffer.EncodeToBase64String(
+                reader.ReadBuffer(loaded));
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        return $"data:{DetectContentType(bytes)};base64,{Convert.ToBase64String(bytes)}";
+        return $"data:{this.ContentType};base64,{base64}";
     }
 
-    private static string DetectContentType(ReadOnlySpan<byte> bytes)
+    /// <summary>
+    /// Releases a thumbnail that was loaded but never published to presentation code.
+    /// Published thumbnails may still back an <see cref="IconInfo"/> and must not be
+    /// disposed through this path.
+    /// </summary>
+    public void DisposeUnpublished()
     {
-        if (bytes.StartsWith(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }))
+        if (Interlocked.Exchange(ref this._released, 1) == 0)
         {
-            return "image/png";
+            this.Stream?.Dispose();
         }
-
-        if (bytes.StartsWith(new byte[] { 0xFF, 0xD8, 0xFF }))
-        {
-            return "image/jpeg";
-        }
-
-        if (bytes.StartsWith("GIF8"u8))
-        {
-            return "image/gif";
-        }
-
-        if (bytes.StartsWith("BM"u8))
-        {
-            return "image/bmp";
-        }
-
-        if (bytes.Length >= 12 && bytes[..4].SequenceEqual("RIFF"u8) && bytes.Slice(8, 4).SequenceEqual("WEBP"u8))
-        {
-            return "image/webp";
-        }
-
-        return "application/octet-stream";
     }
 }

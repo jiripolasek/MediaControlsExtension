@@ -29,7 +29,6 @@ internal sealed partial class FallbackPlayCommandItem : FallbackCommandItem, IIc
         this._iconService = iconService;
         this._command.Name = "";
         this.Title = "";
-        this.Subtitle = Strings.TogglePlayPause_Comments!;
     }
 
     public void RefreshIconTheme()

@@ -9,13 +9,13 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCommand
 {
     private readonly SystemVolumeService _systemVolumeService;
-    private readonly YetAnotherHelper _yetAnotherHelper;
+    private readonly MediaCommandResultFactory _resultFactory;
     public override string Name => Strings.Command_ToggleMute!;
 
-    public ToggleMuteMediaInvokableCommand(SystemVolumeService systemVolumeService, YetAnotherHelper yetAnotherHelper)
+    public ToggleMuteMediaInvokableCommand(SystemVolumeService systemVolumeService, MediaCommandResultFactory resultFactory)
     {
         this._systemVolumeService = systemVolumeService;
-        this._yetAnotherHelper = yetAnotherHelper;
+        this._resultFactory = resultFactory;
         this.Icon = Icons.ToggleMute;
     }
 
@@ -24,13 +24,13 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
         try
         {
             var state = this._systemVolumeService.ToggleMute(cancellationToken);
-            return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
+            return Task.FromResult(this._resultFactory.Create(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
         }
         catch (Exception ex)
         {
             Logger.LogError(ex);
         }
 
-        return Task.FromResult(this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!));
+        return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));
     }
 }
