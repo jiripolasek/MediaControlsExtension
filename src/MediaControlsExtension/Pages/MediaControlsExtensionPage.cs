@@ -96,17 +96,29 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 this._resultFactory,
                 this._iconService)
             : null;
+
+        // Do not reuse the named track commands from the now-playing item here.
+        // ListItem.Title falls back to Command.Name when set to an empty string,
+        // which would make the skip-track labels reappear in the dock.
         this._nextTrackCurrentSessionItem = new(
-            this._playPauseCurrentSessionItem.NextTrackCommand,
+            new CurrentSessionCommand(
+                this._mediaService,
+                MediaSessionOperations.SkipNextTrack,
+                this._resultFactory),
             this._playPauseCurrentSessionItem)
         {
-            Title = Strings.Command_NextTrack
+            Title = Strings.Command_NextTrack,
+            Subtitle = Strings.Command_NextTrack_Subtitle
         };
         this._prevTrackCurrentSessionItem = new(
-            this._playPauseCurrentSessionItem.PreviousTrackCommand,
+            new CurrentSessionCommand(
+                this._mediaService,
+                MediaSessionOperations.SkipPreviousTrack,
+                this._resultFactory),
             this._playPauseCurrentSessionItem)
         {
-            Title = Strings.Command_PreviousTrack
+            Title = Strings.Command_PreviousTrack,
+            Subtitle = Strings.Command_PreviousTrack_Subtitle
         };
         this.UpdateTrackNavigationIcons();
         this._volumeItem = this._isBandPage
@@ -122,7 +134,9 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._playPauseCurrentSessionItem.Title = string.Empty;
             this._playPauseCurrentSessionItem.Subtitle = string.Empty;
             this._nextTrackCurrentSessionItem.Title = string.Empty;
+            this._nextTrackCurrentSessionItem.Subtitle = string.Empty;
             this._prevTrackCurrentSessionItem.Title = string.Empty;
+            this._prevTrackCurrentSessionItem.Subtitle = string.Empty;
         }
 
         this.UpdateStatus();
