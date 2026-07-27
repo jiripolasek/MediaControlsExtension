@@ -24,6 +24,18 @@ internal enum MediaBackendCommandStatus
     SessionGone,
 }
 
+[Flags]
+internal enum MediaBackendObservationChanges
+{
+    None = 0,
+    Playback = 1 << 0,
+    Timeline = 1 << 1,
+}
+
+internal readonly record struct MediaBackendObservationRequest(
+    MediaBackendSessionId SessionId,
+    MediaBackendObservationChanges Changes);
+
 internal sealed record MediaBackendSessionSnapshot(
     MediaBackendSessionId Id,
     long BindingGeneration,
@@ -56,7 +68,8 @@ internal interface IMediaBackend : IAsyncDisposable
 
     Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken);
 
-    void InvalidateObservations();
+    void InvalidateObservations(
+        ImmutableArray<MediaBackendObservationRequest> requests);
 
     Task<MediaBackendCommandResult> ExecuteAsync(
         MediaBackendCommand command,

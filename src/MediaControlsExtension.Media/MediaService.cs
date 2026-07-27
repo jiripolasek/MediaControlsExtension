@@ -19,19 +19,22 @@ public sealed class MediaService : IMediaService
 {
     private static readonly TimeSpan NavigationCommandInterval = TimeSpan.FromMilliseconds(200);
     private static readonly TimeSpan PlaybackCommandInterval = TimeSpan.FromMilliseconds(200);
-    private static readonly TimeSpan NavigationSettleRefreshDelay = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan CommandSettleRefreshDelay = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan PlaybackPredictionLifetime = TimeSpan.FromSeconds(10);
 
     private readonly IMediaBackend _backend;
     private readonly Lock _commandAdmissionLock = new();
     private readonly Channel<CommandWork> _commandQueue;
+    private readonly Lock _commandSettleRefreshLock = new();
+    private readonly Dictionary<MediaBackendSessionId, MediaBackendObservationChanges>
+        _commandSettleRefreshRequests = [];
+    private readonly Timer _commandSettleRefreshTimer;
     private readonly Channel<bool> _refreshRequests;
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Lock _lifecycleLock = new();
     private readonly Dictionary<MediaSessionId, long> _lastNavigationCommandTimestamps = [];
     private readonly Dictionary<MediaSessionId, long> _lastPlaybackCommandTimestamps = [];
     private readonly ILogger _logger;
-    private readonly Timer _navigationSettleRefreshTimer;
     private readonly MediaNotificationHub _notificationHub;
     private readonly MediaSessionCatalog _sessionCatalog = new();
     private readonly MediaStateStore _stateStore = new();
@@ -56,7 +59,7 @@ public sealed class MediaService : IMediaService
         this._refreshRequests = CreateRefreshQueue();
         this._timeProvider = TimeProvider.System;
         this._playbackPredictionLifetime = PlaybackPredictionLifetime;
-        this._navigationSettleRefreshTimer = this.CreateNavigationSettleRefreshTimer();
+        this._commandSettleRefreshTimer = this.CreateCommandSettleRefreshTimer();
         this._notificationHub = new(this.RaiseChanged, this._logger);
         this._commandPumpTask = Task.Run(this.ProcessCommandsAsync);
     }
@@ -82,7 +85,7 @@ public sealed class MediaService : IMediaService
                 "The playback prediction lifetime must be positive.");
         }
 
-        this._navigationSettleRefreshTimer = this.CreateNavigationSettleRefreshTimer();
+        this._commandSettleRefreshTimer = this.CreateCommandSettleRefreshTimer();
         this._notificationHub = new(this.RaiseChanged, this._logger);
         this._commandPumpTask = Task.Run(this.ProcessCommandsAsync);
     }
@@ -428,9 +431,9 @@ public sealed class MediaService : IMediaService
                 command.SessionId.Value,
                 result.DiagnosticMessage ?? outcomeStatus.ToString());
         }
-        else if (IsNavigationCommand(command.ResolvedOperation))
+        else
         {
-            this.ScheduleNavigationSettleRefresh();
+            this.ScheduleCommandSettleRefresh(command);
         }
 
         this.RequestRefresh();
@@ -499,10 +502,10 @@ public sealed class MediaService : IMediaService
         this._refreshRequests.Writer.TryWrite(true);
     }
 
-    private Timer CreateNavigationSettleRefreshTimer()
+    private Timer CreateCommandSettleRefreshTimer()
     {
         return new(
-            static state => ((MediaService)state!).RequestRefreshIfActive(),
+            static state => ((MediaService)state!).RequestCommandSettleRefreshIfActive(),
             this,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
@@ -532,17 +535,44 @@ public sealed class MediaService : IMediaService
                this._timeProvider.GetElapsedTime(previousTimestamp, timestamp) < interval;
     }
 
-    private void ScheduleNavigationSettleRefresh()
+    private void ScheduleCommandSettleRefresh(ResolvedMediaCommand command)
     {
         if (Volatile.Read(ref this._disposeState) != 0)
         {
             return;
         }
 
+        lock (this._commandSettleRefreshLock)
+        {
+            if (IsNavigationCommand(command.ResolvedOperation))
+            {
+                this.MergeCommandSettleRefreshRequestUnderLock(
+                    command.BackendSessionId,
+                    MediaBackendObservationChanges.Playback |
+                    MediaBackendObservationChanges.Timeline);
+            }
+            else if (command.ResolvedOperation == MediaOperation.Play)
+            {
+                this.MergeCommandSettleRefreshRequestUnderLock(
+                    command.BackendSessionId,
+                    MediaBackendObservationChanges.Playback);
+                foreach (var sessionId in command.SessionsPlayingBeforeCommand)
+                {
+                    this.MergeCommandSettleRefreshRequestUnderLock(
+                        sessionId,
+                        MediaBackendObservationChanges.Playback);
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
+
         try
         {
-            this._navigationSettleRefreshTimer.Change(
-                NavigationSettleRefreshDelay,
+            this._commandSettleRefreshTimer.Change(
+                CommandSettleRefreshDelay,
                 Timeout.InfiniteTimeSpan);
         }
         catch (ObjectDisposedException) when (Volatile.Read(ref this._disposeState) != 0)
@@ -550,13 +580,39 @@ public sealed class MediaService : IMediaService
         }
     }
 
-    private void RequestRefreshIfActive()
+    private void MergeCommandSettleRefreshRequestUnderLock(
+        MediaBackendSessionId sessionId,
+        MediaBackendObservationChanges changes)
     {
-        if (Volatile.Read(ref this._disposeState) == 0)
+        this._commandSettleRefreshRequests.TryGetValue(sessionId, out var pending);
+        this._commandSettleRefreshRequests[sessionId] = pending | changes;
+    }
+
+    private void RequestCommandSettleRefreshIfActive()
+    {
+        if (Volatile.Read(ref this._disposeState) != 0)
         {
-            this._backend.InvalidateObservations();
-            this.RequestRefresh();
+            return;
         }
+
+        ImmutableArray<MediaBackendObservationRequest> requests;
+        lock (this._commandSettleRefreshLock)
+        {
+            if (this._commandSettleRefreshRequests.Count == 0)
+            {
+                return;
+            }
+
+            requests = this._commandSettleRefreshRequests
+                .Select(static request => new MediaBackendObservationRequest(
+                    request.Key,
+                    request.Value))
+                .ToImmutableArray();
+            this._commandSettleRefreshRequests.Clear();
+        }
+
+        this._backend.InvalidateObservations(requests);
+        this.RequestRefresh();
     }
 
     private async Task ExpirePredictionAsync(
@@ -604,7 +660,7 @@ public sealed class MediaService : IMediaService
         this._disposeCts.Cancel();
         this._commandQueue.Writer.TryComplete();
         this._refreshRequests.Writer.TryComplete();
-        await this._navigationSettleRefreshTimer.DisposeAsync().ConfigureAwait(false);
+        await this._commandSettleRefreshTimer.DisposeAsync().ConfigureAwait(false);
 
         if (Volatile.Read(ref this._startState) == 1)
         {

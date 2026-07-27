@@ -26,6 +26,7 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
             AllowSynchronousContinuations = false,
         });
     private readonly Lock _stateLock = new();
+    private readonly List<ImmutableArray<MediaBackendObservationRequest>> _observationInvalidations = [];
     private MediaBackendSnapshot _snapshot = initialSnapshot;
     private int _blockCommands;
     private int _blockStart;
@@ -43,6 +44,17 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
     public int SnapshotReadCount => Volatile.Read(ref this._snapshotReadCount);
 
     public Task StartStarted => this._startStarted.Task;
+
+    public ImmutableArray<ImmutableArray<MediaBackendObservationRequest>> ObservationInvalidations
+    {
+        get
+        {
+            lock (this._stateLock)
+            {
+                return [.. this._observationInvalidations];
+            }
+        }
+    }
 
     public void BlockCommands()
     {
@@ -109,8 +121,13 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         }
     }
 
-    public void InvalidateObservations()
+    public void InvalidateObservations(
+        ImmutableArray<MediaBackendObservationRequest> requests)
     {
+        lock (this._stateLock)
+        {
+            this._observationInvalidations.Add(requests);
+        }
     }
 
     public async Task<MediaBackendCommandResult> ExecuteAsync(
@@ -177,6 +194,25 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
                     session.Title,
                     1,
                     MediaPlaybackState.Paused,
+                    null))
+                .ToImmutableArray(),
+            new(currentSessionId),
+            MediaControlAvailability.Available);
+    }
+
+    public static MediaBackendSnapshot CreateSnapshot(
+        long revision,
+        long currentSessionId,
+        params (long SessionId, string Title, MediaPlaybackState PlaybackState)[] sessions)
+    {
+        return new(
+            revision,
+            sessions
+                .Select(session => CreateSession(
+                    new(session.SessionId),
+                    session.Title,
+                    1,
+                    session.PlaybackState,
                     null))
                 .ToImmutableArray(),
             new(currentSessionId),

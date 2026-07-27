@@ -187,13 +187,21 @@ internal sealed class MediaStateStore
                     .Select(static session => new MediaBackendSessionId(session.Id.Value))
                     .ToImmutableArray()
                 : [];
+            var sessionsPlayingBeforeCommand = operation == MediaOperation.Play
+                ? this._current.Sessions
+                    .Where(static session =>
+                        session.PlaybackInfo.EffectiveState == MediaPlaybackState.Playing)
+                    .Select(static session => new MediaBackendSessionId(session.Id.Value))
+                    .ToImmutableArray()
+                : [];
             resolvedCommand = new(
                 command.Operation,
                 operation,
                 target.Id,
                 new MediaBackendSessionId(target.Id.Value),
                 target.BindingGeneration,
-                sessionsToPause);
+                sessionsToPause,
+                sessionsPlayingBeforeCommand);
             return MediaCommandSubmissionStatus.Accepted;
         }
     }
@@ -398,4 +406,5 @@ internal readonly record struct ResolvedMediaCommand(
     MediaSessionId SessionId,
     MediaBackendSessionId BackendSessionId,
     long BindingGeneration,
-    ImmutableArray<MediaBackendSessionId> SessionsToPause);
+    ImmutableArray<MediaBackendSessionId> SessionsToPause,
+    ImmutableArray<MediaBackendSessionId> SessionsPlayingBeforeCommand);

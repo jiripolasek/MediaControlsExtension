@@ -24,6 +24,7 @@ public sealed class MediaServiceConcurrencyTests
                 new(1),
                 new(1),
                 1,
+                [],
                 []));
         using var cancellation = new CancellationTokenSource();
 
@@ -397,6 +398,7 @@ public sealed class MediaServiceConcurrencyTests
                 ConfirmedState: MediaPlaybackState.Playing,
                 IsOptimistic: false,
             });
+        await WaitUntilAsync(() => !backend.ObservationInvalidations.IsEmpty);
         await WaitUntilSnapshotReadsSettleAsync(backend);
         var readsAfterConfirmation = backend.SnapshotReadCount;
 
@@ -495,6 +497,47 @@ public sealed class MediaServiceConcurrencyTests
         backend.SetSnapshotWithoutSignal(FakeMediaBackend.CreateSnapshot(3, "Settled"));
         await WaitUntilAsync(
             () => service.CurrentSession?.MediaProperties.Title == "Settled");
+
+        var invalidation = backend.ObservationInvalidations.Single();
+        var request = invalidation.Single();
+        Assert.AreEqual(new MediaBackendSessionId(1), request.SessionId);
+        Assert.AreEqual(
+            MediaBackendObservationChanges.Playback |
+            MediaBackendObservationChanges.Timeline,
+            request.Changes);
+    }
+
+    [TestMethod]
+    public async Task SuccessfulPlayReconcilesOnlyTargetAndPreviouslyPlayingSessions()
+    {
+        var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(
+            1,
+            1,
+            (1, "Target", MediaPlaybackState.Paused),
+            (2, "Playing", MediaPlaybackState.Playing),
+            (3, "Paused", MediaPlaybackState.Paused)));
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+        await WaitUntilSnapshotReadsSettleAsync(backend);
+
+        var submission = service.TrySubmit(new(
+            MediaCommandTarget.CurrentSession,
+            MediaOperation.Play));
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, submission.Status);
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await submission.Completion!).Status);
+        await WaitUntilAsync(() => !backend.ObservationInvalidations.IsEmpty);
+
+        var requests = backend.ObservationInvalidations
+            .Single()
+            .ToDictionary(static request => request.SessionId);
+        Assert.AreEqual(2, requests.Count);
+        Assert.AreEqual(
+            MediaBackendObservationChanges.Playback,
+            requests[new MediaBackendSessionId(1)].Changes);
+        Assert.AreEqual(
+            MediaBackendObservationChanges.Playback,
+            requests[new MediaBackendSessionId(2)].Changes);
+        Assert.IsFalse(requests.ContainsKey(new MediaBackendSessionId(3)));
     }
 
     [TestMethod]

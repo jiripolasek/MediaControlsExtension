@@ -179,7 +179,8 @@ internal sealed class GsmtcBackend : IMediaBackend
                 : MediaControlAvailability.Available);
     }
 
-    public void InvalidateObservations()
+    public void InvalidateObservations(
+        ImmutableArray<MediaBackendObservationRequest> requests)
     {
         lock (this._stateLock)
         {
@@ -188,9 +189,12 @@ internal sealed class GsmtcBackend : IMediaBackend
                 return;
             }
 
-            foreach (var binding in this._bindings.Values)
+            foreach (var request in requests)
             {
-                binding.Invalidate(SessionObservationChanges.All);
+                if (this._bindings.TryGetValue(request.SessionId, out var binding))
+                {
+                    binding.Invalidate(MapObservationChanges(request.Changes));
+                }
             }
         }
     }
@@ -359,6 +363,23 @@ internal sealed class GsmtcBackend : IMediaBackend
             : SessionObservationChanges.Playback;
     }
 
+    private static SessionObservationChanges MapObservationChanges(
+        MediaBackendObservationChanges changes)
+    {
+        var result = SessionObservationChanges.None;
+        if ((changes & MediaBackendObservationChanges.Playback) != 0)
+        {
+            result |= SessionObservationChanges.Playback;
+        }
+
+        if ((changes & MediaBackendObservationChanges.Timeline) != 0)
+        {
+            result |= SessionObservationChanges.Timeline;
+        }
+
+        return result;
+    }
+
     private static MediaBackendSessionSnapshot CreateFallbackSnapshot(SessionBinding binding)
     {
         var application = new MediaApplicationSnapshot(
@@ -375,67 +396,112 @@ internal sealed class GsmtcBackend : IMediaBackend
             MediaCapabilities.None);
     }
 
-    private static async Task<MediaBackendSessionSnapshot> ReadSessionAsync(
+    private async Task<MediaBackendSessionSnapshot> ReadSessionAsync(
         SessionBinding binding,
         SessionObservationPlan plan)
     {
         var previous = plan.PreviousSnapshot;
-        var mediaProperties = previous?.MediaProperties;
-        var timelineProperties = previous?.TimelineProperties;
+        var application = previous?.MediaProperties.Application
+            ?? new MediaApplicationSnapshot(
+                binding.ApplicationId,
+                binding.ApplicationId,
+                null,
+                null);
+        var mediaProperties = previous?.MediaProperties
+            ?? MediaPropertiesSnapshot.Empty(application);
+        var timelineProperties = previous?.TimelineProperties
+            ?? MediaTimelinePropertiesSnapshot.Empty;
         var playbackState = previous?.PlaybackState ?? MediaPlaybackState.Unknown;
         var capabilities = previous?.Capabilities ?? MediaCapabilities.None;
 
         if ((plan.Changes & SessionObservationChanges.Playback) != 0)
         {
-            var playbackInfo = binding.Session.GetPlaybackInfo();
-            playbackState = MapPlaybackState(playbackInfo?.PlaybackStatus);
-            capabilities = MapCapabilities(playbackInfo);
+            try
+            {
+                var playbackInfo = binding.Session.GetPlaybackInfo();
+                playbackState = MapPlaybackState(playbackInfo?.PlaybackStatus);
+                capabilities = MapCapabilities(playbackInfo);
+            }
+            catch (Exception ex) when (CanRetainObservationPart(ex))
+            {
+                binding.RestoreObservation(SessionObservationChanges.Playback);
+                MediaLog.SessionObservationPartFailed(
+                    this._logger,
+                    binding.ApplicationId,
+                    "playback information",
+                    ex);
+            }
         }
 
         if ((plan.Changes & SessionObservationChanges.Timeline) != 0)
         {
-            var timeline = binding.Session.GetTimelineProperties();
-            timelineProperties = new(
-                timeline.StartTime,
-                timeline.EndTime,
-                timeline.MinSeekTime,
-                timeline.MaxSeekTime,
-                timeline.Position,
-                timeline.LastUpdatedTime);
+            try
+            {
+                var timeline = binding.Session.GetTimelineProperties();
+                timelineProperties = new(
+                    timeline.StartTime,
+                    timeline.EndTime,
+                    timeline.MinSeekTime,
+                    timeline.MaxSeekTime,
+                    timeline.Position,
+                    timeline.LastUpdatedTime);
+            }
+            catch (Exception ex) when (CanRetainObservationPart(ex))
+            {
+                binding.RestoreObservation(SessionObservationChanges.Timeline);
+                MediaLog.SessionObservationPartFailed(
+                    this._logger,
+                    binding.ApplicationId,
+                    "timeline",
+                    ex);
+            }
         }
 
         if ((plan.Changes & SessionObservationChanges.MediaProperties) != 0)
         {
-            var properties = await binding.Session.TryGetMediaPropertiesAsync();
-            var application = new MediaApplicationSnapshot(
-                binding.ApplicationId,
-                binding.ApplicationId,
-                null,
-                null);
-            var artwork = binding.UpdateArtworkReference(properties?.Thumbnail);
-            mediaProperties = properties is null
-                ? MediaPropertiesSnapshot.Empty(application)
-                : new(
-                    application,
-                    properties.Title ?? string.Empty,
-                    properties.Artist ?? string.Empty,
-                    properties.AlbumTitle ?? string.Empty,
-                    properties.AlbumArtist ?? string.Empty,
-                    properties.Subtitle ?? string.Empty,
-                    properties.Genres?.ToImmutableArray() ?? [],
-                    properties.TrackNumber,
-                    properties.AlbumTrackCount,
-                    MapContentType(properties.PlaybackType),
-                    artwork);
+            try
+            {
+                var properties = await binding.Session.TryGetMediaPropertiesAsync();
+                var artwork = binding.UpdateArtworkReference(properties?.Thumbnail);
+                mediaProperties = properties is null
+                    ? MediaPropertiesSnapshot.Empty(application)
+                    : new(
+                        application,
+                        properties.Title ?? string.Empty,
+                        properties.Artist ?? string.Empty,
+                        properties.AlbumTitle ?? string.Empty,
+                        properties.AlbumArtist ?? string.Empty,
+                        properties.Subtitle ?? string.Empty,
+                        properties.Genres?.ToImmutableArray() ?? [],
+                        properties.TrackNumber,
+                        properties.AlbumTrackCount,
+                        MapContentType(properties.PlaybackType),
+                        artwork);
+            }
+            catch (Exception ex) when (CanRetainObservationPart(ex))
+            {
+                binding.RestoreObservation(SessionObservationChanges.MediaProperties);
+                MediaLog.SessionObservationPartFailed(
+                    this._logger,
+                    binding.ApplicationId,
+                    "media properties",
+                    ex);
+            }
         }
 
         return new(
             binding.Id,
             binding.Generation,
-            mediaProperties!,
-            timelineProperties!,
+            mediaProperties,
+            timelineProperties,
             playbackState,
             capabilities);
+    }
+
+    private static bool CanRetainObservationPart(Exception exception)
+    {
+        return exception is not OperationCanceledException &&
+               !GsmtcErrors.IndicatesStaleSession(exception);
     }
 
     private static MediaCapabilities MapCapabilities(

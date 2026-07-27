@@ -110,4 +110,11 @@ internal static partial class MediaLog
     public static partial void CommandMailboxFull(
         ILogger logger,
         MediaOperation operation);
+
+    [LoggerMessage(EventId = 19, Level = LogLevel.Warning, Message = "Could not observe GSMTC {ObservationPart} for session {ApplicationId}; retaining that part of its last snapshot.")]
+    public static partial void SessionObservationPartFailed(
+        ILogger logger,
+        string applicationId,
+        string observationPart,
+        Exception exception);
 }
