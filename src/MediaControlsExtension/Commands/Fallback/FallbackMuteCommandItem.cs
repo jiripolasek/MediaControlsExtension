@@ -11,7 +11,7 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem, IIc
     private readonly SettingsManager _settingsManager;
     private readonly SetMuteMediaInvokableCommand _command;
     private readonly IIconService _iconService;
-    private readonly QueryCommandProcessor _queryProcessor = new([
+    private readonly QueryCommandProcessor _queryProcessor = new((CommandMapping[])[
         new("mu", "Mute"),
         new("media", "Media Controls: Mute"),
         new("vol", "Volume mute"),

@@ -60,10 +60,11 @@ internal static class IconThemeCatalog
     ];
 
     public static IReadOnlyList<IconThemeInfo> Themes { get; } =
-        [.. s_themes.Select(static theme => theme.Info)];
+        s_themes.Select(static theme => theme.Info).ToArray();
 
     public static IReadOnlyList<IconRequest> RequiredIcons { get; } =
-    [
+        (IconRequest[])
+        [
         new(ThemedIcon.PlayPause),
         new(ThemedIcon.Play),
         new(ThemedIcon.Pause),
@@ -80,7 +81,7 @@ internal static class IconThemeCatalog
         new(ThemedIcon.VolumeLow),
         new(ThemedIcon.VolumeMedium),
         new(ThemedIcon.VolumeHigh),
-    ];
+        ];
 
     public static IconThemeDefinition GetThemeOrDefault(string? id)
     {

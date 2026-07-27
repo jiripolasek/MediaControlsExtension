@@ -11,7 +11,7 @@ internal sealed partial class FallbackPlayCommandItem : FallbackCommandItem, IIc
     private readonly SettingsManager _settingsManager;
     private readonly PlayPauseMediaCommand _command;
     private readonly IIconService _iconService;
-    private readonly QueryCommandProcessor _queryProcessor = new([
+    private readonly QueryCommandProcessor _queryProcessor = new((CommandMapping[])[
         new("pl", "Play"),
         new("pa", "Pause"),
         new("t", "Toggle Play/Pause"),

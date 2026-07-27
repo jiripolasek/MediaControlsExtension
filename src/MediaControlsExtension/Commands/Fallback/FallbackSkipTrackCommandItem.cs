@@ -11,7 +11,7 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
     private readonly SettingsManager _settingsManager;
     private readonly NextTrackInvokableMediaCommand _command;
     private readonly IIconService _iconService;
-    private readonly QueryCommandProcessor _queryProcessor = new([
+    private readonly QueryCommandProcessor _queryProcessor = new((CommandMapping[])[
         new("skip", "Skip track"),
         new("next", "Next track"),
         new("play n", "Play next track"),

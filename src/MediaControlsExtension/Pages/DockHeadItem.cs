@@ -164,8 +164,11 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 this.Title = properties.Title;
                 this.Subtitle = StringHelper.JoinNonEmpty(
                     " • ",
-                    properties.Artist,
-                    viewModel.ApplicationName);
+                    (string?[])
+                    [
+                        properties.Artist,
+                        viewModel.ApplicationName,
+                    ]);
 
                 if (this._settingsManager.ShowThumbnails)
                 {

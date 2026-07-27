@@ -49,7 +49,7 @@ internal sealed partial class IconService : IIconService
         {
             lock (this._lock)
             {
-                return [.. this._diagnostics];
+                return this._diagnostics.ToArray();
             }
         }
     }
@@ -282,7 +282,7 @@ internal sealed partial class IconService : IIconService
 
 internal static class IconAssetConvention
 {
-    public static IReadOnlyList<string> SupportedExtensions { get; } = [".svg", ".png"];
+    public static IReadOnlyList<string> SupportedExtensions { get; } = (string[])[".svg", ".png"];
 
     public static bool IsSupportedExtension(string extension)
         => SupportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);

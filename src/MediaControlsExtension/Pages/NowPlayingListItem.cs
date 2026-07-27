@@ -251,9 +251,12 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                     ? string.Empty
                     : StringHelper.JoinNonEmpty(
                         " • ",
-                        properties.Title,
-                        properties.Artist,
-                        viewModel.ApplicationName);
+                        (string?[])
+                        [
+                            properties.Title,
+                            properties.Artist,
+                            viewModel.ApplicationName,
+                        ]);
 
                 this.UpdateIcon(playbackAction.CommandIcon);
 #if FF_ENABLE_FULL_METADATA_PAGE

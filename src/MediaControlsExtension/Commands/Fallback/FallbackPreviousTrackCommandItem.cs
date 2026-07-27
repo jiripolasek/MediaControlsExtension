@@ -11,7 +11,7 @@ internal sealed partial class FallbackPreviousTrackCommandItem : FallbackCommand
     private readonly SettingsManager _settingsManager;
     private readonly PreviousTrackInvokableMediaCommand _command;
     private readonly IIconService _iconService;
-    private readonly QueryCommandProcessor _queryProcessor = new([
+    private readonly QueryCommandProcessor _queryProcessor = new((CommandMapping[])[
         new("pre", "Previous track"),
         new("media", "Media Controls: Previous track"),
     ]);
