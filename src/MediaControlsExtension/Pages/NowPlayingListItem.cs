@@ -127,11 +127,13 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         var toggleShuffleCommand = new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, resultFactory) { Name = Strings.Command_ToggleShuffle };
         this._mediaContextCommandsWithoutMetadata = [
             new CommandContextItem(this._switchToApplicationCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
+            new Separator(),
             new CommandContextItem(this._nextTrackCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
             new CommandContextItem(this._previousTrackCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
+            new Separator(),
             new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
             new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
-
+            new Separator(),
             new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
             new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];

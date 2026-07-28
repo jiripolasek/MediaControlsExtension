@@ -285,8 +285,9 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
 
     private IContextItem[] BuildCommands(MediaCommandAvailability availability)
     {
-        var commands = new List<IContextItem>(6);
+        var commands = new List<IContextItem>(9);
         commands.Add(this._playPauseCommand);
+        commands.Add(new Separator());
         if (availability.CanSkipNext)
         {
             commands.Add(this._nextCommand);
@@ -295,6 +296,11 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         if (availability.CanSkipPrevious)
         {
             commands.Add(this._previousCommand);
+        }
+
+        if (availability.CanToggleShuffle || availability.CanToggleRepeat)
+        {
+            commands.Add(new Separator());
         }
 
         if (availability.CanToggleShuffle)
@@ -307,6 +313,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             commands.Add(this._repeatCommand);
         }
 
+        commands.Add(new Separator());
         commands.Add(this._switchToApplicationCommand);
         return [.. commands];
     }

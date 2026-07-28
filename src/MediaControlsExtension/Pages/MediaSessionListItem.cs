@@ -147,8 +147,10 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
 #if FF_ENABLE_FULL_METADATA_PAGE
             new CommandContextItem(this._metadataPage) { Icon = Icons.Metadata },
 #endif
+            new Separator(),
             new CommandContextItem(this._nextTrackCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
             new CommandContextItem(this._previousTrackCommand) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline },
+            new Separator(),
             new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
             new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
