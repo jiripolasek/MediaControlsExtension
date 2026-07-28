@@ -40,7 +40,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        bool asBandPage = false)
+        DockHeadCommandTargets? dockHeadCommandTargets = null)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
@@ -50,8 +50,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
 
-        this._isBandPage = asBandPage;
-        this._iconSurface = asBandPage
+        this._isBandPage = dockHeadCommandTargets is not null;
+        this._iconSurface = this._isBandPage
             ? IconSurface.Dock
             : IconSurface.CommandPalette;
         this._settingsManager = settingsManager;
@@ -88,13 +88,14 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._resultFactory,
             this._iconService,
             this._isBandPage);
-        this._bandFirstItem = this._isBandPage
+        this._bandFirstItem = dockHeadCommandTargets is not null
             ? new DockHeadItem(
                 this._mediaService,
                 this._viewModels,
                 this._settingsManager,
                 this._resultFactory,
-                this._iconService)
+                this._iconService,
+                dockHeadCommandTargets)
             : null;
 
         // Do not reuse the named track commands from the now-playing item here.

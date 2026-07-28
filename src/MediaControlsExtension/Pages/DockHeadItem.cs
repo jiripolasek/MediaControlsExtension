@@ -12,11 +12,13 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly SettingsManager _settingsManager;
     private readonly IIconService _iconService;
+    private readonly DockHeadCommandTargets _commandTargets;
     private readonly ThrottledAction _updateMediaInfo;
 
     private readonly Lock _currentSessionLock = new();
     private readonly Lock _updateLock = new();
     private readonly IContextItem[] _mediaContextCommands;
+    private readonly IContextItem[] _mediaContextCommandsWithSwitchToApplication;
 
     private readonly BringAssociatedAppToFrontCommand _primaryMediaCommand;
     private readonly NoOpCommand _noOpCommand = new();
@@ -30,19 +32,26 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         MediaSessionViewModelCache viewModels,
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService) : base(new NoOpCommand())
+        IIconService iconService,
+        DockHeadCommandTargets commandTargets) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(commandTargets);
+        ArgumentNullException.ThrowIfNull(commandTargets.MediaControlsPage);
 
         this._mediaService = mediaService;
         this._viewModels = viewModels;
         this._settingsManager = settingsManager;
         this._iconService = iconService;
+        this._commandTargets = commandTargets;
         this._updateMediaInfo = new(150, "DockHeadItem.Update", this.UpdateCurrentSession);
 
+        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(
+            this._mediaService,
+            this._viewModels);
         this._mediaContextCommands = [
 
             new Separator(),
@@ -57,10 +66,10 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
             new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
-
-        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(
-            this._mediaService,
-            this._viewModels);
+        this._mediaContextCommandsWithSwitchToApplication = [
+            new CommandContextItem(this._primaryMediaCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
+            .. this._mediaContextCommands,
+        ];
         this.Command = this._noOpCommand;
 
         this.Title = string.Empty;
@@ -146,6 +155,8 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 return;
             }
 
+            var primaryCommand = this.ResolvePrimaryCommand(viewModel);
+            this.Command = primaryCommand;
             if (viewModel is not { IsAvailable: true })
             {
                 this.Title = "";
@@ -154,7 +165,6 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                     ThemedIcon.NoMedia,
                     IconSurface.Dock);
                 this._lastIcon = null;
-                this.Command = this._noOpCommand;
                 this.MoreCommands = [];
 
             }
@@ -184,11 +194,39 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                     this.UpdateIcon(icon.IconInfo);
                 }
 
-                this.Command = this._primaryMediaCommand;
-                this.MoreCommands = this._mediaContextCommands;
+                this.MoreCommands = ReferenceEquals(
+                    primaryCommand,
+                    this._primaryMediaCommand)
+                    ? this._mediaContextCommands
+                    : this._mediaContextCommandsWithSwitchToApplication;
             }
         }
     }
+
+    private ICommand ResolvePrimaryCommand(MediaSessionViewModel? viewModel)
+    {
+        return this._settingsManager.DockCurrentMediaAction switch
+        {
+            DockCurrentMediaActionMode.Default =>
+                this.ResolveDefaultPrimaryCommand(viewModel),
+            DockCurrentMediaActionMode.SwitchToPlayer =>
+                this.ResolvePlayerCommand(viewModel),
+            DockCurrentMediaActionMode.OpenMediaControls =>
+                this._commandTargets.MediaControlsPage,
+            DockCurrentMediaActionMode.OpenMediaMetadata =>
+                this._commandTargets.CurrentMediaMetadataPage ??
+                this.ResolvePlayerCommand(viewModel),
+            _ => this.ResolveDefaultPrimaryCommand(viewModel),
+        };
+    }
+
+    private ICommand ResolveDefaultPrimaryCommand(MediaSessionViewModel? viewModel)
+        => this.ResolvePlayerCommand(viewModel);
+
+    private ICommand ResolvePlayerCommand(MediaSessionViewModel? viewModel)
+        => viewModel is { IsAvailable: true }
+            ? this._primaryMediaCommand
+            : this._noOpCommand;
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {

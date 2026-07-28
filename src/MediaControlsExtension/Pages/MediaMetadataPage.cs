@@ -11,12 +11,12 @@ namespace JPSoftworks.MediaControlsExtension.Pages;
 
 #if FF_ENABLE_FULL_METADATA_PAGE
 [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The visibility lifecycle cancels and disposes artwork work when the page unloads.")]
-internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
+internal partial class MediaMetadataPage : VisibilityAwareContentPage
 {
     private readonly Lock _stateLock = new();
     private readonly IMediaService _mediaService;
     private readonly MediaSessionViewModelCache _viewModels;
-    private readonly MediaSessionId _sessionId;
+    private readonly MediaSessionId? _sessionId;
     private readonly OptimisticPlaybackCommand _playPauseAction;
     // Separate content blocks are always stacked vertically. FormContent keeps the
     // artwork and metadata in one Adaptive Card so they can share a column layout.
@@ -36,12 +36,13 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
     private CancellationTokenSource? _artworkCancellation;
     private string? _artworkDataUri;
     private MediaMetadataSnapshot? _snapshot;
+    private MediaCommandAvailability? _commandAvailability;
     private bool _isLoaded;
 
-    private MediaMetadataPage(
+    protected MediaMetadataPage(
         IMediaService mediaService,
         MediaSessionViewModelCache viewModels,
-        MediaSessionId sessionId,
+        MediaSessionId? sessionId,
         ICommand previousCommand,
         OptimisticPlaybackCommand playPauseCommand,
         ICommand nextCommand,
@@ -136,7 +137,7 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             }
 
             this._isLoaded = true;
-            this._mediaService.SessionsChanged += this.MediaServiceOnSessionsChanged;
+            this.SubscribeToTargetChanges();
             this.SetViewModelUnderLock(this.ResolveViewModel());
         }
     }
@@ -151,23 +152,38 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             }
 
             this._isLoaded = false;
-            this._mediaService.SessionsChanged -= this.MediaServiceOnSessionsChanged;
+            this.UnsubscribeFromTargetChanges();
             this.SetViewModelUnderLock(null);
             this._snapshot = null;
             this.CancelArtworkLoadUnderLock();
         }
     }
 
-    private MediaSessionViewModel? ResolveViewModel()
+    protected IMediaService MediaService => this._mediaService;
+
+    protected MediaSessionViewModelCache ViewModels => this._viewModels;
+
+    protected virtual MediaSessionViewModel? ResolveViewModel()
     {
+        if (this._sessionId is not { } sessionId)
+        {
+            return null;
+        }
+
         var session = this._mediaService.Sessions.FirstOrDefault(
-            session => session.Id == this._sessionId);
+            session => session.Id == sessionId);
         return session is not null
             ? this._viewModels.GetOrCreate(session)
             : null;
     }
 
-    private void MediaServiceOnSessionsChanged(object? sender, EventArgs args)
+    protected virtual void SubscribeToTargetChanges()
+        => this._mediaService.SessionsChanged += this.MediaServiceOnSessionsChanged;
+
+    protected virtual void UnsubscribeFromTargetChanges()
+        => this._mediaService.SessionsChanged -= this.MediaServiceOnSessionsChanged;
+
+    protected void RefreshTarget()
     {
         lock (this._stateLock)
         {
@@ -177,6 +193,9 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             }
         }
     }
+
+    private void MediaServiceOnSessionsChanged(object? sender, EventArgs args)
+        => this.RefreshTarget();
 
     private void SetViewModelUnderLock(MediaSessionViewModel? viewModel)
     {
@@ -219,8 +238,14 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
     {
         if (this._viewModel is not { IsAvailable: true } viewModel)
         {
+            this._snapshot = null;
             this.Title = Strings.Metadata_PageTitle!;
-            this.Commands = [];
+            if (this._commandAvailability is not null)
+            {
+                this._commandAvailability = null;
+                this.Commands = [];
+            }
+
             this._metadata.DataJson = BuildCardData(null, null);
             this.CancelArtworkLoadUnderLock();
             return;
@@ -233,7 +258,13 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
             this._snapshot = snapshot;
             this.Title = MediaMetadataFormatting.ValueOrNotAvailable(snapshot.Title);
             this._metadata.DataJson = BuildCardData(snapshot, this._artworkDataUri);
-            this.Commands = this.BuildCommands(snapshot);
+        }
+
+        var commandAvailability = MediaCommandAvailability.FromSnapshot(snapshot);
+        if (this._commandAvailability != commandAvailability)
+        {
+            this._commandAvailability = commandAvailability;
+            this.Commands = this.BuildCommands(commandAvailability);
         }
 
         var artworkThumbnail = viewModel.Artwork?.Stream is not null
@@ -252,32 +283,47 @@ internal sealed partial class MediaMetadataPage : VisibilityAwareContentPage
         }
     }
 
-    private IContextItem[] BuildCommands(MediaMetadataSnapshot snapshot)
+    private IContextItem[] BuildCommands(MediaCommandAvailability availability)
     {
         var commands = new List<IContextItem>(6);
         commands.Add(this._playPauseCommand);
-        if (snapshot.CanSkipNext)
+        if (availability.CanSkipNext)
         {
             commands.Add(this._nextCommand);
         }
 
-        if (snapshot.CanSkipPrevious)
+        if (availability.CanSkipPrevious)
         {
             commands.Add(this._previousCommand);
         }
 
-        if (snapshot.CanToggleShuffle)
+        if (availability.CanToggleShuffle)
         {
             commands.Add(this._shuffleCommand);
         }
 
-        if (snapshot.CanToggleRepeat)
+        if (availability.CanToggleRepeat)
         {
             commands.Add(this._repeatCommand);
         }
 
         commands.Add(this._switchToApplicationCommand);
         return [.. commands];
+    }
+
+    private readonly record struct MediaCommandAvailability(
+        bool CanSkipPrevious,
+        bool CanSkipNext,
+        bool CanToggleShuffle,
+        bool CanToggleRepeat)
+    {
+        public static MediaCommandAvailability FromSnapshot(
+            MediaMetadataSnapshot snapshot) =>
+            new(
+                snapshot.CanSkipPrevious,
+                snapshot.CanSkipNext,
+                snapshot.CanToggleShuffle,
+                snapshot.CanToggleRepeat);
     }
 
     private async Task LoadArtworkAsync(

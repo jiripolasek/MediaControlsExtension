@@ -116,6 +116,13 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _dockCurrentMediaAction = new(
+        Namespaced("DockCurrentMediaAction"),
+        Strings.Settings_DockCurrentMediaAction_Title!,
+        Strings.Settings_DockCurrentMediaAction_Subtitle!,
+        CreateDockCurrentMediaActionChoices());
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ChoiceSetSetting _commandPaletteIconTheme = new(
         Namespaced("CommandPaletteIconTheme"),
         Resource("Settings_CommandPaletteIconTheme_Title"),
@@ -160,6 +167,30 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
 
+    public DockCurrentMediaActionMode DockCurrentMediaAction
+    {
+        get
+        {
+            if (!Enum.TryParse(
+                    this._dockCurrentMediaAction.Value,
+                    true,
+                    out DockCurrentMediaActionMode result) ||
+                !Enum.IsDefined(result))
+            {
+                return DockCurrentMediaActionMode.Default;
+            }
+
+#if !FF_ENABLE_FULL_METADATA_PAGE
+            if (result == DockCurrentMediaActionMode.OpenMediaMetadata)
+            {
+                return DockCurrentMediaActionMode.Default;
+            }
+#endif
+
+            return result;
+        }
+    }
+
     public string CommandPaletteIconThemeId =>
         IconThemeCatalog.ResolveSelection(this._commandPaletteIconTheme.Value);
 
@@ -182,6 +213,7 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
             Namespaced("Layout.Dock"),
             Strings.Settings_Group_Dock!));
         this.Settings.Add(this._dockIconTheme);
+        this.Settings.Add(this._dockCurrentMediaAction);
         this.Settings.Add(this._showSkipCommandsInDockBand);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.CommandBehavior"),
@@ -237,6 +269,31 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         return choices;
     }
 
+    private static List<ChoiceSetSetting.Choice> CreateDockCurrentMediaActionChoices()
+    {
+        List<ChoiceSetSetting.Choice> choices =
+        [
+            // The first option is the default one (hardcoded in the extension SDK).
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_Default!,
+                DockCurrentMediaActionMode.Default.ToString("G")),
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_SwitchToPlayer!,
+                DockCurrentMediaActionMode.SwitchToPlayer.ToString("G")),
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_OpenMediaControls!,
+                DockCurrentMediaActionMode.OpenMediaControls.ToString("G")),
+        ];
+
+#if FF_ENABLE_FULL_METADATA_PAGE
+        choices.Add(new(
+            Strings.Settings_DockCurrentMediaAction_Option_OpenMediaMetadata!,
+            DockCurrentMediaActionMode.OpenMediaMetadata.ToString("G")));
+#endif
+
+        return choices;
+    }
+
     private static string Resource(string name)
         => Strings.ResourceManager.GetString(name, Strings.Culture) ?? name;
 
@@ -255,4 +312,12 @@ internal enum GlobalCommandsMode
     Disabled = 0,
     SlashPrefix = 1,
     Enabled = 2
+}
+
+internal enum DockCurrentMediaActionMode
+{
+    Default = 0,
+    SwitchToPlayer = 1,
+    OpenMediaControls = 2,
+    OpenMediaMetadata = 3
 }

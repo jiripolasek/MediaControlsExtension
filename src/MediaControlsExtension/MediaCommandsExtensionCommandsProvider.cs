@@ -61,6 +61,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             Title = this.DisplayName,
             MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)]
         };
+        IPage? currentMediaMetadataPage = null;
+#if FF_ENABLE_FULL_METADATA_PAGE
+        currentMediaMetadataPage = new CurrentMediaMetadataPage(
+            this._mediaService,
+            this._mediaSessionViewModels,
+            this._resultFactory,
+            this._iconService);
+#endif
         this._nowPlayingItem = new NowPlayingListItem(
             this._mediaService,
             this._mediaSessionViewModels,
@@ -108,7 +116,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._settingsManager,
             this._resultFactory,
             this._iconService,
-            true);
+            new DockHeadCommandTargets(
+                this._mediaControlsExtensionPage,
+                currentMediaMetadataPage));
         this._bands = [new CommandItem(this._mediaControlsBand) { Title = Strings.Name! }];
         this.UpdateTopLevelCommands();
 
