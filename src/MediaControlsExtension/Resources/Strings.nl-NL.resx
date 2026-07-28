@@ -154,10 +154,10 @@
     <value>Toggle herhalen</value>
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
-    <value>Schakelen</value>
+    <value>Willekeurige volgorde in- of uitschakelen</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Spelen</value>
+    <value>Wordt afgespeeld</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Stomme</value>
@@ -209,7 +209,7 @@
 Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenovergestelde te doen.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Speel</value>
+    <value>Afspelen</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pauze</value>
@@ -245,7 +245,7 @@ Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenove
     <value>Stop {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Speel {0}</value>
+    <value>{0} afspelen</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Nu aan het spelen {0}</value>
@@ -266,7 +266,7 @@ Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenove
     <value>Kan het afspelen niet pauzeren</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Spelen</value>
+    <value>Wordt afgespeeld</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Kan nummer niet afspelen</value>
@@ -332,7 +332,7 @@ Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenove
     <value>Kon niet overschakelen naar {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Spelen {0}</value>
+    <value>Wordt afgespeeld in {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Toastberichten weergeven</value>
@@ -372,5 +372,174 @@ Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenove
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Verbergen na afspelen/pauzeren op mediasessie</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>Volledige metagegevens bekijken</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Artiest van het album</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>Toepassings-ID</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Kunstenaar</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Commando's</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Duur</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Mediatype</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Afbeelding</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Muziek</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Onbekend</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Niet beschikbaar</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>Afspeelstatus</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Mediaspeler</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Ondertitel</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Titel</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Track</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} van {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>Er zijn geen metagegevens van de media beschikbaar.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Albumhoes</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Metagegevens van media</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Metagegevens</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Technische informatie</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Stel het volume in op {0}%</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Volume verlagen</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Volume verhogen</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Volume - {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Volume - gedempt</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>Media-details standaard weergeven</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Open het detailvenster automatisch op de pagina ‘Media-bedieningselementen’.</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>De mediabediening reageert niet meer. Start de extensie opnieuw op om het nog eens te proberen.</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Volumeregeling inschakelen</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Toon de systeemvolumecommando's van deze extensie. Schakel deze optie uit als een andere extensie deze al biedt.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Pagina ‘Opdrachtpalet’</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Pictogramthema</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Standaard ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Kies pictogrammen voor de startpagina van het opdrachtpalet en de lijstpagina met mediaknoppen.</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Pictogramthema</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Kies pictogrammen voor het Command Palette Dock.</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Uiterlijk en gedrag</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Commando's</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Hulp en dankbetuigingen</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Hulp vragen, een probleem melden of de broncode bekijken](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Gemaakt door [Jiří Polášek](https://jiripolasek.com)
+_Vrijgegeven onder de Apache 2.0-licentie_
+_Copyright © Jiří Polášek_
+
+Met speciale dank aan [Mike Griese](https://github.com/zadjii-msft)</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>Actie voor huidig media-item</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Kies wat er gebeurt als je het huidige media-item in het Dock selecteert.</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>Naar mediaspeler gaan</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>Media-bedieningselementen openen</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>Mediametadata openen</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>Standaard (Naar mediaspeler gaan)</value>
   </data>
 </root>

@@ -122,6 +122,7 @@
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
+    <comment>Verb. Opens the Media Controls page in Command Palette.</comment>
   </data>
   <data name="TogglePlayPause" xml:space="preserve">
     <value>Toggle Play / Pause</value>
@@ -131,9 +132,11 @@
   </data>
   <data name="Command_SwitchToApplication" xml:space="preserve">
     <value>Switch to Application</value>
+    <comment>Application means the software media player app, not an application form.</comment>
   </data>
   <data name="Command_ViewMetadata" xml:space="preserve">
     <value>View full metadata</value>
+    <comment>Verb. Opens the metadata page for the current media item.</comment>
   </data>
   <data name="Details_Album" xml:space="preserve">
     <value>Album</value>
@@ -143,6 +146,7 @@
   </data>
   <data name="Details_ApplicationId" xml:space="preserve">
     <value>Application ID</value>
+    <comment>Identifier of the software media player application.</comment>
   </data>
   <data name="Details_Artist" xml:space="preserve">
     <value>Artist</value>
@@ -152,12 +156,14 @@
   </data>
   <data name="Details_Length" xml:space="preserve">
     <value>Length</value>
+    <comment>Playback duration of the current media item, not physical length.</comment>
   </data>
   <data name="Details_Genres" xml:space="preserve">
     <value>Genres</value>
   </data>
   <data name="Details_MediaType" xml:space="preserve">
     <value>Media type</value>
+    <comment>Category of the current media content, such as music, video, or image.</comment>
   </data>
   <data name="Details_MediaType_Image" xml:space="preserve">
     <value>Image</value>
@@ -179,18 +185,22 @@
   </data>
   <data name="Details_Player" xml:space="preserve">
     <value>Player</value>
+    <comment>Software application that owns the media session, not a person or game participant.</comment>
   </data>
   <data name="Details_Subtitle" xml:space="preserve">
     <value>Subtitle</value>
+    <comment>Optional secondary-title metadata supplied by the media session, not video captions.</comment>
   </data>
   <data name="Details_Title" xml:space="preserve">
     <value>Title</value>
   </data>
   <data name="Details_TrackNumber" xml:space="preserve">
     <value>Track</value>
+    <comment>Track or song number within an album, not a railway or race track.</comment>
   </data>
   <data name="Details_TrackNumberWithCount" xml:space="preserve">
     <value>{0} of {1}</value>
+    <comment>{0} is the current track number; {1} is the total number of tracks on the album.</comment>
   </data>
   <data name="Metadata_NoMedia" xml:space="preserve">
     <value>No media metadata is available.</value>
@@ -254,9 +264,11 @@
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
     <value>Toggle Shuffle</value>
+    <comment>Shuffle means random media playback order, not mixing physical objects.</comment>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
     <value>Playing</value>
+    <comment>Media playback state; the media is currently playing, not playing a game.</comment>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Mute</value>
@@ -299,6 +311,7 @@
   </data>
   <data name="Command_Play" xml:space="preserve">
     <value>Play</value>
+    <comment>Verb. Starts or resumes media playback, not playing a game.</comment>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pause</value>
@@ -308,9 +321,11 @@
   </data>
   <data name="Command_NextApp" xml:space="preserve">
     <value>Next Application</value>
+    <comment>Application means another software media app or media session.</comment>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
     <value>Previous Application</value>
+    <comment>Application means another software media app or media session.</comment>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Search media commands or sessions…</value>
@@ -335,6 +350,7 @@
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
     <value>Play {0}</value>
+    <comment>Verb. Starts or resumes media playback for {0}; {0} is the media application name.</comment>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Now playing {0}</value>
@@ -359,6 +375,7 @@
   </data>
   <data name="Toast_Volume" xml:space="preserve">
     <value>Volume</value>
+    <comment>System audio output volume, not physical size or a book volume.</comment>
   </data>
   <data name="Toast_Paused" xml:space="preserve">
     <value>Paused</value>
@@ -368,6 +385,7 @@
   </data>
   <data name="Toast_Playing" xml:space="preserve">
     <value>Playing</value>
+    <comment>Media playback state; the media is currently playing, not playing a game.</comment>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Could not play track</value>
@@ -398,9 +416,11 @@
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
     <value>Shuffle disabled</value>
+    <comment>Random media playback order is disabled.</comment>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
     <value>Shuffle enabled</value>
+    <comment>Random media playback order is enabled.</comment>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Could not toggle shuffle</value>
@@ -437,6 +457,7 @@
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
     <value>Playing {0}</value>
+    <comment>Media playback state for {0}; {0} is the media application name.</comment>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Show action confirmations</value>
@@ -488,30 +509,38 @@
   </data>
   <data name="Settings_Group_Dock" xml:space="preserve">
     <value>Dock</value>
+    <comment>Command Palette Dock UI surface; do not translate as a harbor, pier, or ship dock.</comment>
   </data>
   <data name="Settings_DockIconTheme_Title" xml:space="preserve">
     <value>Icon theme</value>
   </data>
   <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
     <value>Choose icons for the Command Palette Dock.</value>
+    <comment>Command Palette Dock is a product UI surface, not a harbor or ship dock.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
     <value>Current media item action</value>
+    <comment>Current media item means the now-playing entry displayed in the Command Palette Dock.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
     <value>Choose what happens when you select the current media item in the Dock.</value>
+    <comment>Dock means the Command Palette Dock UI surface; current media item is its now-playing entry.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>Default (Switch to player)</value>
+    <comment>Player means the software media player application; the text in parentheses describes the default action.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
     <value>Switch to player</value>
+    <comment>Verb. Brings the software media player application to the foreground.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
     <value>Open Media Controls</value>
+    <comment>Open is an imperative verb; Media Controls is the extension page name.</comment>
   </data>
   <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
     <value>Open media metadata</value>
+    <comment>Open is an imperative verb; opens the metadata page for the current media item.</comment>
   </data>
   <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
     <value>Appearance and behavior</value>

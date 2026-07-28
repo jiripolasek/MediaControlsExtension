@@ -157,7 +157,7 @@
     <value>Přepnout náhodné přehrávání</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Hraní</value>
+    <value>Přehrává se</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Ztlumit</value>
@@ -209,7 +209,7 @@
 Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Hrát</value>
+    <value>Přehrát</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pauza</value>
@@ -221,7 +221,7 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Další aplikace</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>Předchozí žádost</value>
+    <value>Předchozí aplikace</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Hledat mediální příkazy nebo relace…</value>
@@ -245,7 +245,7 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Zastavit {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Hrát {0}</value>
+    <value>Přehrát {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Právě se přehrává {0}</value>
@@ -266,7 +266,7 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Přehrávání se nepodařilo pozastavit</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Hraní</value>
+    <value>Přehrává se</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Nepodařilo se přehrát skladbu</value>
@@ -296,10 +296,10 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Ovládání náhodného přehrávání není pro tuto relaci k dispozici</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Míchání vypnuto</value>
+    <value>Náhodné přehrávání vypnuto</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Míchání povoleno</value>
+    <value>Náhodné přehrávání zapnuto</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Nepodařilo se přepnout náhodné přehrávání</value>
@@ -332,7 +332,7 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Nepodařilo se přepnout na {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Hraje se {0}</value>
+    <value>Přehrává se v aplikaci {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Zobrazovat toast zprávy</value>
@@ -372,5 +372,174 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Skrýt po přepnutí přehrávání/pozastavení v mediální relaci</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>Zobrazit úplná metadata</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Interpret alba</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>ID aplikace</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Umělec</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Příkazy</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Doba trvání</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Žánry</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Typ média</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Obrázek</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Hudba</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Neznámé</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Není k dispozici</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>Stav přehrávání</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Přehrávač</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Podtitul</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Název</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Skladba</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} z {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>Nejsou k dispozici žádná metadata k médiím.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Obal alba</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Metadata médií</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Metadata</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Technické informace</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Nastavit hlasitost na {0} %</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Snížit hlasitost</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Zvýšit hlasitost</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Hlasitost – {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Hlasitost – ztlumeno</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>Ve výchozím nastavení zobrazit podrobnosti o médiích</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Na stránce „Ovládací prvky médií“ se má automaticky otevřít panel s podrobnostmi.</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Hlasitost</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>Ovládací prvky médií přestaly reagovat. Restartujte rozšíření a zkuste to znovu.</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Zapnout ovládání hlasitosti</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Zobrazit systémové příkazy pro nastavení hlasitosti tohoto rozšíření. Tuto funkci vypněte, pokud je již poskytuje jiné rozšíření.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Stránka „Paleta příkazů“</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Téma ikon</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Výchozí ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Vyberte ikony pro úvodní stránku palety příkazů a stránku se seznamem ovládacích prvků médií.</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Téma ikon</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Vyberte ikony pro Dock palety příkazů.</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Vzhled a chování</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Příkazy</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Nápověda a poděkování</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Získat pomoc, nahlásit problém nebo zobrazit zdrojový kód](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Vytvořil [Jiří Polášek](https://jiripolasek.com)
+_Vydáno pod licencí Apache 2.0_
+_Copyright © Jiří Polášek_
+
+Zvláštní poděkování patří [Mikeovi Griesemu](https://github.com/zadjii-msft)</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>Akce aktuální mediální položky</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Zvolte, co se stane, když v Docku vyberete aktuální mediální položku.</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>Přepnout na přehrávač</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>Otevřít ovládací prvky médií</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>Otevřít metadata médií</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>Výchozí nastavení (Přepnout na přehrávač)</value>
   </data>
 </root>
