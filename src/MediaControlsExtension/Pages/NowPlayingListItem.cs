@@ -335,7 +335,11 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
         var commands = new IContextItem[this._mediaContextCommandsWithoutMetadata.Length + 1];
         commands[0] = this._mediaContextCommandsWithoutMetadata[0];
-        commands[1] = new CommandContextItem(metadataPage) { Icon = Icons.Metadata };
+        commands[1] = new CommandContextItem(metadataPage)
+        {
+            RequestedShortcut = Chords.ViewMetadata,
+            Icon = Icons.Metadata,
+        };
         Array.Copy(
             this._mediaContextCommandsWithoutMetadata,
             1,

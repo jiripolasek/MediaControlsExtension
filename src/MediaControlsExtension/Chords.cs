@@ -23,6 +23,7 @@ internal static class Chords
     public static KeyChord ToggleRepeat { get; } = From(ctrl: true, vkey: VirtualKey.T);
     public static KeyChord ToggleShuffle { get; } = From(ctrl: true, vkey: VirtualKey.H);
     public static KeyChord SwitchToApplication { get; } = From(ctrl: true, vkey: VirtualKey.G);
+    public static KeyChord ViewMetadata { get; } = From(ctrl: true, vkey: VirtualKey.I);
     
     public static KeyChord PreviousSession { get; } = From(ctrl: true, vkey: VirtualKey.J);
     public static KeyChord NextSession { get; } = From(ctrl: true, vkey: VirtualKey.N);

@@ -145,7 +145,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         [
             new CommandContextItem(this._switchToApplicationCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
 #if FF_ENABLE_FULL_METADATA_PAGE
-            new CommandContextItem(this._metadataPage) { Icon = Icons.Metadata },
+            new CommandContextItem(this._metadataPage) { RequestedShortcut = Chords.ViewMetadata, Icon = Icons.Metadata },
 #endif
             new Separator(),
             new CommandContextItem(this._nextTrackCommand) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline },
