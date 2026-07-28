@@ -50,7 +50,9 @@ internal static class Icons
     public static IconInfo Volume_Mid { get; } = new(SegoeFluentIconGlyphs.VolumeMedium);
     public static IconInfo Volume_Unmute { get; } = new(SegoeFluentIconGlyphs.VolumeOff);
 
-    public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(@"Assets\Square40x40-lightunplated.png", @"Assets\Square40x40-unplated.png");
+    public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(
+        @"Assets\MainIcon.light.png",
+        @"Assets\MainIcon.dark.png");
 
     public static IconInfo MediaHeroPlaceholder { get; } = IconHelpers.FromRelativePath(@"Assets\MediaHeroPlaceholder.png");
 

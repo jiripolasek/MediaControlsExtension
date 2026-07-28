@@ -60,25 +60,28 @@ NuGet dependency changes make the redirected assets file stale.
 
 ## Automated build and deployment
 
+For the reusable WAP layout, migration checklist, new-project setup, templates,
+and convention checks, see [Command Palette WAP Packaging Guide](WapPackaging.md).
+
 The repository script performs the redirected restore, builds the WAP directly
 with Visual Studio MSBuild, unpacks its generated unsigned MSIX, and registers
 the unpacked development package:
 
 ```powershell
-.\scripts\Deploy-Package.ps1
+.\eng\Deploy-Package.ps1
 ```
 
 It defaults to a managed, untrimmed `Release|x64` deployment. Add `-Aot` to
 enable Native AOT and trimming together:
 
 ```powershell
-.\scripts\Deploy-Package.ps1 -Aot
+.\eng\Deploy-Package.ps1 -Aot
 ```
 
 Select another supported configuration or platform with parameters:
 
 ```powershell
-.\scripts\Deploy-Package.ps1 -Configuration Debug -Platform ARM64 -Aot
+.\eng\Deploy-Package.ps1 -Configuration Debug -Platform ARM64 -Aot
 ```
 
 The script uses the WAP property `GenerateAppxPackageOnBuild=true` directly;
@@ -107,7 +110,7 @@ so the previous layout and registration can be restored if registration fails.
 All repository and application-specific values are stored in:
 
 ```text
-scripts\Package.config.psd1
+eng\Package.config.psd1
 ```
 
 The configuration defines the repository-relative app project, WAP project,
@@ -122,13 +125,13 @@ configuration with `-ConfigPath` when needed.
 Build and deploy the package, then ask Command Palette to reload extensions:
 
 ```powershell
-.\scripts\Test-Package.ps1 -AfterDeploy Reload
+.\eng\Test-Package.ps1 -AfterDeploy Reload
 ```
 
 `Reload` is the default. To restart Command Palette after deployment instead:
 
 ```powershell
-.\scripts\Test-Package.ps1 -AfterDeploy Restart
+.\eng\Test-Package.ps1 -AfterDeploy Restart
 ```
 
 The test script accepts the same `-Configuration`, `-Platform`, `-Aot`, and
@@ -142,14 +145,14 @@ URI from `Package.config.psd1`.
 Uninstall the configured package for the current user:
 
 ```powershell
-.\scripts\Uninstall-Package.ps1
+.\eng\Uninstall-Package.ps1
 ```
 
 By default this also removes the package's application data. Preserve the data
 for a later deployment with:
 
 ```powershell
-.\scripts\Uninstall-Package.ps1 -PreserveApplicationData
+.\eng\Uninstall-Package.ps1 -PreserveApplicationData
 ```
 
 The uninstall script supports `-WhatIf` and removes only package registration;

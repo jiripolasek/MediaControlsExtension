@@ -13,13 +13,13 @@ Repository-specific paths and platform mappings are loaded from
 Package.config.psd1.
 
 .EXAMPLE
-.\scripts\Deploy-Package.ps1
+.\eng\Deploy-Package.ps1
 
 .EXAMPLE
-.\scripts\Deploy-Package.ps1 -Aot
+.\eng\Deploy-Package.ps1 -Aot
 
 .EXAMPLE
-.\scripts\Deploy-Package.ps1 -Configuration Debug -Platform ARM64 -Aot
+.\eng\Deploy-Package.ps1 -Configuration Debug -Platform ARM64 -Aot
 #>
 
 [CmdletBinding()]

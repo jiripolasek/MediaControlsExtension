@@ -1,18 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-		<TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
-		<RootNamespace>JPSoftworks.MediaControlsExtension.Media</RootNamespace>
-		<AssemblyName>JPSoftworks.MediaControlsExtension.Media</AssemblyName>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<LangVersion>preview</LangVersion>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
 		<IsAotCompatible>true</IsAotCompatible>
-		<IsTrimmable>true</IsTrimmable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>

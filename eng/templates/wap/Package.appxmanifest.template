@@ -1,71 +1,83 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-
+<?xml version="1.0" encoding="utf-8"?>
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
-  xmlns:uap7="http://schemas.microsoft.com/appx/manifest/uap/windows10/7"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap uap3 rescap">
 
   <Identity
-    Name="JiriPolasek.MediaControlsForCmdPal"
-    Publisher="CN=735F2779-478E-4220-AA28-465CBADFF852"
-    Version="0.20.7.0" />
-  <!-- When you're ready to publish your extension, you'll need to change the
-       Publisher= to match your own identity -->
+    Name="__PACKAGE_IDENTITY_NAME__"
+    Publisher="__PUBLISHER__"
+    Version="__PACKAGE_VERSION__" />
 
   <Properties>
-    <DisplayName>ms-resource:AppDisplayName</DisplayName>
-    <PublisherDisplayName>Jiri Polasek</PublisherDisplayName>
+    <DisplayName>__DISPLAY_NAME__</DisplayName>
+    <PublisherDisplayName>__PUBLISHER_DISPLAY_NAME__</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+    <TargetDeviceFamily
+      Name="Windows.Universal"
+      MinVersion="__TARGET_PLATFORM_MIN_VERSION__"
+      MaxVersionTested="__TARGET_PLATFORM_VERSION__" />
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="__TARGET_PLATFORM_MIN_VERSION__"
+      MaxVersionTested="__TARGET_PLATFORM_VERSION__" />
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="x-generate" />
   </Resources>
 
   <Applications>
-    <Application Id="App"
+    <Application
+      Id="App"
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="ms-resource:AppDisplayName"
-        Description="ms-resource:AppDescription"
+        DisplayName="__DISPLAY_NAME__"
+        Description="__DISPLAY_NAME__"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
         AppListEntry="none">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png"/>
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\SmallTile.png"
+          Square310x310Logo="Assets\LargeTile.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
       <Extensions>
         <com:Extension Category="windows.comServer">
           <com:ComServer>
-            <com:ExeServer Executable="JPSoftworks.MediaControlsExtension\JPSoftworks.MediaControlsExtension.exe" Arguments="-RegisterProcessAsComServer" DisplayName="Media Controls">
-              <com:Class Id="502f0b1d-b778-450c-9803-6c09cb0e6407" DisplayName="Media Controls" />
+            <com:ExeServer
+              Executable="__PACKAGE_EXECUTABLE__"
+              Arguments="-RegisterProcessAsComServer"
+              DisplayName="__DISPLAY_NAME__">
+              <com:Class
+                Id="__PROVIDER_CLASS_ID__"
+                DisplayName="__DISPLAY_NAME__" />
             </com:ExeServer>
           </com:ComServer>
         </com:Extension>
         <uap3:Extension Category="windows.appExtension">
-          <uap3:AppExtension Name="com.microsoft.commandpalette"
+          <uap3:AppExtension
+            Name="com.microsoft.commandpalette"
             Id="ID"
             PublicFolder="Public"
-            DisplayName="Media Controls"
-            Description="Media Controls">
+            DisplayName="__DISPLAY_NAME__"
+            Description="__DISPLAY_NAME__">
             <uap3:Properties>
               <CmdPalProvider>
                 <Activation>
-                  <CreateInstance ClassId="502f0b1d-b778-450c-9803-6c09cb0e6407" />
+                  <CreateInstance ClassId="__PROVIDER_CLASS_ID__" />
                 </Activation>
                 <SupportedInterfaces>
-                  <Commands/>
+                  <Commands />
                 </SupportedInterfaces>
               </CmdPalProvider>
             </uap3:Properties>
@@ -77,7 +89,5 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
-	<uap7:Capability Name="globalMediaControl" />
   </Capabilities>
-
 </Package>

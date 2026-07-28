@@ -1,41 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<RootNamespace>JPSoftworks.MediaControlsExtension</RootNamespace>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<PackageManifestPath>$(MSBuildThisFileDirectory)..\MediaControlsExtension.Package\Package.appxmanifest</PackageManifestPath>
+		<PackageManifestPath>$(CmdPalPackageManifest)</PackageManifestPath>
 
-		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-		<TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
 		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
 		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
 
 		<PublishProfile Condition="'$(_IsPublishing)' == 'true'">win-$(Platform).pubxml</PublishProfile>
-		<Nullable>enable</Nullable>
-		<LangVersion>preview</LangVersion>
 		<DebugType>embedded</DebugType>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
 		<!-- Remove this symbol to compile out the experimental full metadata page. -->
 		<DefineConstants>$(DefineConstants);FF_ENABLE_FULL_METADATA_PAGE</DefineConstants>
 
-		<AssemblyName>JPSoftworks.MediaControlsExtension</AssemblyName>
+		<AssemblyName>$(CmdPalExtensionAssemblyName)</AssemblyName>
 		<Company>Jiri Polasek</Company>
 		<Copyright>(c) Jiri Polasek</Copyright>
-		<NeutralLanguage>en-US</NeutralLanguage>
+		<NeutralLanguage>$(CmdPalDefaultLanguage)</NeutralLanguage>
 		<Product>Media Controls Command Palette</Product>
 		<AssemblyTitle>Media Controls Command Palette</AssemblyTitle>
+		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Update="Assets\IconThemes\**\*">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-		</None>
-		<None Update="Assets\MediaHeroPlaceholder.png;Assets\Square40x40-lightunplated.png;Assets\Square40x40-unplated.png">
+		<None Update="Assets\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		</None>
@@ -57,7 +46,7 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PublishAot>true</PublishAot>
+		<PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
 		<SelfContained>true</SelfContained>
 		<IsAotCompatible>true</IsAotCompatible>
 		<CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
@@ -66,12 +55,11 @@
 		<!-- Keep the Windows SDK fallback and Serilog's unused structure-destructuring warning visible without failing AOT. -->
 		<WarningsNotAsErrors>$(WarningsNotAsErrors);IL2081;IL2067</WarningsNotAsErrors>
 
-		<PublishTrimmed>true</PublishTrimmed>
+		<PublishTrimmed Condition="'$(PublishTrimmed)' == ''">false</PublishTrimmed>
 		<TrimMode>full</TrimMode>
 		<PublishSingleFile>false</PublishSingleFile>
 		<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -8,13 +8,13 @@ Package.config.psd1 and removes matching packages for the current user.
 Generated AppX layout files are not deleted.
 
 .EXAMPLE
-.\scripts\Uninstall-Package.ps1
+.\eng\Uninstall-Package.ps1
 
 .EXAMPLE
-.\scripts\Uninstall-Package.ps1 -PreserveApplicationData
+.\eng\Uninstall-Package.ps1 -PreserveApplicationData
 
 .EXAMPLE
-.\scripts\Uninstall-Package.ps1 -WhatIf
+.\eng\Uninstall-Package.ps1 -WhatIf
 #>
 
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

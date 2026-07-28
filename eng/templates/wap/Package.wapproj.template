@@ -24,7 +24,9 @@
   <PropertyGroup>
     <WapProjPath Condition="'$(WapProjPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
   </PropertyGroup>
-  <Import Project="..\..\eng\CmdPal.Extension.props" Condition="'$(CmdPalExtensionProject)' == '' and Exists('..\..\eng\CmdPal.Extension.props')" />
+  <Import
+    Project="__EXTENSION_PROPS_RELATIVE_PATH__"
+    Condition="'$(CmdPalExtensionProject)' == '' and Exists('__EXTENSION_PROPS_RELATIVE_PATH__')" />
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
   <PropertyGroup>
     <ProjectGuid>$(CmdPalPackageProjectGuid)</ProjectGuid>
@@ -34,8 +36,10 @@
     <AssetTargetFallback>$(CmdPalTargetFramework);$(AssetTargetFallback)</AssetTargetFallback>
     <DefaultLanguage>$(CmdPalDefaultLanguage)</DefaultLanguage>
     <EntryPointProjectUniqueName>$(CmdPalExtensionProjectReference)</EntryPointProjectUniqueName>
+
     <!-- The WAP restore evaluates build-only project references as UAP dependencies. -->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
+
     <GenerateAppInstallerFile>false</GenerateAppInstallerFile>
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
@@ -46,6 +50,7 @@
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxSymbolPackageEnabled>true</AppxSymbolPackageEnabled>
     <AppxPackageIncludePrivateSymbols>false</AppxPackageIncludePrivateSymbols>
+
     <!-- Native AOT and trimming are deployment-time opt-ins. -->
     <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">false</PublishTrimmed>
@@ -70,26 +75,27 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" Condition="'$(ManagePackageVersionsCentrally)' == 'true'" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="$(CmdPalWindowsSdkBuildToolsVersion)" PrivateAssets="all" Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' != ''" />
+    <PackageReference
+      Include="Microsoft.Windows.SDK.BuildTools"
+      PrivateAssets="all"
+      Condition="'$(ManagePackageVersionsCentrally)' == 'true'" />
+    <PackageReference
+      Include="Microsoft.Windows.SDK.BuildTools"
+      Version="$(CmdPalWindowsSdkBuildToolsVersion)"
+      PrivateAssets="all"
+      Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' != ''" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+
   <Target Name="ValidateCmdPalWapConfiguration" BeforeTargets="PrepareForBuild">
-    <Error Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' == ''" Text="Set CmdPalWindowsSdkBuildToolsVersion or centrally manage Microsoft.Windows.SDK.BuildTools." />
-    <Error Condition="'$(PublishAot)' == 'true' and '$(CmdPalSupportsNativeAot)' != 'true'" Text="Native AOT was requested, but CmdPalSupportsNativeAot is not true." />
-    <Error Condition="'$(PublishSingleFile)' == 'true'" Text="PublishSingleFile is not supported for this packaged WAP output." />
-  </Target>
-  <!-- Native AOT uses the Windows-provided UCRT and has no VCLibs imports. -->
-  <Target Name="RemoveUnusedVCLibsFromCurrentProjectManifest" BeforeTargets="_GenerateCurrentProjectAppxManifest">
-    <ItemGroup>
-      <FrameworkSdkReference Remove="@(FrameworkSdkReference)" Condition="'%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs' or '%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs.Desktop'" />
-      <FrameworkSdkPackage Remove="@(FrameworkSdkPackage)" Condition="'%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.UWPDesktop' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug.UWPDesktop'" />
-    </ItemGroup>
-  </Target>
-  <Target Name="RemoveUnusedVCLibsFromDesktopBridgeManifest" BeforeTargets="_GenerateDesktopBridgeAppxManifest" DependsOnTargets="_ResolveVCLibDependencies">
-    <ItemGroup>
-      <FrameworkSdkReference Remove="@(FrameworkSdkReference)" Condition="'%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs' or '%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs.Desktop'" />
-      <FrameworkSdkPackage Remove="@(FrameworkSdkPackage)" Condition="'%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.UWPDesktop' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug.UWPDesktop'" />
-    </ItemGroup>
+    <Error
+      Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' == ''"
+      Text="Set CmdPalWindowsSdkBuildToolsVersion or centrally manage Microsoft.Windows.SDK.BuildTools." />
+    <Error
+      Condition="'$(PublishAot)' == 'true' and '$(CmdPalSupportsNativeAot)' != 'true'"
+      Text="Native AOT was requested, but CmdPalSupportsNativeAot is not true." />
+    <Error
+      Condition="'$(PublishSingleFile)' == 'true'"
+      Text="PublishSingleFile is not supported for this packaged WAP output." />
   </Target>
 </Project>

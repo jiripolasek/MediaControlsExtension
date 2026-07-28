@@ -10,13 +10,13 @@ the active development or release channel. If the host was not running, the
 configured launch URI is used instead.
 
 .EXAMPLE
-.\scripts\Test-Package.ps1
+.\eng\Test-Package.ps1
 
 .EXAMPLE
-.\scripts\Test-Package.ps1 -AfterDeploy Restart
+.\eng\Test-Package.ps1 -AfterDeploy Restart
 
 .EXAMPLE
-.\scripts\Test-Package.ps1 -Aot -AfterDeploy Reload
+.\eng\Test-Package.ps1 -Aot -AfterDeploy Reload
 #>
 
 [CmdletBinding()]
