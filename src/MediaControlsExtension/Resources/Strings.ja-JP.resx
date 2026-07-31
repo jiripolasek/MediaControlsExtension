@@ -364,6 +364,12 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Dockに "Next "と "Previous Track "を表示する。</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>音量調整ボタンを表示</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>システム音量の Dock バンドに「音量ダウン」と「音量を上げる」を表示します。</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>再生/一時停止後に隠す</value>
   </data>

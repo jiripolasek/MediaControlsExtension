@@ -364,6 +364,12 @@ Tenere premuto Shift mentre si attiva un comando per fare temporaneamente il con
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Visualizzare "Traccia successiva" e "Traccia precedente" nel Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Mostra i pulsanti di regolazione del volume</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Visualizzare «Abbassa il volume» e «Aumenta il volume» nella banda del Dock dedicata al volume di sistema.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Nascondi dopo la riproduzione/pausa</value>
   </data>

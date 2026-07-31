@@ -355,6 +355,12 @@
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>在快捷欄中顯示「下一首」和「上一首」。</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>顯示音量調整按鈕</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>在系統音量快捷欄中顯示「降低音量」和「提高音量」。</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>播放/暫停後隱藏</value>
   </data>

@@ -364,6 +364,12 @@ Mantén pulsada la tecla Mayús mientras activas un comando para hacer temporalm
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Muestra "Siguiente" y "Pista anterior" en el Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Mostrar botones de ajuste de volumen</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Muestra «Bajar el volumen» y «Subir el volumen» en la banda de volumen del sistema del Dock.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Ocultar después de Reproducir/Pausar</value>
   </data>

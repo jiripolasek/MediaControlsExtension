@@ -364,6 +364,12 @@ Houd Shift ingedrukt terwijl je een opdracht activeert om tijdelijk het tegenove
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Geef "Volgende" en "Vorige track" weer in het Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Knoppen voor volumeregeling weergeven</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Geef "Volume verlagen" en "Volume verhogen" weer in de Dock-band voor het systeemvolume.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Verbergen na afspelen/pauzeren</value>
   </data>

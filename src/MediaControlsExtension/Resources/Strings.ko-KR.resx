@@ -364,6 +364,12 @@
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Dock에 “다음” 및 “이전 트랙”을 표시합니다.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>볼륨 조절 버튼 표시</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>시스템 볼륨 Dock 밴드에 “볼륨 줄이기” 및 “볼륨 높이기”를 표시합니다.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>재생/일시정지 후 숨기기</value>
   </data>

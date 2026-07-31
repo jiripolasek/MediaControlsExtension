@@ -10,7 +10,7 @@
 
 namespace JPSoftworks.MediaControlsExtension.Resources {
     using System;
-
+    
     
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
@@ -1008,7 +1008,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Show volume adjustment buttons.
         /// </summary>
@@ -1017,7 +1017,7 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
                 return ResourceManager.GetString("Settings_ShowVolumeAdjustmentCommandsInDock_Title", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Playing.
         /// </summary>
