@@ -17,7 +17,7 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         Namespaced("ShowThumbnails"),
         Strings.Settings_ShowThumbnails_Title!,
         Strings.Settings_ShowThumbnails_Subtitle!,
-        false);
+        true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showDetailsOption = new(
