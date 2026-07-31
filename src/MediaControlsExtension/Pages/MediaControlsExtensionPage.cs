@@ -137,6 +137,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 this._resultFactory,
                 this._iconService,
                 this._iconSurface,
+                VolumeListItemPresentation.Page,
                 this._loggerFactory);
 
         if (this._isBandPage)

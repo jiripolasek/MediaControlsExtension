@@ -15,6 +15,7 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
     private readonly ToggleMuteMediaInvokableCommand _toggleMuteCommand;
     private readonly IIconService _iconService;
     private readonly IconSurface _iconSurface;
+    private readonly VolumeListItemPresentation _presentation;
     private readonly ILogger _logger;
 
     private bool _disposed;
@@ -26,13 +27,21 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface,
+        VolumeListItemPresentation presentation,
         ILoggerFactory loggerFactory)
         : this(
-            new(systemVolumeService, resultFactory, loggerFactory),
+            new(
+                systemVolumeService,
+                resultFactory,
+                loggerFactory,
+                presentation == VolumeListItemPresentation.Dock
+                    ? string.Empty
+                    : Strings.Command_ToggleMute!),
             systemVolumeService,
             resultFactory,
             iconService,
             iconSurface,
+            presentation,
             loggerFactory)
     {
     }
@@ -43,6 +52,7 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
         IconSurface iconSurface,
+        VolumeListItemPresentation presentation,
         ILoggerFactory loggerFactory)
         : base(toggleMuteCommand)
     {
@@ -55,11 +65,22 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         this._systemVolumeService = systemVolumeService;
         this._iconService = iconService;
         this._iconSurface = iconSurface;
+        this._presentation = presentation;
         this._logger = loggerFactory.CreateLogger<VolumeListItem>();
 
-        this._toggleMuteCommand.Id = CommandId;
+        if (this._presentation == VolumeListItemPresentation.Page)
+        {
+            this._toggleMuteCommand.Id = CommandId;
+            this.Title = Strings.Toast_Volume!;
+        }
+        else
+        {
+            // Dock items are icon-only. The dock command also has an empty name so
+            // ListItem.Title cannot fall back to a visible command label.
+            this.Title = string.Empty;
+            this.Subtitle = string.Empty;
+        }
 
-        this.Title = Strings.Toast_Volume!;
         this.Icon = iconService.GetIcon(ThemedIcon.ToggleMute, iconSurface);
         this.MoreCommands = CreateMoreCommands(
             systemVolumeService,
@@ -143,10 +164,13 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         this.Icon = icon;
         this._toggleMuteCommand.UpdateIcon(icon);
 
-        this.Title = VolumePresentation.FormatStatus(state);
-        this.Subtitle = state.IsMuted
-            ? VolumePresentation.FormatLevel(state.VolumePercent)
-            : string.Empty;
+        if (this._presentation == VolumeListItemPresentation.Page)
+        {
+            this.Title = VolumePresentation.FormatStatus(state);
+            this.Subtitle = state.IsMuted
+                ? VolumePresentation.FormatLevel(state.VolumePercent)
+                : string.Empty;
+        }
     }
 
     public void Dispose()
@@ -186,4 +210,10 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
             }
         }
     }
+}
+
+internal enum VolumeListItemPresentation
+{
+    Page,
+    Dock
 }

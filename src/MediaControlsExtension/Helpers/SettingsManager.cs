@@ -115,6 +115,13 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _showVolumeAdjustmentCommandsInDockBand = new(
+        Namespaced("ShowVolumeAdjustmentCommandsInDockBand"),
+        Strings.Settings_ShowVolumeAdjustmentCommandsInDock_Title!,
+        Strings.Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle!,
+        false);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ChoiceSetSetting _dockCurrentMediaAction = new(
         Namespaced("DockCurrentMediaAction"),
         Strings.Settings_DockCurrentMediaAction_Title!,
@@ -162,6 +169,9 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
     public bool ShowSkipCommands => _showSkipCommands.Value;
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
+
+    public bool ShowVolumeAdjustmentCommandsInDockBand =>
+        this._showVolumeAdjustmentCommandsInDockBand.Value;
 
     public DockCurrentMediaActionMode DockCurrentMediaAction
     {
@@ -211,6 +221,7 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         this.Settings.Add(this._dockIconTheme);
         this.Settings.Add(this._dockCurrentMediaAction);
         this.Settings.Add(this._showSkipCommandsInDockBand);
+        this.Settings.Add(this._showVolumeAdjustmentCommandsInDockBand);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.CommandBehavior"),
             Strings.Settings_Group_AppearanceAndBehavior!));

@@ -10,16 +10,32 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
 {
     private readonly SystemVolumeService _systemVolumeService;
     private readonly MediaCommandResultFactory _resultFactory;
-    public override string Name => Strings.Command_ToggleMute!;
+    private readonly string _name;
+
+    public override string Name => this._name;
 
     public ToggleMuteMediaInvokableCommand(
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
         ILoggerFactory loggerFactory)
+        : this(
+            systemVolumeService,
+            resultFactory,
+            loggerFactory,
+            Strings.Command_ToggleMute!)
+    {
+    }
+
+    internal ToggleMuteMediaInvokableCommand(
+        SystemVolumeService systemVolumeService,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory,
+        string commandName)
         : base(loggerFactory)
     {
         this._systemVolumeService = systemVolumeService;
         this._resultFactory = resultFactory;
+        this._name = commandName;
         this.Icon = Icons.ToggleMute;
     }
 

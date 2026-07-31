@@ -21,6 +21,7 @@ internal interface ISettingsManager
     bool EnableVolumeControls { get; }
     bool ShowSkipCommands { get; }
     bool ShowSkipCommandsInDockBand { get; }
+    bool ShowVolumeAdjustmentCommandsInDockBand { get; }
     DockCurrentMediaActionMode DockCurrentMediaAction { get; }
     string CommandPaletteIconThemeId { get; }
     string DockIconThemeId { get; }

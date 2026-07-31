@@ -495,6 +495,12 @@
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Show volume adjustment buttons</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Show Volume Down and Volume Up in the system volume Dock band.</value>
+  </data>
   <data name="Settings_Group_PalettePage" xml:space="preserve">
     <value>Command Palette page</value>
   </data>

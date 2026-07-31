@@ -10,7 +10,7 @@
 
 namespace JPSoftworks.MediaControlsExtension.Resources {
     using System;
-    
+
     
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
@@ -1000,6 +1000,24 @@ namespace JPSoftworks.MediaControlsExtension.Resources {
             }
         }
         
+        /// <summary>
+        ///   Looks up a localized string similar to Show Volume Down and Volume Up in the system volume Dock band..
+        /// </summary>
+        internal static string Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle {
+            get {
+                return ResourceManager.GetString("Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show volume adjustment buttons.
+        /// </summary>
+        internal static string Settings_ShowVolumeAdjustmentCommandsInDock_Title {
+            get {
+                return ResourceManager.GetString("Settings_ShowVolumeAdjustmentCommandsInDock_Title", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Playing.
         /// </summary>

@@ -23,11 +23,13 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly CommandItem _nowPlayingItem;
     private readonly MediaControlsExtensionPage _mediaControlsExtensionPage;
     private readonly MediaControlsExtensionPage _mediaControlsBand;
+    private readonly CommandItem _mediaControlsBandItem;
+    private readonly VolumeDockBand _volumeDockBand;
     private readonly ToggleMuteCommandItem _toggleMuteCommandItem;
     private readonly CurrentSessionNavigationCommandItem[] _trackNavigationCommands;
     private readonly CommandItem[] _volumeCommands;
     private ICommandItem[] _commands = [];
-    private readonly ICommandItem[] _bands;
+    private ICommandItem[] _bands = [];
     private int _disposeState;
 
     public MediaControlsExtensionCommandsProvider()
@@ -136,7 +138,13 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             new DockHeadCommandTargets(
                 this._mediaControlsExtensionPage,
                 currentMediaMetadataPage));
-        this._bands = [new CommandItem(this._mediaControlsBand) { Title = Strings.Name! }];
+        this._mediaControlsBandItem = new(this._mediaControlsBand) { Title = Strings.Name! };
+        this._volumeDockBand = new(
+            this._systemVolumeService,
+            this._resultFactory,
+            this._iconService,
+            this._settingsManager.ShowVolumeAdjustmentCommandsInDockBand,
+            loggerFactory);
         var initializationTask = Task.Run(this.InitializeMediaServiceAsync);
         this._trackNavigationCommands =
         [
@@ -168,6 +176,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             },
         ];
         this.UpdateTopLevelCommands();
+        this.UpdateDockBands();
     }
 
     private async Task InitializeMediaServiceAsync()
@@ -187,6 +196,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     {
         this.UpdateMediaServiceOptions();
         this.UpdateTopLevelCommands();
+        this.UpdateDockBands();
         this.RaiseItemsChanged();
     }
 
@@ -243,6 +253,15 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._settingsManager.PauseOthersOnPlay));
     }
 
+    private void UpdateDockBands()
+    {
+        this._volumeDockBand.UpdateAdjustmentCommandsVisibility(
+            this._settingsManager.ShowVolumeAdjustmentCommandsInDockBand);
+        this._bands = this._settingsManager.EnableVolumeControls
+            ? [this._mediaControlsBandItem, this._volumeDockBand]
+            : [this._mediaControlsBandItem];
+    }
+
     public override ICommandItem[] TopLevelCommands() => this._commands;
 
     public override ICommandItem? GetCommandItem(string id)
@@ -277,6 +296,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
             this._mediaControlsExtensionPage.Dispose();
             this._mediaControlsBand.Dispose();
+            this._volumeDockBand.Dispose();
             ((IDisposable)this._nowPlayingItem).Dispose();
             this._metadataPages.Dispose();
             this._mediaSessionViewModels.Dispose();
