@@ -8,16 +8,17 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class NextTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
+    internal const string CommandId = "com.jpsoftworks.cmdpal.mediacontrols.next";
+
     public NextTrackInvokableMediaCommand(
         IMediaService mediaService,
         Task initialization,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService,
         ILoggerFactory loggerFactory)
         : base(mediaService, initialization, MediaSessionOperations.SkipNextTrack, resultFactory, loggerFactory)
     {
+        this.Id = CommandId;
         this.Name = Strings.Command_NextTrack!;
-        this.Icon = iconService.GetIcon(ThemedIcon.SkipNext, IconSurface.CommandPalette);
     }
 }
 

@@ -36,7 +36,6 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
             // first option is the default one (hardcoded in the extension SDK)
             new ChoiceSetSetting.Choice(Strings.Settings_GlobalCommands_Option_Enabled!, GlobalCommandsMode.Enabled.ToString("G")),
             new ChoiceSetSetting.Choice(Strings.Settings_GlobalCommands_Option_Disabled!, GlobalCommandsMode.Disabled.ToString("G")),
-            // new ChoiceSetSetting.Choice("With slash ('/') prefix", GlobalCommandsMode.SlashPrefix.ToString("G")),
         ]);
 
 
@@ -140,12 +139,9 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 
     public bool ShowDetails => this._showDetailsOption.Value;
 
-    public GlobalCommandsMode GlobalCommands =>
-        string.IsNullOrWhiteSpace(this._globalCommands.Value)
-            ? GlobalCommandsMode.Enabled
-            : Enum.TryParse(this._globalCommands.Value, true, out GlobalCommandsMode result)
-                ? result
-                : GlobalCommandsMode.Enabled;
+    public bool ShowTrackNavigationCommandsAtTopLevel =>
+        !Enum.TryParse(this._globalCommands.Value, true, out GlobalCommandsMode result) ||
+        result != GlobalCommandsMode.Disabled;
 
     public bool KeepOpen => this._keepOpen.Value;
 
@@ -310,7 +306,6 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 internal enum GlobalCommandsMode
 {
     Disabled = 0,
-    SlashPrefix = 1,
     Enabled = 2
 }
 

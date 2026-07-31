@@ -26,10 +26,12 @@ internal partial class StandaloneCurrentSessionCommand : MediaInvokableCommand
         this._mediaSessionOp = mediaSessionOp ?? throw new ArgumentNullException(nameof(mediaSessionOp));
     }
 
+    internal MediaSessionOp MediaSessionOp => this._mediaSessionOp;
+
     protected override async Task<ICommandResult> InvokeMediaAsync(CancellationToken cancellationToken)
     {
         using var diagnostics = new ExtensionOperationDiagnostics(
-            $"fallback media command {this._mediaSessionOp.GetType().Name}",
+            $"standalone media command {this._mediaSessionOp.GetType().Name}",
             this.Logger);
         diagnostics.SetStage("awaiting media-service initialization");
         await this._initialization.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -39,7 +41,7 @@ internal partial class StandaloneCurrentSessionCommand : MediaInvokableCommand
             this._mediaService,
             MediaCommandTarget.CurrentSession,
             cancellationToken).ConfigureAwait(false);
-        diagnostics.SetStage("creating fallback command result");
+        diagnostics.SetStage("creating command result");
         return this.CreateMediaCommandResult(message);
     }
 }

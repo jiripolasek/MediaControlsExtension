@@ -10,7 +10,7 @@ internal interface ISettingsManager
 {
     bool ShowThumbnails { get; }
     bool ShowDetails { get; }
-    GlobalCommandsMode GlobalCommands { get; }
+    bool ShowTrackNavigationCommandsAtTopLevel { get; }
     bool KeepOpen { get; }
     bool KeepOpenTogglePlayPauseCurrent { get; }
     bool KeepOpenSkipTrack { get; }
