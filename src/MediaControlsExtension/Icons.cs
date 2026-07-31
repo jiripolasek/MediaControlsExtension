@@ -8,17 +8,13 @@ namespace JPSoftworks.MediaControlsExtension;
 
 internal static class Icons
 {
+    public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(
+        @"Assets\MainIcon.light.png",
+        @"Assets\MainIcon.dark.png");
+
     public static IconInfo PlayPause { get; } = IconHelpers.FromRelativePaths(
         @"Assets\IconThemes\colorful\PlayPause.light.svg",
         @"Assets\IconThemes\colorful\PlayPause.dark.svg");
-
-    public static IconInfo PlayColorful { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\IconThemes\colorful\Play.light.svg",
-        @"Assets\IconThemes\colorful\Play.dark.svg");
-
-    public static IconInfo PauseColorful { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\IconThemes\colorful\Pause.light.svg",
-        @"Assets\IconThemes\colorful\Pause.dark.svg");
 
     public static IconInfo SkipNextTrack { get; } = IconHelpers.FromRelativePaths(
         @"Assets\IconThemes\colorful\SkipNext.light.svg",
@@ -27,18 +23,6 @@ internal static class Icons
     public static IconInfo SkipPreviousTrack { get; } = IconHelpers.FromRelativePaths(
         @"Assets\IconThemes\colorful\SkipPrevious.light.svg",
         @"Assets\IconThemes\colorful\SkipPrevious.dark.svg");
-
-    public static IconInfo SkipNextTrackDisabled { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\IconThemes\colorful\SkipNext.disabled.svg",
-        @"Assets\IconThemes\colorful\SkipNext.disabled.svg");
-
-    public static IconInfo SkipPreviousTrackDisabled { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\IconThemes\colorful\SkipPrevious.disabled.svg",
-        @"Assets\IconThemes\colorful\SkipPrevious.disabled.svg");
-
-    public static IconInfo NoMedia { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\IconThemes\colorful\NoMedia.svg",
-        @"Assets\IconThemes\colorful\NoMedia.svg");
 
     public static IconInfo ToggleMute { get; } = new(SegoeFluentIconGlyphs.ToggleMute);
 
@@ -49,10 +33,6 @@ internal static class Icons
     public static IconInfo Volume_Max { get; } = new(SegoeFluentIconGlyphs.VolumeHigh);
     public static IconInfo Volume_Mid { get; } = new(SegoeFluentIconGlyphs.VolumeMedium);
     public static IconInfo Volume_Zero { get; } = new(SegoeFluentIconGlyphs.VolumeZero);
-
-    public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(
-        @"Assets\MainIcon.light.png",
-        @"Assets\MainIcon.dark.png");
 
     public static IconInfo MediaHeroPlaceholder { get; } = IconHelpers.FromRelativePath(@"Assets\MediaHeroPlaceholder.png");
 
