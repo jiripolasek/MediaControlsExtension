@@ -548,4 +548,38 @@ Agradecimiento especial a [Mike Griese](https://github.com/zadjii-msft)</value>
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>Predeterminado (Cambiar al reproductor)</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Informar de un problema</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Para informar de un problema:
+
+1. Reproduzca el problema.
+2. Guarde los registros de diagnóstico en el escritorio.
+3. Abra GitHub Issues y cree un informe.
+4. Adjunte el archivo ZIP generado al informe.
+
+Los registros de diagnóstico pueden contener títulos multimedia, nombres de reproductores y detalles técnicos de errores. Revise el archivo antes de compartirlo.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Guardar registros de diagnóstico en el escritorio</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Crear un archivo ZIP para adjuntarlo a una incidencia de GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Los registros de diagnóstico se guardaron en el escritorio como {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>No se pudieron guardar los registros de diagnóstico. Consulte los diagnósticos de Command Palette para obtener más información.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Abrir GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Crear un informe y adjuntar los registros de diagnóstico.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>No se pudo abrir GitHub Issues. Inténtelo de nuevo o abra el repositorio desde Configuración.</value>
+  </data>
 </root>

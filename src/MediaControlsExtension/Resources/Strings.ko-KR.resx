@@ -548,4 +548,38 @@ _저작권 © Jiří Polášek_
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>기본값 (플레이어로 전환)</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>문제 신고</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>문제를 신고하려면:
+
+1. 문제를 재현합니다.
+2. 진단 로그를 바탕 화면에 저장합니다.
+3. GitHub Issues를 열고 이슈를 작성합니다.
+4. 생성된 ZIP 파일을 이슈에 첨부합니다.
+
+진단 로그에는 미디어 제목, 플레이어 이름 및 기술적인 오류 세부 정보가 포함될 수 있습니다. 공유하기 전에 보관 파일을 검토하세요.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>진단 로그를 바탕 화면에 저장</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>GitHub 이슈에 첨부할 ZIP 파일을 만듭니다.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>진단 로그를 바탕 화면의 {0} 파일로 저장했습니다.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>진단 로그를 저장하지 못했습니다. 자세한 내용은 Command Palette 진단을 확인하세요.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>GitHub Issues 열기</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>이슈를 작성하고 진단 로그를 첨부합니다.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>GitHub Issues를 열지 못했습니다. 다시 시도하거나 설정에서 리포지토리를 여세요.</value>
+  </data>
 </root>

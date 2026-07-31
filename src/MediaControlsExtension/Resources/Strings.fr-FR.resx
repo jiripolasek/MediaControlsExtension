@@ -548,4 +548,38 @@ Remerciements particuliers à [Mike Griese](https://github.com/zadjii-msft)</val
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>Par défaut (Passer au lecteur)</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Signaler un problème</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Pour signaler un problème :
+
+1. Reproduisez le problème.
+2. Enregistrez les journaux de diagnostic sur votre Bureau.
+3. Ouvrez GitHub Issues et créez un rapport.
+4. Joignez le fichier ZIP généré au rapport.
+
+Les journaux de diagnostic peuvent contenir des titres de médias, des noms de lecteurs et des détails techniques sur les erreurs. Vérifiez l’archive avant de la partager.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Enregistrer les journaux de diagnostic sur le Bureau</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Créer un fichier ZIP à joindre à un ticket GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Les journaux de diagnostic ont été enregistrés sur votre Bureau sous le nom {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Impossible d’enregistrer les journaux de diagnostic. Consultez les diagnostics de Command Palette pour plus d’informations.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Ouvrir GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Créer un rapport et joindre les journaux de diagnostic.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>Impossible d’ouvrir GitHub Issues. Réessayez ou ouvrez le dépôt à partir des Paramètres.</value>
+  </data>
 </root>

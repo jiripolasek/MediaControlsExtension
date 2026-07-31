@@ -18,8 +18,8 @@ internal static class Program
             args,
             new ExtensionHostRunnerParameters
             {
-                PublisherMoniker = "JPSoftworks",
-                ProductMoniker = "MediaControlsExtension",
+                PublisherMoniker = ExtensionHostIdentity.PublisherMoniker,
+                ProductMoniker = ExtensionHostIdentity.ProductMoniker,
             });
 
         using var loggerFactory = LoggerFactory.Create(builder =>

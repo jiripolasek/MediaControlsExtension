@@ -53,6 +53,10 @@ internal static class Icons
 
     public static IconInfo NextApp { get; } = new IconInfo("\uE8B5");
     public static IconInfo PreviousApp { get; } = new IconInfo("\uEA52");
+
+    public static IconInfo ReportProblem { get; } = new(SegoeFluentIconGlyphs.Bug);
+    public static IconInfo Save { get; } = new(SegoeFluentIconGlyphs.Save);
+    public static IconInfo OpenInNewWindow { get; } = new(SegoeFluentIconGlyphs.OpenInNewWindow);
 }
 
 internal static class SegoeFluentIconGlyphs
@@ -67,4 +71,8 @@ internal static class SegoeFluentIconGlyphs
     public const string ToggleMute = VolumeMute;
     public const string VolumeUp = VolumeHigh;
     public const string VolumeDown = VolumeLow;
+
+    public const string Bug = "\uEBE8";
+    public const string Save = "\uE74E";
+    public const string OpenInNewWindow = "\uE8A7";
 }

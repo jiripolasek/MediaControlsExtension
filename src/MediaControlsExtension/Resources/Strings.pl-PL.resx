@@ -548,4 +548,38 @@ Szczególne podziękowania dla [Mike'a Griese'a](https://github.com/zadjii-msft)
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>Ustawienie domyślne (Przejdź do odtwarzacza)</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Zgłoś problem</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Aby zgłosić problem:
+
+1. Odtwórz problem.
+2. Zapisz dzienniki diagnostyczne na pulpicie.
+3. Otwórz GitHub Issues i utwórz zgłoszenie.
+4. Dołącz wygenerowany plik ZIP do zgłoszenia.
+
+Dzienniki diagnostyczne mogą zawierać tytuły multimediów, nazwy odtwarzaczy i techniczne szczegóły błędów. Przed udostępnieniem przejrzyj zawartość archiwum.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Zapisz dzienniki diagnostyczne na pulpicie</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Utwórz plik ZIP do dołączenia do zgłoszenia w serwisie GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Dzienniki diagnostyczne zapisano na pulpicie jako {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Nie można zapisać dzienników diagnostycznych. Szczegóły znajdziesz w diagnostyce Command Palette.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Otwórz GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Utwórz zgłoszenie i dołącz dzienniki diagnostyczne.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>Nie można otworzyć GitHub Issues. Spróbuj ponownie lub otwórz repozytorium z poziomu Ustawień.</value>
+  </data>
 </root>

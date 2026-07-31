@@ -548,4 +548,38 @@ Zvláštní poděkování patří [Mikeovi Griesemu](https://github.com/zadjii-m
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Skrýt po přepnutí přehrávání/pozastavení v mediální relaci</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Nahlásit problém</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Postup nahlášení problému:
+
+1. Znovu vyvolejte problém.
+2. Uložte diagnostické protokoly na plochu.
+3. Otevřete GitHub Issues a vytvořte hlášení.
+4. Přiložte vygenerovaný soubor ZIP k hlášení.
+
+Diagnostické protokoly mohou obsahovat názvy médií, názvy přehrávačů a technické podrobnosti o chybách. Před sdílením archiv zkontrolujte.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Uložit diagnostické protokoly na plochu</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Vytvořit soubor ZIP, který lze přiložit k hlášení na GitHubu.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Diagnostické protokoly byly uloženy na plochu jako {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Diagnostické protokoly se nepodařilo uložit. Podrobnosti najdete v diagnostice Command Palette.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Otevřít GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Vytvořit hlášení a přiložit diagnostické protokoly.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>GitHub Issues se nepodařilo otevřít. Zkuste to znovu nebo otevřete úložiště z Nastavení.</value>
+  </data>
 </root>

@@ -548,4 +548,38 @@ Besonderer Dank gilt [Mike Griese](https://github.com/zadjii-msft)</value>
   <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
     <value>Standard (Zum Player wechseln)</value>
   </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Problem melden</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>So melden Sie ein Problem:
+
+1. Reproduzieren Sie das Problem.
+2. Speichern Sie die Diagnoseprotokolle auf Ihrem Desktop.
+3. Öffnen Sie GitHub Issues und erstellen Sie einen Bericht.
+4. Fügen Sie die erstellte ZIP-Datei dem Bericht als Anhang hinzu.
+
+Diagnoseprotokolle können Medientitel, Playernamen und technische Fehlerdetails enthalten. Überprüfen Sie das Archiv, bevor Sie es weitergeben.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Diagnoseprotokolle auf dem Desktop speichern</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Eine ZIP-Datei zum Anhängen an ein GitHub-Issue erstellen.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Die Diagnoseprotokolle wurden als {0} auf Ihrem Desktop gespeichert.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Die Diagnoseprotokolle konnten nicht gespeichert werden. Weitere Informationen finden Sie in den Diagnosedaten von Command Palette.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>GitHub Issues öffnen</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Einen Bericht erstellen und die Diagnoseprotokolle anhängen.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>GitHub Issues konnte nicht geöffnet werden. Versuchen Sie es erneut, oder öffnen Sie das Repository über die Einstellungen.</value>
+  </data>
 </root>

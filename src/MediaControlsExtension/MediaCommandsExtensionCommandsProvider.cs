@@ -70,10 +70,17 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._resultFactory,
             this._iconService,
             loggerFactory);
+        var reportProblemPage = new ReportProblemPage(
+            new DiagnosticLogArchiveService(ExtensionHostIdentity.GetLogDirectoryPath()),
+            loggerFactory);
         this._mediaControlsPageItem = new(this._mediaControlsExtensionPage)
         {
             Title = this.DisplayName,
-            MoreCommands = [new CommandContextItem(this.Settings.SettingsPage!)]
+            MoreCommands =
+            [
+                new CommandContextItem(this.Settings.SettingsPage!),
+                new CommandContextItem(reportProblemPage),
+            ]
         };
         IPage? currentMediaMetadataPage = null;
 #if FF_ENABLE_FULL_METADATA_PAGE
