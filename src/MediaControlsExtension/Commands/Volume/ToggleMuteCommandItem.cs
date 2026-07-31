@@ -14,12 +14,14 @@ internal sealed partial class ToggleMuteCommandItem : CommandItem, IDisposable
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
         : this(
-            new(systemVolumeService, resultFactory),
+            new(systemVolumeService, resultFactory, loggerFactory),
             systemVolumeService,
             iconService,
-            iconSurface)
+            iconSurface,
+            loggerFactory)
     {
     }
 
@@ -27,7 +29,8 @@ internal sealed partial class ToggleMuteCommandItem : CommandItem, IDisposable
         ToggleMuteMediaInvokableCommand command,
         SystemVolumeService systemVolumeService,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
         : base(command)
     {
         this._iconBinding = new(
@@ -35,7 +38,8 @@ internal sealed partial class ToggleMuteCommandItem : CommandItem, IDisposable
             command,
             iconService,
             iconSurface,
-            this.SetIcon);
+            this.SetIcon,
+            loggerFactory);
     }
 
     private void SetIcon(IconInfo icon)
@@ -54,6 +58,7 @@ internal sealed partial class ToggleMuteIconBinding : IDisposable
     private readonly IIconService _iconService;
     private readonly IconSurface _iconSurface;
     private readonly Action<IconInfo> _setItemIcon;
+    private readonly ILogger _logger;
 
     private bool _disposed;
     private bool _hasObservedState;
@@ -64,13 +69,16 @@ internal sealed partial class ToggleMuteIconBinding : IDisposable
         ToggleMuteMediaInvokableCommand command,
         IIconService iconService,
         IconSurface iconSurface,
-        Action<IconInfo> setItemIcon)
+        Action<IconInfo> setItemIcon,
+        ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         this._systemVolumeService = systemVolumeService;
         this._command = command;
         this._iconService = iconService;
         this._iconSurface = iconSurface;
         this._setItemIcon = setItemIcon;
+        this._logger = loggerFactory.CreateLogger<ToggleMuteIconBinding>();
 
         this.ApplyIcon(iconService.GetIcon(ThemedIcon.ToggleMute, iconSurface));
         this._systemVolumeService.StateChanged += this.SystemVolumeServiceOnStateChanged;
@@ -91,7 +99,9 @@ internal sealed partial class ToggleMuteIconBinding : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"Could not initialize the mute command icon: {ex.Message}");
+            ExtensionLog.Warning(
+                this._logger,
+                $"Could not initialize the mute command icon: {ex.Message}");
         }
     }
 

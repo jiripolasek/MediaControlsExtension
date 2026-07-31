@@ -14,6 +14,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly MediaMetadataPageCache _metadataPages;
     private readonly IIconService _iconService;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly IconSurface _iconSurface;
     private readonly Lock _refreshLock = new();
     private readonly bool _isBandPage;
@@ -40,6 +41,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
+        ILoggerFactory loggerFactory,
         DockHeadCommandTargets? dockHeadCommandTargets = null)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
@@ -49,6 +51,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._isBandPage = dockHeadCommandTargets is not null;
         this._iconSurface = this._isBandPage
@@ -60,6 +63,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this._viewModels = viewModels;
         this._metadataPages = metadataPages;
         this._iconService = iconService;
+        this._loggerFactory = loggerFactory;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
 
         this.Icon = Icons.MainIcon;
@@ -87,6 +91,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._settingsManager,
             this._resultFactory,
             this._iconService,
+            this._loggerFactory,
             this._isBandPage);
         this._bandFirstItem = dockHeadCommandTargets is not null
             ? new DockHeadItem(
@@ -95,6 +100,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 this._settingsManager,
                 this._resultFactory,
                 this._iconService,
+                this._loggerFactory,
                 dockHeadCommandTargets)
             : null;
 
@@ -105,7 +111,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             new CurrentSessionCommand(
                 this._mediaService,
                 MediaSessionOperations.SkipNextTrack,
-                this._resultFactory),
+                this._resultFactory,
+                this._loggerFactory),
             this._playPauseCurrentSessionItem)
         {
             Title = Strings.Command_NextTrack,
@@ -115,7 +122,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             new CurrentSessionCommand(
                 this._mediaService,
                 MediaSessionOperations.SkipPreviousTrack,
-                this._resultFactory),
+                this._resultFactory,
+                this._loggerFactory),
             this._playPauseCurrentSessionItem)
         {
             Title = Strings.Command_PreviousTrack,
@@ -128,7 +136,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 systemVolumeService,
                 this._resultFactory,
                 this._iconService,
-                this._iconSurface);
+                this._iconSurface,
+                this._loggerFactory);
 
         if (this._isBandPage)
         {
@@ -236,6 +245,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                         this._settingsManager,
                         this._resultFactory,
                         this._iconService,
+                        this._loggerFactory,
                         this._isBandPage));
                 }
             }

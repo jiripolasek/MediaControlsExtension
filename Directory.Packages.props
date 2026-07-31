@@ -2,9 +2,14 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <PropertyGroup>
+      <ToolkitVersion>0.9.3-preview.1</ToolkitVersion>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit" Version="0.9.1" />
+    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit" Version="$(ToolkitVersion)" />
+    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit.Logging.MicrosoftExtensions" Version="$(ToolkitVersion)" />
     <PackageVersion Include="Microsoft.CommandPalette.Extensions" Version="0.9.260303001" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="Microsoft.Windows.CsWinRT" Version="2.3.1" />

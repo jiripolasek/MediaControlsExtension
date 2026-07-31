@@ -33,12 +33,14 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
+        ILoggerFactory loggerFactory,
         DockHeadCommandTargets commandTargets) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         ArgumentNullException.ThrowIfNull(commandTargets);
         ArgumentNullException.ThrowIfNull(commandTargets.MediaControlsPage);
 
@@ -47,24 +49,29 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         this._settingsManager = settingsManager;
         this._iconService = iconService;
         this._commandTargets = commandTargets;
-        this._updateMediaInfo = new(150, "DockHeadItem.Update", this.UpdateCurrentSession);
+        this._updateMediaInfo = new(
+            150,
+            "DockHeadItem.Update",
+            this.UpdateCurrentSession,
+            loggerFactory.CreateLogger<DockHeadItem>());
 
         this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(
             this._mediaService,
-            this._viewModels);
+            this._viewModels,
+            loggerFactory);
         this._mediaContextCommands = [
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, resultFactory) { Name = Strings.Command_NextTrack }) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, resultFactory) { Name = Strings.Command_PreviousTrack }) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipNextTrack, resultFactory, loggerFactory) { Name = Strings.Command_NextTrack }) { RequestedShortcut = Chords.NextTrack, Icon = Icons.NextTrackOutline},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.SkipPreviousTrack, resultFactory, loggerFactory) { Name = Strings.Command_PreviousTrack }) { RequestedShortcut = Chords.PreviousTrack, Icon = Icons.PreviousTrackOutline},
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, resultFactory) { Name = Strings.Command_ToggleRepeat }) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, resultFactory) { Name = Strings.Command_ToggleShuffle }) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleRepeat, resultFactory, loggerFactory) { Name = Strings.Command_ToggleRepeat }) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat},
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, MediaSessionOperations.ToggleShuffle, resultFactory, loggerFactory) { Name = Strings.Command_ToggleShuffle }) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle},
 
             new Separator(),
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
-            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayNextSessionMop(this._viewModels), resultFactory, loggerFactory) { Name = Strings.Command_NextApp })  { RequestedShortcut = Chords.NextSession, Icon = Icons.NextApp },
+            new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory, loggerFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
         this._mediaContextCommandsWithSwitchToApplication = [
             new CommandContextItem(this._primaryMediaCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },

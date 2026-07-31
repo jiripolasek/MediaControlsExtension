@@ -37,7 +37,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit" />
+		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit.Logging.MicrosoftExtensions" />
 		<PackageReference Include="Microsoft.CommandPalette.Extensions" />
+		<PackageReference Include="Microsoft.Extensions.Logging" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
 		<PackageReference Include="Microsoft.Windows.CsWinRT" />
 	</ItemGroup>
 
@@ -52,8 +55,8 @@
 		<CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
 		<CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
-		<!-- Keep the Windows SDK fallback and Serilog's unused structure-destructuring warning visible without failing AOT. -->
-		<WarningsNotAsErrors>$(WarningsNotAsErrors);IL2081;IL2067</WarningsNotAsErrors>
+		<!-- Keep the CsWinRT Windows.Foundation fallback warning visible without failing AOT. -->
+		<WarningsNotAsErrors>$(WarningsNotAsErrors);IL2081</WarningsNotAsErrors>
 
 		<PublishTrimmed Condition="'$(PublishTrimmed)' == ''">false</PublishTrimmed>
 		<TrimMode>full</TrimMode>

@@ -39,7 +39,9 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         IMediaService mediaService,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(resultFactory);

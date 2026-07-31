@@ -12,6 +12,7 @@ namespace JPSoftworks.MediaControlsExtension.Services;
 internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
 {
     private readonly Action<SystemVolumeState> _publishState;
+    private readonly ILogger _logger;
     private readonly ManualResetEvent _stopRequested = new(false);
     private readonly AutoResetEvent _rebindRequested = new(false);
     private readonly AutoResetEvent _refreshRequested = new(false);
@@ -20,10 +21,14 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
 
     private int _disposeState;
 
-    public SystemVolumeMonitor(Action<SystemVolumeState> publishState)
+    public SystemVolumeMonitor(
+        Action<SystemVolumeState> publishState,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(publishState);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         this._publishState = publishState;
+        this._logger = loggerFactory.CreateLogger<SystemVolumeMonitor>();
         this._waitHandles = [this._stopRequested, this._rebindRequested, this._refreshRequested];
         this._thread = new(this.Run)
         {
@@ -73,11 +78,11 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
         }
         finally
         {
-            Unbind(volumeCallbackPointer, ref endpoint);
+            this.Unbind(volumeCallbackPointer, ref endpoint);
 
             if (deviceCallbackRegistered && enumerator != null)
             {
@@ -87,7 +92,9 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning($"Could not unregister the default audio device callback: {ex.Message}");
+                    ExtensionLog.Warning(
+                        this._logger,
+                        $"Could not unregister the default audio device callback: {ex.Message}");
                 }
             }
 
@@ -110,7 +117,7 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
         nint callback,
         ref CoreAudioNative.AudioEndpointVolume? endpoint)
     {
-        Unbind(callback, ref endpoint);
+        this.Unbind(callback, ref endpoint);
 
         try
         {
@@ -133,7 +140,9 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogWarning($"Could not roll back the volume callback registration: {ex.Message}");
+                        ExtensionLog.Warning(
+                            this._logger,
+                            $"Could not roll back the volume callback registration: {ex.Message}");
                     }
                 }
 
@@ -143,7 +152,9 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"Could not monitor the default playback endpoint: {ex.Message}");
+            ExtensionLog.Warning(
+                this._logger,
+                $"Could not monitor the default playback endpoint: {ex.Message}");
         }
     }
 
@@ -160,12 +171,14 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"Could not read the default playback endpoint: {ex.Message}");
+            ExtensionLog.Warning(
+                this._logger,
+                $"Could not read the default playback endpoint: {ex.Message}");
             this.RequestRebind();
         }
     }
 
-    private static void Unbind(
+    private void Unbind(
         nint callback,
         ref CoreAudioNative.AudioEndpointVolume? endpoint)
     {
@@ -182,7 +195,9 @@ internal sealed unsafe partial class SystemVolumeMonitor : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"Could not unregister the volume callback: {ex.Message}");
+            ExtensionLog.Warning(
+                this._logger,
+                $"Could not unregister the volume callback: {ex.Message}");
         }
         finally
         {

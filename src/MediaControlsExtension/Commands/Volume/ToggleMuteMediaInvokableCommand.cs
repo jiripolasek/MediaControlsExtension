@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -12,7 +12,11 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
     private readonly MediaCommandResultFactory _resultFactory;
     public override string Name => Strings.Command_ToggleMute!;
 
-    public ToggleMuteMediaInvokableCommand(SystemVolumeService systemVolumeService, MediaCommandResultFactory resultFactory)
+    public ToggleMuteMediaInvokableCommand(
+        SystemVolumeService systemVolumeService,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         this._systemVolumeService = systemVolumeService;
         this._resultFactory = resultFactory;
@@ -28,7 +32,7 @@ internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCo
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
         }
 
         return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));

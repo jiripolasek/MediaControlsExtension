@@ -4,15 +4,20 @@
 // 
 // ------------------------------------------------------------
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace JPSoftworks.MediaControlsExtension;
 
 public sealed partial class MediaControlsExtensionCommandsProvider : CommandProvider, IDisposable
 {
     private readonly MediaCommandResultFactory _resultFactory;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger _logger;
     private readonly MediaService _mediaService;
     private readonly MediaSessionViewModelCache _mediaSessionViewModels;
     private readonly MediaMetadataPageCache _metadataPages;
-    private readonly SystemVolumeService _systemVolumeService = new();
+    private readonly SystemVolumeService _systemVolumeService;
     private readonly SettingsManager _settingsManager = new();
     private readonly IconService _iconService;
     private readonly CommandItem _mediaControlsPageItem;
@@ -29,10 +34,19 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private int _disposeState;
 
     public MediaControlsExtensionCommandsProvider()
+        : this(NullLoggerFactory.Instance)
     {
-        this._mediaService = new MediaService(ExtensionLoggerFactory.Instance);
-        this._mediaSessionViewModels = new(this._mediaService);
-        this._iconService = new IconService(this._settingsManager);
+    }
+
+    internal MediaControlsExtensionCommandsProvider(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this._loggerFactory = loggerFactory;
+        this._logger = loggerFactory.CreateLogger<MediaControlsExtensionCommandsProvider>();
+        this._mediaService = new MediaService(loggerFactory);
+        this._mediaSessionViewModels = new(this._mediaService, loggerFactory);
+        this._systemVolumeService = new(loggerFactory);
+        this._iconService = new IconService(this._settingsManager, loggerFactory);
         this.Id = "JPSoftworks.CmdPal.MediaControls";
         this.DisplayName = Strings.Name!;
         this.Icon = Icons.MainIcon;
@@ -45,7 +59,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._mediaService,
             this._mediaSessionViewModels,
             this._resultFactory,
-            this._iconService);
+            this._iconService,
+            loggerFactory);
         this.UpdateMediaServiceOptions();
 
         this._mediaControlsExtensionPage = new(
@@ -55,7 +70,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._systemVolumeService,
             this._settingsManager,
             this._resultFactory,
-            this._iconService);
+            this._iconService,
+            loggerFactory);
         this._mediaControlsPageItem = new(this._mediaControlsExtensionPage)
         {
             Title = this.DisplayName,
@@ -67,7 +83,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._mediaService,
             this._mediaSessionViewModels,
             this._resultFactory,
-            this._iconService);
+            this._iconService,
+            loggerFactory);
 #endif
         this._nowPlayingItem = new NowPlayingListItem(
             this._mediaService,
@@ -76,25 +93,27 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._settingsManager,
             this._resultFactory,
             this._iconService,
+            loggerFactory,
             false);
         this._toggleMuteCommandItem = new(
             this._systemVolumeService,
             this._resultFactory,
             this._iconService,
-            IconSurface.CommandPalette)
+            IconSurface.CommandPalette,
+            loggerFactory)
         {
             Title = Strings.Command_ToggleMute!,
         };
         this._volumeCommands =
         [
-            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, this._systemVolumeService, this._resultFactory))
+            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, this._systemVolumeService, this._resultFactory, loggerFactory))
             {
                 Title = Strings.Command_VolumeUp!,
                 Icon = this._iconService.GetIcon(
                     ThemedIcon.VolumeUp,
                     IconSurface.CommandPalette),
             },
-            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, this._systemVolumeService, this._resultFactory))
+            new CommandItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, this._systemVolumeService, this._resultFactory, loggerFactory))
             {
                 Title = Strings.Command_VolumeDown!,
                 Icon = this._iconService.GetIcon(
@@ -106,7 +125,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 this._systemVolumeService,
                 this._resultFactory,
                 this._iconService,
-                IconSurface.CommandPalette),
+                IconSurface.CommandPalette,
+                loggerFactory),
         ];
         this._mediaControlsBand = new(
             this._mediaService,
@@ -116,6 +136,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._settingsManager,
             this._resultFactory,
             this._iconService,
+            loggerFactory,
             new DockHeadCommandTargets(
                 this._mediaControlsExtensionPage,
                 currentMediaMetadataPage));
@@ -134,7 +155,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
             throw;
         }
     }
@@ -149,7 +170,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                     this._mediaService,
                     initializationTask,
                     this._resultFactory,
-                    this._iconService),
+                    this._iconService,
+                    this._loggerFactory),
                 Strings.TogglePlayPause!,
                 this._settingsManager,
                 this._iconService);
@@ -158,13 +180,15 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 initializationTask,
                 this._settingsManager,
                 this._resultFactory,
-                this._iconService);
+                this._iconService,
+                this._loggerFactory);
             var skipPrevious = new FallbackPreviousTrackCommandItem(
                 this._mediaService,
                 initializationTask,
                 this._settingsManager,
                 this._resultFactory,
-                this._iconService);
+                this._iconService,
+                this._loggerFactory);
             this._fallbackCommandsWithoutVolume = [play, skipNext, skipPrevious];
             this._fallbackCommandsWithVolume =
             [
@@ -173,12 +197,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                     this._settingsManager,
                     this._systemVolumeService,
                     this._resultFactory,
-                    this._iconService),
+                    this._iconService,
+                    this._loggerFactory),
                 new FallbackMuteCommandItem(
                     this._settingsManager,
                     this._systemVolumeService,
                     this._resultFactory,
-                    this._iconService),
+                    this._iconService,
+                    this._loggerFactory),
                 skipNext,
                 skipPrevious,
             ];
@@ -187,7 +213,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
         }
 
     }

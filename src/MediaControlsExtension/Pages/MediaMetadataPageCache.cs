@@ -14,6 +14,7 @@ internal sealed partial class MediaMetadataPageCache : IDisposable
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly MediaCommandResultFactory _resultFactory;
     private readonly IIconService _iconService;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly Dictionary<MediaSessionId, MediaMetadataPage> _pages = [];
     private bool _disposed;
 #endif
@@ -22,18 +23,21 @@ internal sealed partial class MediaMetadataPageCache : IDisposable
         IMediaService mediaService,
         MediaSessionViewModelCache viewModels,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
 #if FF_ENABLE_FULL_METADATA_PAGE
         this._mediaService = mediaService;
         this._viewModels = viewModels;
         this._resultFactory = resultFactory;
         this._iconService = iconService;
+        this._loggerFactory = loggerFactory;
         this._mediaService.SessionsChanged += this.MediaServiceOnSessionsChanged;
 #endif
     }
@@ -57,7 +61,8 @@ internal sealed partial class MediaMetadataPageCache : IDisposable
                 this._viewModels,
                 viewModel,
                 this._resultFactory,
-                this._iconService);
+                this._iconService,
+                this._loggerFactory);
             this._pages.Add(sessionId, page);
             return page;
         }

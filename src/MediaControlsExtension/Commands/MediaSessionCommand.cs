@@ -16,8 +16,9 @@ internal partial class MediaSessionCommand : MediaInvokableCommand
         IMediaService mediaService,
         MediaSession mediaSession,
         MediaSessionOp mediaSessionOp,
-        MediaCommandResultFactory resultFactory)
-        : base(resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(resultFactory, loggerFactory)
     {
         this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
         ArgumentNullException.ThrowIfNull(mediaSession);

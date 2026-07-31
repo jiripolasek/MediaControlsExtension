@@ -21,12 +21,13 @@ internal sealed partial class FallbackMuteCommandItem : FallbackCommandItem, IIc
         SettingsManager settingsManager,
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
         : base(new NoOpCommand(), Strings.Command_Mute, "com.jpsoftworks.cmdpal.mediacontrols.mute")
     {
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this.Command = this._command = new(true, systemVolumeService, resultFactory, iconService) { Name = "" };
+        this.Command = this._command = new(true, systemVolumeService, resultFactory, iconService, loggerFactory) { Name = "" };
         this.Title = "";
     }
 

@@ -8,12 +8,22 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class AsyncInvokableCommand : InvokableCommand
 {
+    protected AsyncInvokableCommand(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this.Logger = loggerFactory.CreateLogger(
+            this.GetType().FullName ?? this.GetType().Name);
+    }
+
+    protected ILogger Logger { get; }
+
     protected virtual TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
     public override ICommandResult Invoke()
     {
         var diagnostics = new ExtensionOperationDiagnostics(
-            $"async command {this.GetType().FullName ?? this.GetType().Name}");
+            $"async command {this.GetType().FullName ?? this.GetType().Name}",
+            this.Logger);
         diagnostics.SetStage("capturing command invocation");
         var invocation = this.CreateInvocation();
         diagnostics.SetStage("creating timeout result");
@@ -21,7 +31,7 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         diagnostics.SetStage("scheduling command body");
 
         using var timeoutCts = new CancellationTokenSource();
-        var cmdResult = Task.Run(() => SafeInvokeAsync(invocation, diagnostics, timeoutResult, timeoutCts.Token));
+        var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, diagnostics, timeoutResult, timeoutCts.Token));
         if (cmdResult.Wait(this.Timeout))
         {
             return cmdResult.Result;
@@ -32,7 +42,7 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         return timeoutResult;
     }
 
-    private static async Task<ICommandResult> SafeInvokeAsync(
+    private async Task<ICommandResult> SafeInvokeAsync(
         Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> invocation,
         ExtensionOperationDiagnostics diagnostics,
         ICommandResult timeoutResult,
@@ -49,7 +59,7 @@ internal abstract class AsyncInvokableCommand : InvokableCommand
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
             return CommandResult.KeepOpen();
         }
         finally

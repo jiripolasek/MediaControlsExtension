@@ -15,6 +15,7 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
     private readonly ToggleMuteMediaInvokableCommand _toggleMuteCommand;
     private readonly IIconService _iconService;
     private readonly IconSurface _iconSurface;
+    private readonly ILogger _logger;
 
     private bool _disposed;
     private bool _hasObservedState;
@@ -24,13 +25,15 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
         : this(
-            new(systemVolumeService, resultFactory),
+            new(systemVolumeService, resultFactory, loggerFactory),
             systemVolumeService,
             resultFactory,
             iconService,
-            iconSurface)
+            iconSurface,
+            loggerFactory)
     {
     }
 
@@ -39,23 +42,29 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
         : base(toggleMuteCommand)
     {
         ArgumentNullException.ThrowIfNull(systemVolumeService);
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._toggleMuteCommand = toggleMuteCommand;
         this._systemVolumeService = systemVolumeService;
         this._iconService = iconService;
         this._iconSurface = iconSurface;
+        this._logger = loggerFactory.CreateLogger<VolumeListItem>();
 
         this._toggleMuteCommand.Id = CommandId;
 
         this.Title = Strings.Toast_Volume!;
         this.Icon = iconService.GetIcon(ThemedIcon.ToggleMute, iconSurface);
-        this.MoreCommands = CreateMoreCommands(systemVolumeService, resultFactory);
+        this.MoreCommands = CreateMoreCommands(
+            systemVolumeService,
+            resultFactory,
+            loggerFactory);
 
         // Subscribe before seeding. If a notification wins the race with the initial
         // read, _hasObservedState prevents the older seed from replacing it.
@@ -77,28 +86,31 @@ internal sealed partial class VolumeListItem : ListItem, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogWarning($"Could not initialize the volume list item: {ex.Message}");
+            ExtensionLog.Warning(
+                this._logger,
+                $"Could not initialize the volume list item: {ex.Message}");
         }
     }
 
     private static IContextItem[] CreateMoreCommands(
         SystemVolumeService systemVolumeService,
-        MediaCommandResultFactory resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
     {
         return
         [
-            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, systemVolumeService, resultFactory))
+            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Increase, systemVolumeService, resultFactory, loggerFactory))
             {
                 RequestedShortcut = Chords.VolumeUp,
                 Icon = Icons.Volume_Up,
             },
-            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, systemVolumeService, resultFactory))
+            new CommandContextItem(new ChangeVolumeMediaInvokableCommand(VolumeChange.Decrease, systemVolumeService, resultFactory, loggerFactory))
             {
                 RequestedShortcut = Chords.VolumeDown,
                 Icon = Icons.Volume_Down,
             },
             new Separator(),
-            .. VolumeCommandFactory.CreatePresetContextItems(systemVolumeService, resultFactory),
+            .. VolumeCommandFactory.CreatePresetContextItems(systemVolumeService, resultFactory, loggerFactory),
         ];
     }
 

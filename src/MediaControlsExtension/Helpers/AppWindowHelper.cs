@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
@@ -15,9 +15,13 @@ internal static class AppWindowHelper
     /// Attempts to bring the window with the specified AppUserModelID to the front.
     /// Returns true if successful; false if no matching window was found.
     /// </summary>
-    public static bool TryBringToFront(IAppInfo app, string mediaTitle)
+    public static bool TryBringToFront(
+        IAppInfo app,
+        string mediaTitle,
+        ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(app);
+        ArgumentNullException.ThrowIfNull(logger);
 
         try
         {
@@ -71,7 +75,7 @@ internal static class AppWindowHelper
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(logger, ex);
         }
 
         return false;

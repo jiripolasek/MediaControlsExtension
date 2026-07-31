@@ -5,6 +5,8 @@
 // ------------------------------------------------------------
 
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension;
 
@@ -13,11 +15,21 @@ public sealed partial class MediaControlsExtension : IExtension, IDisposable
 {
     private readonly ManualResetEvent _extensionDisposedEvent;
 
-    private readonly MediaControlsExtensionCommandsProvider _provider = new();
+    private readonly MediaControlsExtensionCommandsProvider _provider;
 
     public MediaControlsExtension(ManualResetEvent extensionDisposedEvent)
+        : this(extensionDisposedEvent, NullLoggerFactory.Instance)
     {
-        this._extensionDisposedEvent = extensionDisposedEvent;
+    }
+
+    public MediaControlsExtension(
+        ManualResetEvent extensionDisposedEvent,
+        ILoggerFactory loggerFactory)
+    {
+        this._extensionDisposedEvent = extensionDisposedEvent
+            ?? throw new ArgumentNullException(nameof(extensionDisposedEvent));
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this._provider = new(loggerFactory);
     }
 
     public object? GetProvider(ProviderType providerType)

@@ -13,7 +13,8 @@ internal sealed partial class CurrentMediaMetadataPage : MediaMetadataPage
         IMediaService mediaService,
         MediaSessionViewModelCache viewModels,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
         : base(
             mediaService,
             viewModels,
@@ -21,7 +22,8 @@ internal sealed partial class CurrentMediaMetadataPage : MediaMetadataPage
             new CurrentSessionCommand(
                 mediaService,
                 MediaSessionOperations.SkipPreviousTrack,
-                resultFactory)
+                resultFactory,
+                loggerFactory)
             {
                 Name = Strings.Command_PreviousTrack!,
             },
@@ -29,31 +31,37 @@ internal sealed partial class CurrentMediaMetadataPage : MediaMetadataPage
                 mediaService,
                 resultFactory,
                 iconService,
-                IconSurface.CommandPalette),
+                IconSurface.CommandPalette,
+                loggerFactory),
             new CurrentSessionCommand(
                 mediaService,
                 MediaSessionOperations.SkipNextTrack,
-                resultFactory)
+                resultFactory,
+                loggerFactory)
             {
                 Name = Strings.Command_NextTrack!,
             },
             new CurrentSessionCommand(
                 mediaService,
                 MediaSessionOperations.ToggleShuffle,
-                resultFactory)
+                resultFactory,
+                loggerFactory)
             {
                 Name = Strings.Command_ToggleShuffle!,
             },
             new CurrentSessionCommand(
                 mediaService,
                 MediaSessionOperations.ToggleRepeat,
-                resultFactory)
+                resultFactory,
+                loggerFactory)
             {
                 Name = Strings.Command_ToggleRepeat!,
             },
             new BringAssociatedAppToFrontCommand(
                 mediaService,
-                viewModels))
+                viewModels,
+                loggerFactory),
+            loggerFactory)
     {
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols.currentmetadata";
     }

@@ -12,6 +12,7 @@ internal sealed partial class SystemVolumeService : IDisposable
 {
     private readonly Lock _operationLock = new();
     private readonly Lock _stateLock = new();
+    private readonly ILogger _logger;
     private readonly SystemVolumeMonitor _monitor;
 
     private SystemVolumeState? _currentState;
@@ -19,9 +20,11 @@ internal sealed partial class SystemVolumeService : IDisposable
 
     public event EventHandler<SystemVolumeState>? StateChanged;
 
-    public SystemVolumeService()
+    public SystemVolumeService(ILoggerFactory loggerFactory)
     {
-        this._monitor = new(this.PublishState);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this._logger = loggerFactory.CreateLogger<SystemVolumeService>();
+        this._monitor = new(this.PublishState, loggerFactory);
     }
 
     public bool TryGetCurrentState(out SystemVolumeState state)
@@ -150,7 +153,7 @@ internal sealed partial class SystemVolumeService : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex);
+                ExtensionLog.UnexpectedError(this._logger, ex);
             }
         }
     }

@@ -16,8 +16,9 @@ internal sealed partial class CurrentSessionCommand : MediaInvokableCommand
         IMediaService mediaService,
         MediaSessionOp mediaSessionOp,
         MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory,
         string? id = null)
-        : base(resultFactory)
+        : base(resultFactory, loggerFactory)
     {
         this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
         this._mediaSessionOp = mediaSessionOp ?? throw new ArgumentNullException(nameof(mediaSessionOp));

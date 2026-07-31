@@ -17,8 +17,9 @@ internal partial class StandaloneCurrentSessionCommand : MediaInvokableCommand
         IMediaService mediaService,
         Task initialization,
         MediaSessionOp mediaSessionOp,
-        MediaCommandResultFactory resultFactory)
-        : base(resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(resultFactory, loggerFactory)
     {
         this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
         this._initialization = initialization ?? throw new ArgumentNullException(nameof(initialization));
@@ -28,7 +29,8 @@ internal partial class StandaloneCurrentSessionCommand : MediaInvokableCommand
     protected override async Task<ICommandResult> InvokeMediaAsync(CancellationToken cancellationToken)
     {
         using var diagnostics = new ExtensionOperationDiagnostics(
-            $"fallback media command {this._mediaSessionOp.GetType().Name}");
+            $"fallback media command {this._mediaSessionOp.GetType().Name}",
+            this.Logger);
         diagnostics.SetStage("awaiting media-service initialization");
         await this._initialization.WaitAsync(cancellationToken).ConfigureAwait(false);
         diagnostics.SetStage($"submitting {this._mediaSessionOp.Operation}");

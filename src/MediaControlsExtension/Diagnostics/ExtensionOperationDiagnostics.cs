@@ -29,6 +29,7 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
     private static long _nextId;
 
     private readonly Lock _stateLock = new();
+    private readonly ILogger _logger;
     private readonly long _startedTimestamp = Stopwatch.GetTimestamp();
     private long _stageStartedTimestamp = Stopwatch.GetTimestamp();
     private long _nextWarningTimestamp;
@@ -37,10 +38,12 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
     private int _callerTimedOut;
     private int _state;
 
-    public ExtensionOperationDiagnostics(string name)
+    public ExtensionOperationDiagnostics(string name, ILogger logger)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(logger);
 
+        this._logger = logger;
         this.Id = Interlocked.Increment(ref _nextId);
         this.Name = name;
         this._nextWarningTimestamp =
@@ -74,11 +77,12 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
     {
         Interlocked.Exchange(ref this._callerTimedOut, 1);
         var snapshot = this.GetSnapshot();
-        Logger.LogWarning(
+        ExtensionLog.Warning(
+            this._logger,
             $"Extension operation #{snapshot.Id} {snapshot.Name} did not return to its caller within {timeout}; " +
             $"current stage: {snapshot.Stage}; stage elapsed: {snapshot.StageElapsed}; " +
             $"managed thread: {snapshot.StageThreadId}; total elapsed: {snapshot.Elapsed}.");
-        LogActiveOperations($"operation #{this.Id} caller timeout");
+        this.LogActiveOperations($"operation #{this.Id} caller timeout");
     }
 
     public void Complete(string outcome = "completed")
@@ -95,7 +99,8 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
         var snapshot = this.GetSnapshot();
         if (snapshot.Elapsed >= EarlyWarningThreshold || snapshot.CallerTimedOut)
         {
-            Logger.LogWarning(
+            ExtensionLog.Warning(
+                this._logger,
                 $"Extension operation #{snapshot.Id} {snapshot.Name} {outcome} after {snapshot.Elapsed}; " +
                 $"final stage: {snapshot.Stage}; stage elapsed: {snapshot.StageElapsed}; " +
                 $"caller timed out: {snapshot.CallerTimedOut}.");
@@ -107,7 +112,7 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
         this.Complete();
     }
 
-    public static void LogActiveOperations(string reason)
+    private void LogActiveOperations(string reason)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
 
@@ -117,7 +122,9 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
             .ToArray();
         if (operations.Length == 0)
         {
-            Logger.LogWarning($"No active extension operations were recorded for {reason}.");
+            ExtensionLog.Warning(
+                this._logger,
+                $"No active extension operations were recorded for {reason}.");
             return;
         }
 
@@ -130,7 +137,8 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
         var omittedCount = operations.Length - MaxSnapshotOperations;
         var omittedSuffix = omittedCount > 0 ? $" | +{omittedCount} more" : string.Empty;
         var threadPoolState = GetThreadPoolState();
-        Logger.LogWarning(
+        ExtensionLog.Warning(
+            this._logger,
             $"Active extension operations for {reason} ({operations.Length}; {threadPoolState}): " +
             string.Join(" | ", displayedOperations) + omittedSuffix);
     }
@@ -214,7 +222,8 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
         }
 
         var snapshot = this.GetSnapshot();
-        Logger.LogWarning(
+        ExtensionLog.Warning(
+            this._logger,
             $"Extension operation #{snapshot.Id} {snapshot.Name} has not completed after {snapshot.Elapsed}; " +
             $"current stage: {snapshot.Stage}; stage elapsed: {snapshot.StageElapsed}; " +
             $"managed thread: {snapshot.StageThreadId}; caller timed out: {snapshot.CallerTimedOut}; " +

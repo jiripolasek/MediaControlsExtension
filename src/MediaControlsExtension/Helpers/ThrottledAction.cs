@@ -14,23 +14,26 @@ internal sealed partial class ThrottledAction : IDisposable
     // Prevent disposal from overtaking an action that has been approved but not started.
     private readonly object _executionLock = new();
     private readonly Func<Task> _action;
+    private readonly ILogger _logger;
     private readonly string _operationName;
     private readonly Timer _timer;
     private bool _disposed;
     private bool _isRunning;
     private bool _runPending;
 
-    public ThrottledAction(int interval, string operationName, Action action)
-        : this(interval, operationName, WrapAction(action))
+    public ThrottledAction(int interval, string operationName, Action action, ILogger logger)
+        : this(interval, operationName, WrapAction(action), logger)
     {
     }
 
-    public ThrottledAction(int interval, string operationName, Func<Task> action)
+    public ThrottledAction(int interval, string operationName, Func<Task> action, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
+        ArgumentNullException.ThrowIfNull(logger);
 
         this._action = action;
+        this._logger = logger;
         this._operationName = operationName;
         this._timer = new Timer(interval) { AutoReset = false };
         this._timer.Elapsed += this.TimerOnElapsed;
@@ -50,7 +53,8 @@ internal sealed partial class ThrottledAction : IDisposable
     public void Dispose()
     {
         using var diagnostics = new ExtensionOperationDiagnostics(
-            $"throttled action disposal {this._operationName}");
+            $"throttled action disposal {this._operationName}",
+            this._logger);
         diagnostics.SetStage("waiting for the execution lock");
         lock (this._executionLock)
         {
@@ -114,7 +118,8 @@ internal sealed partial class ThrottledAction : IDisposable
         while (true)
         {
             using var diagnostics = new ExtensionOperationDiagnostics(
-                $"throttled action {this._operationName}");
+                $"throttled action {this._operationName}",
+                this._logger);
             var outcome = "completed";
             try
             {
@@ -143,7 +148,7 @@ internal sealed partial class ThrottledAction : IDisposable
             catch (Exception ex)
             {
                 outcome = "failed";
-                Logger.LogError(ex);
+                ExtensionLog.UnexpectedError(this._logger, ex);
             }
 
             diagnostics.SetStage("waiting for the state lock after callback");

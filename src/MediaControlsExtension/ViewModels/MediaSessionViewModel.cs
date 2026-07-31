@@ -15,6 +15,7 @@ namespace JPSoftworks.MediaControlsExtension.ViewModels;
 internal sealed partial class MediaSessionViewModel : IDisposable
 {
     private readonly IMediaService _mediaService;
+    private readonly ILogger _logger;
     private readonly Lock _applicationLock = new();
     private readonly Lock _artworkLock = new();
 
@@ -29,10 +30,13 @@ internal sealed partial class MediaSessionViewModel : IDisposable
 
     public MediaSessionViewModel(
         IMediaService mediaService,
-        MediaSession session)
+        MediaSession session,
+        ILoggerFactory loggerFactory)
     {
         this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
         this.Session = session ?? throw new ArgumentNullException(nameof(session));
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this._logger = loggerFactory.CreateLogger<MediaSessionViewModel>();
         this.UpdateApplication(session.MediaProperties.Application);
         this._artworkKey = session.MediaProperties.Artwork;
         session.Changed += this.SessionOnChanged;
@@ -195,7 +199,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
         }
     }
 
@@ -288,7 +292,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
                 }
             }
 
-            Logger.LogError("Failed to load media artwork.", ex);
+            ExtensionLog.Error(this._logger, "Failed to load media artwork.", ex);
             if (presentationChanged)
             {
                 this.RaiseChanged();
@@ -317,7 +321,8 @@ internal sealed partial class MediaSessionViewModel : IDisposable
             DiagnosticEvent.Raise(
                 this,
                 this.Changed,
-                $"MediaSessionViewModel[{this.Session.Id.Value}].Changed");
+                $"MediaSessionViewModel[{this.Session.Id.Value}].Changed",
+                this._logger);
         }
     }
 

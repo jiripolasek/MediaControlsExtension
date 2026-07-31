@@ -9,6 +9,7 @@ namespace JPSoftworks.MediaControlsExtension.Services;
 internal sealed partial class IconService : IIconService
 {
     private readonly SettingsManager _settingsManager;
+    private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly Dictionary<IconCacheKey, IconInfo> _cache = [];
     private readonly List<IconThemeDiagnostic> _diagnostics = [];
@@ -18,11 +19,15 @@ internal sealed partial class IconService : IIconService
     private string _dockThemeId;
     private bool _disposed;
 
-    public IconService(SettingsManager settingsManager)
+    public IconService(
+        SettingsManager settingsManager,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(settingsManager);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._settingsManager = settingsManager;
+        this._logger = loggerFactory.CreateLogger<IconService>();
         this._commandPaletteThemeId = settingsManager.CommandPaletteIconThemeId;
         this._dockThemeId = settingsManager.DockIconThemeId;
 
@@ -251,7 +256,7 @@ internal sealed partial class IconService : IIconService
         }
 
         this._diagnostics.Add(new(themeId, message));
-        Logger.LogWarning($"Icon theme '{themeId}': {message}");
+        ExtensionLog.Warning(this._logger, $"Icon theme '{themeId}': {message}");
     }
 
     private static bool AssetExists(string relativePath)

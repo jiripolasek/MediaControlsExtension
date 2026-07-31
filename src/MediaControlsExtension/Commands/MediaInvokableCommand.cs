@@ -16,7 +16,10 @@ internal abstract class MediaInvokableCommand : AsyncInvokableCommand
 {
     private readonly MediaCommandResultFactory _resultFactory;
 
-    protected MediaInvokableCommand(MediaCommandResultFactory resultFactory)
+    protected MediaInvokableCommand(
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(resultFactory);
 
@@ -38,7 +41,7 @@ internal abstract class MediaInvokableCommand : AsyncInvokableCommand
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
             return this.CreateMediaCommandResult($"😢 {Strings.Toast_NothingHappened}");
         }
     }

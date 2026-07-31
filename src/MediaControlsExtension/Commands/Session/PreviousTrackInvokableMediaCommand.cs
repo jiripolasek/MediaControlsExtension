@@ -12,7 +12,9 @@ internal sealed partial class PreviousTrackInvokableMediaCommand : StandaloneCur
         IMediaService mediaService,
         Task initialization,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService) : base(mediaService, initialization, MediaSessionOperations.SkipPreviousTrack, resultFactory)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, initialization, MediaSessionOperations.SkipPreviousTrack, resultFactory, loggerFactory)
     {
         this.Name = Strings.Command_PreviousTrack!;
         this.Icon = iconService.GetIcon(ThemedIcon.SkipPrevious, IconSurface.CommandPalette);
@@ -20,8 +22,12 @@ internal sealed partial class PreviousTrackInvokableMediaCommand : StandaloneCur
 }
 internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSessionCommand
 {
-    public PreviousTrackInvokableSpecificMediaCommand(IMediaService mediaService, MediaSession mediaSession, MediaCommandResultFactory resultFactory)
-        : base(mediaService, mediaSession, MediaSessionOperations.SkipPreviousTrack, resultFactory)
+    public PreviousTrackInvokableSpecificMediaCommand(
+        IMediaService mediaService,
+        MediaSession mediaSession,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, mediaSession, MediaSessionOperations.SkipPreviousTrack, resultFactory, loggerFactory)
     {
         this.Name = Strings.Command_PreviousTrack!;
         this.Icon = Icons.SkipPreviousTrack;

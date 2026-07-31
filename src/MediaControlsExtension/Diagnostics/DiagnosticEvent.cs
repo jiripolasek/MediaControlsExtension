@@ -17,17 +17,20 @@ internal static class DiagnosticEvent
         object sender,
         EventHandler? handlers,
         string eventName,
+        ILogger logger,
         ExtensionOperationDiagnostics? parentDiagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(sender);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(logger);
         if (handlers is null)
         {
             return;
         }
 
         var diagnostics = parentDiagnostics ?? new ExtensionOperationDiagnostics(
-            $"event {eventName}");
+            $"event {eventName}",
+            logger);
         var ownsDiagnostics = parentDiagnostics is null;
         var outcome = "completed";
         try
@@ -48,7 +51,8 @@ internal static class DiagnosticEvent
                 catch (Exception ex)
                 {
                     outcome = "failed";
-                    Logger.LogError(
+                    ExtensionLog.Error(
+                        logger,
                         $"Event subscriber {subscriberName} failed while handling {eventName}.",
                         ex);
                     throw;
@@ -57,7 +61,8 @@ internal static class DiagnosticEvent
                 var elapsed = Stopwatch.GetElapsedTime(startedTimestamp);
                 if (elapsed >= SlowSubscriberThreshold)
                 {
-                    Logger.LogWarning(
+                    ExtensionLog.Warning(
+                        logger,
                         $"Event subscriber {subscriberName} returned after {elapsed} while handling {eventName}.");
                 }
             }
@@ -78,17 +83,20 @@ internal static class DiagnosticEvent
         EventHandler<TEventArgs>? handlers,
         TEventArgs args,
         string eventName,
+        ILogger logger,
         ExtensionOperationDiagnostics? parentDiagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(sender);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(logger);
         if (handlers is null)
         {
             return;
         }
 
         var diagnostics = parentDiagnostics ?? new ExtensionOperationDiagnostics(
-            $"event {eventName}");
+            $"event {eventName}",
+            logger);
         var ownsDiagnostics = parentDiagnostics is null;
         var outcome = "completed";
         try
@@ -109,7 +117,8 @@ internal static class DiagnosticEvent
                 catch (Exception ex)
                 {
                     outcome = "failed";
-                    Logger.LogError(
+                    ExtensionLog.Error(
+                        logger,
                         $"Event subscriber {subscriberName} failed while handling {eventName}.",
                         ex);
                     throw;
@@ -118,7 +127,8 @@ internal static class DiagnosticEvent
                 var elapsed = Stopwatch.GetElapsedTime(startedTimestamp);
                 if (elapsed >= SlowSubscriberThreshold)
                 {
-                    Logger.LogWarning(
+                    ExtensionLog.Warning(
+                        logger,
                         $"Event subscriber {subscriberName} returned after {elapsed} while handling {eventName}.");
                 }
             }
@@ -139,18 +149,21 @@ internal static class DiagnosticEvent
         PropertyChangedEventHandler? handlers,
         PropertyChangedEventArgs args,
         string eventName,
+        ILogger logger,
         ExtensionOperationDiagnostics? parentDiagnostics = null)
     {
         ArgumentNullException.ThrowIfNull(sender);
         ArgumentNullException.ThrowIfNull(args);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(logger);
         if (handlers is null)
         {
             return;
         }
 
         var diagnostics = parentDiagnostics ?? new ExtensionOperationDiagnostics(
-            $"event {eventName}");
+            $"event {eventName}",
+            logger);
         var ownsDiagnostics = parentDiagnostics is null;
         var outcome = "completed";
         try
@@ -171,7 +184,8 @@ internal static class DiagnosticEvent
                 catch (Exception ex)
                 {
                     outcome = "failed";
-                    Logger.LogError(
+                    ExtensionLog.Error(
+                        logger,
                         $"Event subscriber {subscriberName} failed while handling {eventName}.",
                         ex);
                     throw;
@@ -180,7 +194,8 @@ internal static class DiagnosticEvent
                 var elapsed = Stopwatch.GetElapsedTime(startedTimestamp);
                 if (elapsed >= SlowSubscriberThreshold)
                 {
-                    Logger.LogWarning(
+                    ExtensionLog.Warning(
+                        logger,
                         $"Event subscriber {subscriberName} returned after {elapsed} while handling {eventName}.");
                 }
             }

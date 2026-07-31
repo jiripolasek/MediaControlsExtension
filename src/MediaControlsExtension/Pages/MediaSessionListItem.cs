@@ -15,6 +15,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
 
     private readonly SettingsManager _settingsManager;
     private readonly IIconService _iconService;
+    private readonly ILogger _logger;
     private readonly IconSurface _iconSurface;
     private readonly ThrottledAction _throttledAction;
     private readonly OptimisticPlaybackCommand _command;
@@ -71,6 +72,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
+        ILoggerFactory loggerFactory,
         bool asBand) : base(new NoOpCommand())
     {
         ArgumentNullException.ThrowIfNull(mediaService);
@@ -80,11 +82,13 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         ArgumentNullException.ThrowIfNull(settingsManager);
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._viewModel = viewModel;
         this._sessionId = viewModel.Session.Id;
         this._settingsManager = settingsManager;
         this._iconService = iconService;
+        this._logger = loggerFactory.CreateLogger<MediaSessionListItem>();
         this._iconSurface = asBand
             ? IconSurface.Dock
             : IconSurface.CommandPalette;
@@ -97,7 +101,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
                 {
                     this.Update(currentViewModel);
                 }
-            });
+            },
+            this._logger);
 
         this._viewModel.Changed += this.ViewModelOnChanged;
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
@@ -110,33 +115,39 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             mediaService,
             resultFactory,
             iconService,
-            this._iconSurface);
+            this._iconSurface,
+            loggerFactory);
         this._switchToApplicationCommand = new(
             mediaService,
             viewModels,
-            viewModel.Session.Id);
+            viewModel.Session.Id,
+            loggerFactory);
         this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(
             mediaService,
             viewModel.Session,
-            resultFactory)
+            resultFactory,
+            loggerFactory)
         {
             Icon = iconService.GetIcon(ThemedIcon.SkipNext, this._iconSurface),
         };
         this._previousTrackCommand = new PreviousTrackInvokableSpecificMediaCommand(
             mediaService,
             viewModel.Session,
-            resultFactory)
+            resultFactory,
+            loggerFactory)
         {
             Icon = iconService.GetIcon(ThemedIcon.SkipPrevious, this._iconSurface),
         };
         var toggleRepeatCommand = new ToggleRepeatSpecificMediaCommand(
             mediaService,
             viewModel.Session,
-            resultFactory);
+            resultFactory,
+            loggerFactory);
         var toggleShuffleCommand = new ToggleShuffleSpecificMediaCommand(
             mediaService,
             viewModel.Session,
-            resultFactory);
+            resultFactory,
+            loggerFactory);
 #if FF_ENABLE_FULL_METADATA_PAGE
         this._metadataPage = metadataPages.GetOrCreate(viewModel);
 #endif
@@ -174,7 +185,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex);
+                ExtensionLog.UnexpectedError(this._logger, ex);
             }
         }
 
@@ -370,7 +381,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
         }
 
         this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;

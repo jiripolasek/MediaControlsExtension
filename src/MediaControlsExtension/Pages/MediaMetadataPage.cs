@@ -15,6 +15,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
 {
     private readonly Lock _stateLock = new();
     private readonly IMediaService _mediaService;
+    private readonly ILogger _logger;
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly MediaSessionId? _sessionId;
     private readonly OptimisticPlaybackCommand _playPauseAction;
@@ -48,7 +49,8 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         ICommand nextCommand,
         ICommand shuffleCommand,
         ICommand repeatCommand,
-        ICommand switchToApplicationCommand)
+        ICommand switchToApplicationCommand,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
@@ -58,8 +60,10 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         ArgumentNullException.ThrowIfNull(shuffleCommand);
         ArgumentNullException.ThrowIfNull(repeatCommand);
         ArgumentNullException.ThrowIfNull(switchToApplicationCommand);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._mediaService = mediaService;
+        this._logger = loggerFactory.CreateLogger<MediaMetadataPage>();
         this._viewModels = viewModels;
         this._sessionId = sessionId;
         this._playPauseAction = playPauseCommand;
@@ -83,20 +87,23 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         MediaSessionViewModelCache viewModels,
         MediaSessionViewModel viewModel,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(resultFactory);
         ArgumentNullException.ThrowIfNull(iconService);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         var session = viewModel.Session;
         var playPauseCommand = new OptimisticPlaybackCommand(
             mediaService,
             resultFactory,
             iconService,
-            IconSurface.CommandPalette);
+            IconSurface.CommandPalette,
+            loggerFactory);
         playPauseCommand.UpdatePresentation(session);
         return new(
             mediaService,
@@ -105,24 +112,30 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             new PreviousTrackInvokableSpecificMediaCommand(
                 mediaService,
                 session,
-                resultFactory),
+                resultFactory,
+                loggerFactory),
             playPauseCommand,
             new NextTrackInvokableSpecificMediaCommand(
                 mediaService,
                 session,
-                resultFactory),
+                resultFactory,
+                loggerFactory),
             new ToggleShuffleSpecificMediaCommand(
                 mediaService,
                 session,
-                resultFactory),
+                resultFactory,
+                loggerFactory),
             new ToggleRepeatSpecificMediaCommand(
                 mediaService,
                 session,
-                resultFactory),
+                resultFactory,
+                loggerFactory),
             new BringAssociatedAppToFrontCommand(
                 mediaService,
                 viewModels,
-                session.Id));
+                session.Id,
+                loggerFactory),
+            loggerFactory);
     }
 
     public override IContent[] GetContent() => this._content;
@@ -360,7 +373,10 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         }
         catch (Exception ex)
         {
-            Logger.LogError("Failed to prepare artwork for the metadata page.", ex);
+            ExtensionLog.Error(
+                this._logger,
+                "Failed to prepare artwork for the metadata page.",
+                ex);
         }
     }
 

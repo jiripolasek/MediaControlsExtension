@@ -16,7 +16,9 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
         bool targetMute,
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         this._targetMute = targetMute;
         this._systemVolumeService = systemVolumeService;
@@ -36,7 +38,7 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
         }
 
         return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));

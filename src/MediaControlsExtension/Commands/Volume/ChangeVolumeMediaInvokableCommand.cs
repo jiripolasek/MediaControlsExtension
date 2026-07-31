@@ -15,7 +15,9 @@ internal sealed partial class ChangeVolumeMediaInvokableCommand : AsyncInvokable
     public ChangeVolumeMediaInvokableCommand(
         VolumeChange change,
         SystemVolumeService systemVolumeService,
-        MediaCommandResultFactory resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         this._change = change;
         this._systemVolumeService = systemVolumeService;
@@ -34,7 +36,7 @@ internal sealed partial class ChangeVolumeMediaInvokableCommand : AsyncInvokable
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
         }
 
         return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));

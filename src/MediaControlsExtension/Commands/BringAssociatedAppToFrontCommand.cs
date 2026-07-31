@@ -9,18 +9,22 @@ namespace JPSoftworks.MediaControlsExtension.Commands;
 internal sealed partial class BringAssociatedAppToFrontCommand : InvokableCommand
 {
     private readonly IMediaService _mediaService;
+    private readonly ILogger _logger;
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly MediaSessionId? _sessionId;
 
     private BringAssociatedAppToFrontCommand(
         IMediaService mediaService,
         MediaSessionViewModelCache viewModels,
-        MediaSessionId? sessionId)
+        MediaSessionId? sessionId,
+        ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._mediaService = mediaService;
+        this._logger = loggerFactory.CreateLogger<BringAssociatedAppToFrontCommand>();
         this._viewModels = viewModels;
         this._sessionId = sessionId;
         this.Icon = Icons.SwitchApps;
@@ -29,16 +33,18 @@ internal sealed partial class BringAssociatedAppToFrontCommand : InvokableComman
 
     public BringAssociatedAppToFrontCommand(
         IMediaService mediaService,
-        MediaSessionViewModelCache viewModels)
-        : this(mediaService, viewModels, null)
+        MediaSessionViewModelCache viewModels,
+        ILoggerFactory loggerFactory)
+        : this(mediaService, viewModels, null, loggerFactory)
     {
     }
 
     public BringAssociatedAppToFrontCommand(
         IMediaService mediaService,
         MediaSessionViewModelCache viewModels,
-        MediaSessionId sessionId)
-        : this(mediaService, viewModels, (MediaSessionId?)sessionId)
+        MediaSessionId sessionId,
+        ILoggerFactory loggerFactory)
+        : this(mediaService, viewModels, (MediaSessionId?)sessionId, loggerFactory)
     {
     }
 
@@ -63,11 +69,12 @@ internal sealed partial class BringAssociatedAppToFrontCommand : InvokableComman
         {
             AppWindowHelper.TryBringToFront(
                 viewModel.AppInfo,
-                viewModel.MediaProperties.Title);
+                viewModel.MediaProperties.Title,
+                this._logger);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this._logger, ex);
         }
 
         return CommandResult.Dismiss();

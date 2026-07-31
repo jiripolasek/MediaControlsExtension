@@ -15,7 +15,9 @@ internal sealed partial class SetVolumeMediaInvokableCommand : AsyncInvokableCom
     public SetVolumeMediaInvokableCommand(
         int volumePercent,
         SystemVolumeService systemVolumeService,
-        MediaCommandResultFactory resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(volumePercent);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(volumePercent, 100);
@@ -37,7 +39,7 @@ internal sealed partial class SetVolumeMediaInvokableCommand : AsyncInvokableCom
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
         }
 
         return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));

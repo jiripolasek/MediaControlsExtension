@@ -23,12 +23,13 @@ internal sealed partial class FallbackSkipTrackCommandItem : FallbackCommandItem
         Task initialization,
         SettingsManager settingsManager,
         MediaCommandResultFactory resultFactory,
-        IIconService iconService)
+        IIconService iconService,
+        ILoggerFactory loggerFactory)
         : base(new NoOpCommand(), Strings.Command_NextTrack, "com.jpsoftworks.cmdpal.mediacontrols.next")
     {
         this._settingsManager = settingsManager;
         this._iconService = iconService;
-        this.Command = this._command = new(mediaService, initialization, resultFactory, iconService) { Name = "" };
+        this.Command = this._command = new(mediaService, initialization, resultFactory, iconService, loggerFactory) { Name = "" };
         this.Title = "";
     }
 

@@ -14,12 +14,17 @@ internal static class VolumeCommandFactory
         SystemVolumeService systemVolumeService,
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
-        IconSurface iconSurface)
+        IconSurface iconSurface,
+        ILoggerFactory loggerFactory)
     {
         var items = new CommandItem[PresetPercentagesValues.Length];
         for (var i = 0; i < PresetPercentagesValues.Length; i++)
         {
-            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, resultFactory);
+            var command = CreatePresetCommand(
+                PresetPercentagesValues[i],
+                systemVolumeService,
+                resultFactory,
+                loggerFactory);
             items[i] = new(command)
             {
                 Title = command.Name,
@@ -35,12 +40,17 @@ internal static class VolumeCommandFactory
 
     public static CommandContextItem[] CreatePresetContextItems(
         SystemVolumeService systemVolumeService,
-        MediaCommandResultFactory resultFactory)
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
     {
         var items = new CommandContextItem[PresetPercentagesValues.Length];
         for (var i = 0; i < PresetPercentagesValues.Length; i++)
         {
-            var command = CreatePresetCommand(PresetPercentagesValues[i], systemVolumeService, resultFactory);
+            var command = CreatePresetCommand(
+                PresetPercentagesValues[i],
+                systemVolumeService,
+                resultFactory,
+                loggerFactory);
             items[i] = new(command)
             {
                 Icon = command.Icon,
@@ -53,6 +63,7 @@ internal static class VolumeCommandFactory
     private static SetVolumeMediaInvokableCommand CreatePresetCommand(
         int volumePercent,
         SystemVolumeService systemVolumeService,
-        MediaCommandResultFactory resultFactory)
-        => new(volumePercent, systemVolumeService, resultFactory);
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        => new(volumePercent, systemVolumeService, resultFactory, loggerFactory);
 }

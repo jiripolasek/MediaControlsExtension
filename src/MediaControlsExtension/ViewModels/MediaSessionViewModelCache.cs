@@ -13,13 +13,17 @@ namespace JPSoftworks.MediaControlsExtension.ViewModels;
 internal sealed partial class MediaSessionViewModelCache : IDisposable
 {
     private readonly IMediaService _mediaService;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly Lock _stateLock = new();
     private readonly Dictionary<MediaSessionId, MediaSessionViewModel> _viewModels = [];
     private bool _disposed;
 
-    public MediaSessionViewModelCache(IMediaService mediaService)
+    public MediaSessionViewModelCache(
+        IMediaService mediaService,
+        ILoggerFactory loggerFactory)
     {
         this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
+        this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         mediaService.SessionsChanged += this.MediaServiceOnSessionsChanged;
     }
 
@@ -35,7 +39,7 @@ internal sealed partial class MediaSessionViewModelCache : IDisposable
                 return viewModel;
             }
 
-            viewModel = new(this._mediaService, session);
+            viewModel = new(this._mediaService, session, this._loggerFactory);
             this._viewModels.Add(session.Id, viewModel);
             return viewModel;
         }
