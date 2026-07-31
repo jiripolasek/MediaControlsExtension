@@ -22,7 +22,8 @@ $requiredIcons = @(
     'VolumeUp',
     'VolumeDown',
     'VolumeMute',
-    'VolumeOff',
+    'VolumeZero',
+    'VolumeUnmute',
     'VolumeLow',
     'VolumeMedium',
     'VolumeHigh'
@@ -39,7 +40,8 @@ $knownIcons = @(
     'VolumeUp',
     'VolumeDown',
     'VolumeMute',
-    'VolumeOff',
+    'VolumeZero',
+    'VolumeUnmute',
     'VolumeLow',
     'VolumeMedium',
     'VolumeHigh'

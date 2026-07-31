@@ -33,7 +33,7 @@ internal static class VolumePresentation
     {
         return volumePercent switch
         {
-            <= 0 => Icons.Volume_Unmute,
+            <= 0 => Icons.Volume_Zero,
             <= 33 => Icons.Volume_Low,
             <= 66 => Icons.Volume_Mid,
             _ => Icons.Volume_Max,
@@ -57,7 +57,7 @@ internal static class VolumePresentation
 
         var icon = volumePercent switch
         {
-            <= 0 => ThemedIcon.VolumeOff,
+            <= 0 => ThemedIcon.VolumeZero,
             <= 33 => ThemedIcon.VolumeLow,
             <= 66 => ThemedIcon.VolumeMedium,
             _ => ThemedIcon.VolumeHigh,

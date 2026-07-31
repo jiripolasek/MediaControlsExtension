@@ -48,7 +48,7 @@ internal static class Icons
     public static IconInfo Volume_Low { get; } = new(SegoeFluentIconGlyphs.VolumeLow);
     public static IconInfo Volume_Max { get; } = new(SegoeFluentIconGlyphs.VolumeHigh);
     public static IconInfo Volume_Mid { get; } = new(SegoeFluentIconGlyphs.VolumeMedium);
-    public static IconInfo Volume_Unmute { get; } = new(SegoeFluentIconGlyphs.VolumeOff);
+    public static IconInfo Volume_Zero { get; } = new(SegoeFluentIconGlyphs.VolumeZero);
 
     public static IconInfo MainIcon { get; } = IconHelpers.FromRelativePaths(
         @"Assets\MainIcon.light.png",
@@ -78,7 +78,8 @@ internal static class Icons
 internal static class SegoeFluentIconGlyphs
 {
     public const string VolumeMute = "\uE74F";
-    public const string VolumeOff = "\uE992";
+    public const string VolumeZero = "\uE992";
+    public const string VolumeUnmute = "\uE767";
     public const string VolumeLow = "\uE993";
     public const string VolumeMedium = "\uE994";
     public const string VolumeHigh = "\uE995";

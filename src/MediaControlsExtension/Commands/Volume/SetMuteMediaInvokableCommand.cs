@@ -25,7 +25,7 @@ internal sealed partial class SetMuteMediaInvokableCommand : AsyncInvokableComma
         this._resultFactory = resultFactory;
         this.Name = targetMute ? Strings.Command_Mute! : Strings.Command_Unmute!;
         this.Icon = iconService.GetIcon(
-            targetMute ? ThemedIcon.VolumeMute : ThemedIcon.VolumeOff,
+            targetMute ? ThemedIcon.VolumeMute : ThemedIcon.VolumeUnmute,
             IconSurface.CommandPalette);
     }
 

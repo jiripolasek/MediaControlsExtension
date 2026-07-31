@@ -33,7 +33,7 @@ internal sealed partial class FallbackUnmuteCommandItem : FallbackCommandItem, I
 
     public void RefreshIconTheme()
         => this._command.UpdateIcon(this._iconService.GetIcon(
-            ThemedIcon.VolumeOff,
+            ThemedIcon.VolumeUnmute,
             IconSurface.CommandPalette));
 
     public override void UpdateQuery(string query)

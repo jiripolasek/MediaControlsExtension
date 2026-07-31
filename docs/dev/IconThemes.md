@@ -67,7 +67,8 @@ These are the recognized `ThemedIcon` values. The required request matrix includ
 | `VolumeUp` | Increase-volume action | Default |
 | `VolumeDown` | Decrease-volume action | Default |
 | `VolumeMute` | Mute action or muted-volume state | Default |
-| `VolumeOff` | Unmute action or zero-volume state | Default |
+| `VolumeZero` | Zero-volume state or target | Default |
+| `VolumeUnmute` | Unmute action | Default |
 | `VolumeLow` | Volume level from 1% through 33% | Default |
 | `VolumeMedium` | Volume level from 34% through 66% | Default |
 | `VolumeHigh` | Volume level from 67% through 100% | Default |
