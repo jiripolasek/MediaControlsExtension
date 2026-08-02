@@ -76,7 +76,8 @@ internal static class AppWindowHelper
                         return true;
                     }
 
-                    return DesktopWindowManager.SwitchToDesktopAppWindow(desktopAppInfo.Path, mediaTitle);
+                    return !string.IsNullOrWhiteSpace(desktopAppInfo.Path)
+                        && DesktopWindowManager.SwitchToDesktopAppWindow(desktopAppInfo.Path, mediaTitle);
             }
         }
         catch (Exception ex)

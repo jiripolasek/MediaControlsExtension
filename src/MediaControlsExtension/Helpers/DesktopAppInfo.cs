@@ -8,7 +8,7 @@ using Windows.ApplicationModel;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed record DesktopAppInfo(string DisplayName, string Path, string AppId, string? IconPath) : IAppInfo;
+internal sealed record DesktopAppInfo(string DisplayName, string? Path, string AppId, string? IconPath) : IAppInfo;
 
 internal sealed record ModernAppInfo(string DisplayName, string AppId, string? IconPath, AppInfo AppInfo) : IAppInfo
 {

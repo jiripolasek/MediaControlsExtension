@@ -12,5 +12,7 @@ namespace JPSoftworks.MediaControlsExtension.Interop;
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public enum HRESULT : uint
 {
+    ERROR_FILE_NOT_FOUND = 0x80070002,
+    ERROR_PATH_NOT_FOUND = 0x80070003,
     ERROR_NOT_FOUND = 0x80070490,
 }
