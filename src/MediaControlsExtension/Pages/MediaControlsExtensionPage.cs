@@ -116,7 +116,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._playPauseCurrentSessionItem)
         {
             Title = Strings.Command_NextTrack,
-            Subtitle = Strings.Command_NextTrack_Subtitle
+            // Subtitle = Strings.Command_NextTrack_Subtitle
         };
         this._prevTrackCurrentSessionItem = new(
             new CurrentSessionCommand(
@@ -127,7 +127,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._playPauseCurrentSessionItem)
         {
             Title = Strings.Command_PreviousTrack,
-            Subtitle = Strings.Command_PreviousTrack_Subtitle
+            // Subtitle = Strings.Command_PreviousTrack_Subtitle
         };
         this.UpdateTrackNavigationIcons();
         this._volumeItem = this._isBandPage
