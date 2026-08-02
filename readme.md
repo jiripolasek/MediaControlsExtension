@@ -16,12 +16,12 @@ The extension works with desktop apps, Microsoft Store apps, and browser tabs th
 - **Rich media details** — View title, artist, album, artwork, player, track length, playback state, and additional metadata supplied by the player.
 - **System volume controls** — See the volume of the default Windows playback device, mute or unmute, adjust the level, or jump to 0%, 25%, 50%, 75%, or 100%.
 - **Command Palette integration** — Put Now Playing and volume actions on the home page, surface media commands in global search, keep the palette open for consecutive actions, and show action notifications.
-- **Dock controls** — Add a compact media band with current playback and optional previous/next controls.
-- **Personalization** — Choose separate icon themes for the Command Palette and Dock, use album art in the session list, and configure which commands appear on each surface.
+- **Dock controls** — Add a compact media band with current playback and optional previous/next controls, plus a system volume band in the flyout.
+- **Personalization** — Choose separate icon themes for the Command Palette and Dock, use album art in the session list, configure which commands appear on each surface, and choose what the first dock item does (bring the app to front, open the main page, or open media details).
 
 Popular compatible players include Spotify, Apple Music, foobar2000, Media Player, VLC UWP, and media websites running in Edge, Chrome, other Chromium-based browsers, or Firefox. Exact controls and metadata depend on what each player exposes to Windows.
 
-See the [player compatibility and GSMTC guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, optional integrations, and troubleshooting.
+See the [player compatibility and GSMTC guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, optional integrations, and troubleshooting. For a version-by-version history of changes, see the [changelog](CHANGELOG.md).
 
 ## Installation
 
