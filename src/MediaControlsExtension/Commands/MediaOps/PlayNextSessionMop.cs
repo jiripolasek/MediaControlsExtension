@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
@@ -6,90 +6,52 @@
 
 using System.Globalization;
 using System.Text;
-using Windows.Media.Control;
+using JPSoftworks.MediaControlsExtension.Media;
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class PlayOtherSessionMop : MediaSessionOp
 {
     private static readonly CompositeFormat s_switchedToFormat = CompositeFormat.Parse(Strings.Toast_SwitchedTo!);
-    private static readonly CompositeFormat s_couldNotSwitchToFormat = CompositeFormat.Parse(Strings.Toast_CouldNotSwitchTo!);
-    private static readonly CompositeFormat s_playingNameFormat = CompositeFormat.Parse(Strings.Toast_PlayingName!);
+    private readonly MediaSessionViewModelCache _viewModels;
 
-    private readonly int _relativeIndex;
-    private readonly MediaService _mediaService;
-    private readonly SettingsManager _settingsManager;
-
-    protected PlayOtherSessionMop(SettingsManager settingsManager, int relativeIndex, MediaService mediaService)
+    protected PlayOtherSessionMop(MediaSessionViewModelCache viewModels)
     {
-        this._relativeIndex = relativeIndex;
-        this._mediaService = mediaService;
-        this._settingsManager = settingsManager;
+        this._viewModels = viewModels ?? throw new ArgumentNullException(nameof(viewModels));
     }
 
-    public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
+    protected override async ValueTask<string> GetSuccessMessageAsync(
+        IMediaService mediaService,
+        MediaCommandOutcome outcome,
+        CancellationToken cancellationToken)
     {
-        var allSessions = new List<GlobalSystemMediaTransportControlsSession>(manager.GetSessions());
-        var currentSession = manager.GetCurrentSession();
-        if (currentSession == null)
-        {
-            return new($"🚫 {Strings.Toast_NotCurrentSession}", false);
-        }
-
-        // we have only one session, so we can't switch
-        if (allSessions.Count == 1 && allSessions[0].SourceAppUserModelId == currentSession.SourceAppUserModelId)
-        {
-            return new($"🚫 {Strings.Toast_NoOtherSessions}", false);
-        }
-
-        var currentIndex = allSessions.FindIndex(t => t.SourceAppUserModelId == currentSession.SourceAppUserModelId);
-        if (currentIndex < 0 || currentIndex >= allSessions.Count)
-        {
-            return new($"🚫 {Strings.Toast_NoNextSession}", false);
-        }
-
-        var newIndex = (currentIndex + allSessions.Count + this._relativeIndex) % allSessions.Count;
-        var nextSession = allSessions[newIndex];
-
-        var nextMediaSource = this._mediaService.Sources.FirstOrDefault(t => t.Session.SourceAppUserModelId == nextSession.SourceAppUserModelId);
-        var s = await this.PlayAsync(manager, nextSession, nextMediaSource);
-
-        var applicationName = string.IsNullOrEmpty(nextMediaSource?.ApplicationName) ? "next session" : nextMediaSource?.ApplicationName;
-
-        return s.Success
-            ? new($"🔄️ {string.Format(CultureInfo.CurrentCulture, s_switchedToFormat, applicationName, s.Message)}", true)
-            : new($"🚫 {string.Format(CultureInfo.CurrentCulture, s_couldNotSwitchToFormat, applicationName, s.Message)}", false);
+        var session = outcome.SessionId is { } sessionId
+            ? mediaService.Sessions
+                .FirstOrDefault(candidate => candidate.Id == sessionId)
+            : null;
+        var applicationName = session is null
+            ? null
+            : await this._viewModels
+                .GetOrCreate(session)
+                .GetApplicationNameAsync(cancellationToken)
+                .ConfigureAwait(false);
+        applicationName = string.IsNullOrWhiteSpace(applicationName)
+            ? "next session"
+            : applicationName;
+        return $"🔄️ {string.Format(CultureInfo.CurrentCulture, s_switchedToFormat, applicationName, Strings.Toast_Playing)}";
     }
 
-
-    private async Task<MediaSessionOperationResult> PlayAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session, MediaSource? nextMediaSource)
-    {
-        var sessionIsPlaying = session.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-        bool success;
-        string message;
-        if (!sessionIsPlaying)
-        {
-            if (this._settingsManager.PauseOthersOnPlay)
-            {
-                foreach (var otherSession in manager.GetSessions() ?? [])
-                {
-                    await otherSession.TryPauseAsync();
-                }
-            }
-
-            success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();
-            message = success ? $"⏯️ {string.Format(CultureInfo.CurrentCulture, s_playingNameFormat, nextMediaSource?.Name)}" : $"🚫 {Strings.Toast_CouldNotPlay}";
-        }
-        else
-        {
-            message = Strings.Toast_Playing!;
-            success = true; // we don't need to pause the session, just switch to it
-        }
-
-        return new(message, success);
-    }
+    protected override string GetFailureMessage(object status) => $"🚫 {Strings.Toast_NoOtherSessions}";
 }
 
-internal sealed class PlayNextSessionMop(SettingsManager settingsManager, MediaService mediaService) : PlayOtherSessionMop(settingsManager, 1, mediaService);
+internal sealed class PlayNextSessionMop(MediaSessionViewModelCache viewModels)
+    : PlayOtherSessionMop(viewModels)
+{
+    public override MediaOperation Operation => MediaOperation.SwitchNextSession;
+}
 
-internal sealed class PlayPreviousSessionMop(SettingsManager settingsManager, MediaService mediaService) : PlayOtherSessionMop(settingsManager, -1, mediaService);
+internal sealed class PlayPreviousSessionMop(MediaSessionViewModelCache viewModels)
+    : PlayOtherSessionMop(viewModels)
+{
+    public override MediaOperation Operation => MediaOperation.SwitchPreviousSession;
+}

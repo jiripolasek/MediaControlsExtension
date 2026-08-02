@@ -2,21 +2,19 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <PropertyGroup>
+      <ToolkitVersion>0.9.3-preview.1</ToolkitVersion>
+  </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AudioSwitcher.AudioApi" Version="4.0.0-alpha5" />
-    <PackageVersion Include="AudioSwitcher.AudioApi.CoreAudio" Version="4.0.0-alpha5" />
-    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit" Version="0.5.0" />
+    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit" Version="$(ToolkitVersion)" />
+    <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit.Logging.MicrosoftExtensions" Version="$(ToolkitVersion)" />
     <PackageVersion Include="Microsoft.CommandPalette.Extensions" Version="0.9.260303001" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24508.2" />
-    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
-    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.2.46-beta" />
-    <PackageVersion Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
-    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
-    <PackageVersion Include="Serilog" Version="4.3.0" />
-    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="Shmuelie.WinRTServer" Version="2.2.1" />
-    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="Microsoft.Windows.CsWinRT" Version="2.3.1" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.3.2" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.3.2" />
   </ItemGroup>
 </Project>

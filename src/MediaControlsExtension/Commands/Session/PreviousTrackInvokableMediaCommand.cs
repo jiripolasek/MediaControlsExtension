@@ -1,29 +1,34 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
-using Windows.Media.Control;
-using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class PreviousTrackInvokableMediaCommand : CurrentMediaSessionCommand
+internal sealed partial class PreviousTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
+    internal const string CommandId = "com.jpsoftworks.cmdpal.mediacontrols.previous";
+
     public PreviousTrackInvokableMediaCommand(
-        IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> manager,
-        YetAnotherHelper yetAnotherHelper) : base(manager, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper)
+        IMediaService mediaService,
+        Task initialization,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, initialization, MediaSessionOperations.SkipPreviousTrack, resultFactory, loggerFactory)
     {
+        this.Id = CommandId;
         this.Name = Strings.Command_PreviousTrack!;
-        this.Icon = Icons.SkipPreviousTrack;
     }
 }
 internal sealed partial class PreviousTrackInvokableSpecificMediaCommand : MediaSessionCommand
 {
-    public PreviousTrackInvokableSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
-        : base(mediaService, mediaSource, MediaSessionOperations.SkipPreviousTrack, yetAnotherHelper)
+    public PreviousTrackInvokableSpecificMediaCommand(
+        IMediaService mediaService,
+        MediaSession mediaSession,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, mediaSession, MediaSessionOperations.SkipPreviousTrack, resultFactory, loggerFactory)
     {
         this.Name = Strings.Command_PreviousTrack!;
         this.Icon = Icons.SkipPreviousTrack;

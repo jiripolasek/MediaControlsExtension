@@ -7,4 +7,16 @@
     <NuGetAuditMode>direct</NuGetAuditMode>
     <PlatformTarget>$(Platform)</PlatformTarget>
   </PropertyGroup>
+  <Import
+    Project="$(MSBuildThisFileDirectory)eng\CmdPal.Extension.props"
+    Condition="'$(CmdPalExtensionProject)' == '' and Exists('$(MSBuildThisFileDirectory)eng\CmdPal.Extension.props')" />
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <TargetFramework>$(CmdPalTargetFramework)</TargetFramework>
+    <TargetPlatformMinVersion>$(CmdPalTargetPlatformMinVersion)</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>$(CmdPalTargetPlatformMinVersion)</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
 </Project>

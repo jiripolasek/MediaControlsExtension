@@ -1,52 +1,32 @@
-﻿// ------------------------------------------------------------
-// 
+// ------------------------------------------------------------
+//
 // Copyright (c) Jiří Polášek. All rights reserved.
-// 
+//
 // ------------------------------------------------------------
 
-using Windows.Media.Control;
-
+using JPSoftworks.MediaControlsExtension.Media;
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed class PlayPauseMop : MediaSessionOp
 {
-    private readonly SettingsManager _settingsManager;
+    public override MediaOperation Operation => MediaOperation.TogglePlayback;
 
-    public PlayPauseMop(SettingsManager settingsManager)
+    protected override ValueTask<string> GetSuccessMessageAsync(
+        IMediaService mediaService,
+        MediaCommandOutcome outcome,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(settingsManager);
-
-        this._settingsManager = settingsManager;
-    }
-
-    public override async Task<MediaSessionOperationResult> InvokeAsync(GlobalSystemMediaTransportControlsSessionManager manager, GlobalSystemMediaTransportControlsSession session)
-    {
-        var sessionIsPlaying = session.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-
-        bool success;
-        string message;
-        if (sessionIsPlaying)
+        var session = outcome.SessionId is { } sessionId
+            ? mediaService.Sessions.FirstOrDefault(candidate => candidate.Id == sessionId)
+            : mediaService.CurrentSession;
+        if (session is null)
         {
-            success = await session.TryPauseAsync();
-            message = success ? $"⏸️ {Strings.Toast_Paused}" : $"🚫 {Strings.Toast_CouldNotPause}";
-        }
-        else
-        {
-            if (this._settingsManager.PauseOthersOnPlay)
-            {
-                foreach (var otherSession in manager.GetSessions() ?? [])
-                {
-                    if (otherSession.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
-                    {
-                        await otherSession.TryPauseAsync();
-                    }
-                }
-            }
-
-            success = session.GetPlaybackInfo().Controls.IsPlayEnabled && await session.TryPlayAsync();
-            message = success ? $"⏯️ {Strings.Toast_Playing}" : $"🚫 {Strings.Toast_CouldNotPlay}";
+            return ValueTask.FromResult($"⏯️ {Strings.TogglePlayPause}");
         }
 
-        return new(message, success);
+        var message = session.PlaybackInfo.EffectiveState == MediaPlaybackState.Playing
+            ? $"⏯️ {Strings.Toast_Playing}"
+            : $"⏸️ {Strings.Toast_Paused}";
+        return ValueTask.FromResult(message);
     }
 }

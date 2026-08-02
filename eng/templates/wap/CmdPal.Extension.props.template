@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <CmdPalPackagingTemplateVersion>4</CmdPalPackagingTemplateVersion>
+    <CmdPalRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)__REPOSITORY_ROOT_RELATIVE_PATH__\'))</CmdPalRepositoryRoot>
+
+    <CmdPalExtensionProject>$(CmdPalRepositoryRoot)__APP_PROJECT_RELATIVE_PATH__</CmdPalExtensionProject>
+    <CmdPalExtensionProjectReference>__APP_PROJECT_REFERENCE__</CmdPalExtensionProjectReference>
+    <CmdPalExtensionAssemblyName>__ASSEMBLY_NAME__</CmdPalExtensionAssemblyName>
+
+    <CmdPalPackageProject>$(CmdPalRepositoryRoot)__PACKAGE_PROJECT_RELATIVE_PATH__</CmdPalPackageProject>
+    <CmdPalPackageManifest>$(CmdPalRepositoryRoot)__PACKAGE_MANIFEST_RELATIVE_PATH__</CmdPalPackageManifest>
+    <CmdPalPackageExecutable>__PACKAGE_EXECUTABLE__</CmdPalPackageExecutable>
+    <CmdPalPackageProjectGuid>__PACKAGE_PROJECT_GUID__</CmdPalPackageProjectGuid>
+
+    <CmdPalTargetFramework>__TARGET_FRAMEWORK__</CmdPalTargetFramework>
+    <CmdPalTargetPlatformVersion>__TARGET_PLATFORM_VERSION__</CmdPalTargetPlatformVersion>
+    <CmdPalTargetPlatformMinVersion>__TARGET_PLATFORM_MIN_VERSION__</CmdPalTargetPlatformMinVersion>
+    <CmdPalRuntimeIdentifiers>__RUNTIME_IDENTIFIERS__</CmdPalRuntimeIdentifiers>
+    <CmdPalDefaultLanguage>__DEFAULT_LANGUAGE__</CmdPalDefaultLanguage>
+
+    <CmdPalArtifactsPath>$(CmdPalRepositoryRoot)__ARTIFACTS_RELATIVE_PATH__\</CmdPalArtifactsPath>
+    <CmdPalSupportsNativeAot>__SUPPORTS_NATIVE_AOT__</CmdPalSupportsNativeAot>
+    <CmdPalWindowsSdkBuildToolsVersion>__WINDOWS_SDK_BUILD_TOOLS_VERSION__</CmdPalWindowsSdkBuildToolsVersion>
+  </PropertyGroup>
+</Project>

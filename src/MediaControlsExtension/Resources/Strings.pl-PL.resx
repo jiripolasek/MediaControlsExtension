@@ -157,7 +157,7 @@
     <value>Przełącz losowe odtwarzanie</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Grając</value>
+    <value>Odtwarzanie</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Wycisz</value>
@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Łatwo zarządzaj odtwarzaniem i przełączaj się między aplikacjami multimedialnymi</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Odtwarzanie</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Głośność systemowa</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sesje multimedialne</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Polecenia globalne</value>
   </data>
@@ -200,7 +209,7 @@
 Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotnie.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Graj</value>
+    <value>Odtwórz</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pauza</value>
@@ -212,7 +221,7 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Następna aplikacja</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>Poprzedni wniosek</value>
+    <value>Poprzednia aplikacja</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Szukaj poleceń multimedialnych lub sesji…</value>
@@ -236,7 +245,7 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Zatrzymaj {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Zagraj {0}</value>
+    <value>Odtwórz {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Teraz odtwarzane {0}</value>
@@ -257,7 +266,7 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Nie można było wstrzymać odtwarzania</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Gra</value>
+    <value>Odtwarzanie</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Nie można odtworzyć utworu</value>
@@ -287,10 +296,10 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Sterowanie losowym odtwarzaniem nie jest dostępne dla tej sesji</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Tasowanie wyłączone</value>
+    <value>Odtwarzanie losowe wyłączone</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Tasowanie włączone</value>
+    <value>Odtwarzanie losowe włączone</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Nie można przełączyć trybu losowego</value>
@@ -323,7 +332,7 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Nie można przełączyć na {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Gra {0}</value>
+    <value>Odtwarzanie w aplikacji {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Pokaż komunikaty toastów</value>
@@ -355,6 +364,12 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Wyświetl „Następny” i „Poprzedni utwór” w Docku.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Pokaż przyciski regulacji głośności</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Pokaż „Zmniejsz głośność” i „Zwiększ głośność” w paśmie głośności systemowej Docku.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Ukryj po odtworzeniu/wstrzymaniu</value>
   </data>
@@ -363,5 +378,208 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Ukryj po przełączeniu odtwarzania/pauzy w sesji multimedialnej</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>Wyświetl pełne metadane</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Wykonawca albumu</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>Identyfikator aplikacji</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Artysta</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Polecenia</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Czas trwania</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Gatunki</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Typ multimediów</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Obraz</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Muzyka</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Nieznane</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Wideo</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Niedostępne</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>Stan odtwarzania</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Odtwarzacz</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Podtytuł</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Tytuł</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Utwór</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} z {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>Brak metadanych dotyczących plików multimedialnych.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Okładka albumu</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Metadane mediów</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Metadane</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Informacje techniczne</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Ustaw głośność na {0}%</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Zmniejsz głośność</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Zwiększ głośność</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Głośność – {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Głośność – wyciszona</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>domyślnie wyświetlaj szczegóły multimediów</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Automatycznie otwieraj panel szczegółów na stronie „Elementy sterujące multimediami”.</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Głośność</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>Elementy sterujące multimediami przestały reagować. Uruchom ponownie rozszerzenie, aby spróbować jeszcze raz.</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Włącz regulację głośności</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Pokaż polecenia dotyczące głośności systemowej tego rozszerzenia. Wyłącz tę opcję, jeśli inne rozszerzenie już je udostępnia.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Strona „Paleta poleceń”</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Motyw ikon</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Wartość domyślna ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Wybierz ikony dla strony głównej Palety poleceń oraz strony z listą elementów sterujących multimediami.</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Motyw ikon</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Wybierz ikony dla doku palety poleceń.</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Wygląd i zachowanie</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Polecenia</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Pomoc i podziękowania</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Uzyskaj pomoc, zgłoś problem lub wyświetl kod źródłowy](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Autor: [Jiří Polášek](https://jiripolasek.com)
+_Na licencji Apache 2.0_
+_Prawa autorskie © Jiří Polášek_
+
+Szczególne podziękowania dla [Mike'a Griese'a](https://github.com/zadjii-msft)</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>Akcja bieżącego elementu multimedialnego</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Wybierz, co ma się stać po zaznaczeniu bieżącego elementu multimedialnego w Docku.</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>Przejdź do odtwarzacza</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>Otwórz elementy sterujące multimediami</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>Otwórz metadane multimediów</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>Ustawienie domyślne (Przejdź do odtwarzacza)</value>
+  </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Zgłoś problem</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Aby zgłosić problem:
+
+1. Odtwórz problem.
+2. Zapisz dzienniki diagnostyczne na pulpicie.
+3. Otwórz GitHub Issues i utwórz zgłoszenie.
+4. Dołącz wygenerowany plik ZIP do zgłoszenia.
+
+Dzienniki diagnostyczne mogą zawierać tytuły multimediów, nazwy odtwarzaczy i techniczne szczegóły błędów. Przed udostępnieniem przejrzyj zawartość archiwum.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Zapisz dzienniki diagnostyczne na pulpicie</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Utwórz plik ZIP do dołączenia do zgłoszenia w serwisie GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Dzienniki diagnostyczne zapisano na pulpicie jako {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Nie można zapisać dzienników diagnostycznych. Szczegóły znajdziesz w diagnostyce Command Palette.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Otwórz GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Utwórz zgłoszenie i dołącz dzienniki diagnostyczne.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>Nie można otworzyć GitHub Issues. Spróbuj ponownie lub otwórz repozytorium z poziomu Ustawień.</value>
   </data>
 </root>

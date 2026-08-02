@@ -15,15 +15,15 @@ namespace JPSoftworks.MediaControlsExtension.Interop;
 public struct PROPERTYKEY : IEquatable<PROPERTYKEY>
 {
     public Guid fmtid;
-    public nuint pid;
+    public uint pid;
 
-    private PROPERTYKEY(Guid fmtid, nuint pid)
+    private PROPERTYKEY(Guid fmtid, uint pid)
     {
         this.fmtid = fmtid;
         this.pid = pid;
     }
 
-    public static PROPERTYKEY FromString(string fmtid, nuint pid)
+    public static PROPERTYKEY FromString(string fmtid, uint pid)
     {
         return new PROPERTYKEY(Guid.Parse(fmtid), pid);
     }

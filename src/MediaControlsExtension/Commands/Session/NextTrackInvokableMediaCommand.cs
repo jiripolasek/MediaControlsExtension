@@ -1,29 +1,35 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
-using Windows.Foundation;
-using Windows.Media.Control;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class NextTrackInvokableMediaCommand : CurrentMediaSessionCommand
+internal sealed partial class NextTrackInvokableMediaCommand : StandaloneCurrentSessionCommand
 {
+    internal const string CommandId = "com.jpsoftworks.cmdpal.mediacontrols.next";
+
     public NextTrackInvokableMediaCommand(
-        IAsyncOperation<GlobalSystemMediaTransportControlsSessionManager> manager,
-        YetAnotherHelper yetAnotherHelper) : base(manager, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)
+        IMediaService mediaService,
+        Task initialization,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, initialization, MediaSessionOperations.SkipNextTrack, resultFactory, loggerFactory)
     {
+        this.Id = CommandId;
         this.Name = Strings.Command_NextTrack!;
-        this.Icon = Icons.SkipNextTrack;
     }
 }
 
 internal sealed partial class NextTrackInvokableSpecificMediaCommand : MediaSessionCommand
 {
-    public NextTrackInvokableSpecificMediaCommand(MediaService mediaService, MediaSource mediaSource, YetAnotherHelper yetAnotherHelper)
-        : base(mediaService, mediaSource, MediaSessionOperations.SkipNextTrack, yetAnotherHelper)
+    public NextTrackInvokableSpecificMediaCommand(
+        IMediaService mediaService,
+        MediaSession mediaSession,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(mediaService, mediaSession, MediaSessionOperations.SkipNextTrack, resultFactory, loggerFactory)
     {
         this.Name = Strings.Command_NextTrack!;
         this.Icon = Icons.SkipNextTrack;

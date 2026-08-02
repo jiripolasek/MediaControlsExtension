@@ -1,39 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<RootNamespace>JPSoftworks.MediaControlsExtension</RootNamespace>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<AppxManifest>$(ProjectDir)Package.appxmanifest</AppxManifest>
+		<PackageManifestPath>$(CmdPalPackageManifest)</PackageManifestPath>
 
-		<WindowsSdkPackageVersion>10.0.26100.68-preview</WindowsSdkPackageVersion>
-		<TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
-		<TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-		<RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
+		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+		<RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
 
-		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
-		<EnableMsixTooling>true</EnableMsixTooling>
-		<Nullable>enable</Nullable>
-		<LangVersion>preview</LangVersion>
+		<PublishProfile Condition="'$(_IsPublishing)' == 'true'">win-$(Platform).pubxml</PublishProfile>
 		<DebugType>embedded</DebugType>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
+		<!-- Remove this symbol to compile out the experimental full metadata page. -->
+		<DefineConstants>$(DefineConstants);FF_ENABLE_FULL_METADATA_PAGE</DefineConstants>
 
-		<AssemblyName>JPSoftworks.MediaControlsExtension</AssemblyName>
+		<AssemblyName>$(CmdPalExtensionAssemblyName)</AssemblyName>
 		<Company>Jiri Polasek</Company>
 		<Copyright>(c) Jiri Polasek</Copyright>
-		<NeutralLanguage>en-US</NeutralLanguage>
+		<NeutralLanguage>$(CmdPalDefaultLanguage)</NeutralLanguage>
 		<Product>Media Controls Command Palette</Product>
 		<AssemblyTitle>Media Controls Command Palette</AssemblyTitle>
+		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Include="Assets\SplashScreen.scale-200.png" />
-		<Content Include="Assets\LockScreenLogo.scale-200.png" />
-		<Content Include="Assets\Square150x150Logo.scale-200.png" />
-		<Content Include="Assets\Square44x44Logo.scale-200.png" />
-		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
+		<None Update="Assets\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
 		<Content Include="Resources\app.ico" />
 	</ItemGroup>
 
@@ -41,56 +35,39 @@
 		<Manifest Include="$(ApplicationManifest)" />
 	</ItemGroup>
 
-	<!--
-    Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
-    Tools extension to be activated for this project even if the Windows App SDK Nuget
-    package has not yet been restored.
-  -->
-	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-		<ProjectCapability Include="Msix" />
-	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="AudioSwitcher.AudioApi" NoWarn="NU1701" />
-		<PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" NoWarn="NU1701" />
 		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit" />
+		<PackageReference Include="JPSoftworks.CommandPalette.Extensions.Toolkit.Logging.MicrosoftExtensions" />
 		<PackageReference Include="Microsoft.CommandPalette.Extensions" />
+		<PackageReference Include="Microsoft.Extensions.Logging" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
 		<PackageReference Include="Microsoft.Windows.CsWinRT" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" />
-		<PackageReference Include="Microsoft.Web.WebView2" />
-		<PackageReference Include="Serilog" />
-		<PackageReference Include="Serilog.Sinks.File" />
-		<PackageReference Include="System.Text.Json" />
-		<PackageReference Include="Shmuelie.WinRTServer" />
 	</ItemGroup>
 
-	<!--
-    Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
-    Explorer "Package and Publish" context menu entry to be enabled for this project even if
-    the Windows App SDK Nuget package has not yet been restored.
-  -->
-	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
-		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
-	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+	</ItemGroup>
 
 	<PropertyGroup>
-		<IsAotCompatible>false</IsAotCompatible>
+		<!-- Uncomment (or pass -p:ForceManagedPublish=true) to publish managed, untrimmed
+		     output in Release while tracking an issue down. -->
+		<!-- <ForceManagedPublish>true</ForceManagedPublish> -->
+		<PublishAot Condition="'$(PublishAot)' == '' and '$(Configuration)' == 'Release' and '$(ForceManagedPublish)' != 'true'">true</PublishAot>
+		<PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
+		<SelfContained>true</SelfContained>
+		<IsAotCompatible>true</IsAotCompatible>
 		<CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
 		<CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
-		<!-- Suppress DynamicallyAccessedMemberTypes.PublicParameterlessConstructor in fallback code path of Windows SDK projection -->
-		<WarningsNotAsErrors>IL2081</WarningsNotAsErrors>
+		<TrimmerSingleWarn>false</TrimmerSingleWarn>
+		<!-- Keep the CsWinRT Windows.Foundation fallback warning visible without failing AOT. -->
+		<WarningsNotAsErrors>$(WarningsNotAsErrors);IL2081</WarningsNotAsErrors>
 
-		<PublishTrimmed>false</PublishTrimmed>
-		<PublishSingleFile>true</PublishSingleFile>
-		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
-		<ApplicationIcon>Resources\app.ico</ApplicationIcon>
+		<PublishTrimmed Condition="'$(PublishTrimmed)' == ''">$(PublishAot)</PublishTrimmed>
+		<TrimMode>full</TrimMode>
+		<PublishSingleFile>false</PublishSingleFile>
+		<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi" />
-		<TrimmerRootAssembly Include="AudioSwitcher.AudioApi.CoreAudio" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Update="Resources\Strings.Designer.cs">
@@ -107,8 +84,8 @@
 		</EmbeddedResource>
 	</ItemGroup>
 
-	<Target Name="UpdateVersionFromManifest" BeforeTargets="BeforeBuild">
-		<XmlPeek XmlInputPath="$(AppxManifest)" Query="/appx:Package/appx:Identity/@Version" Namespaces="&lt;Namespace Prefix='appx' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10'/&gt;">
+	<Target Name="UpdateVersionFromPackageManifest" BeforeTargets="BeforeBuild">
+		<XmlPeek XmlInputPath="$(PackageManifestPath)" Query="/appx:Package/appx:Identity/@Version" Namespaces="&lt;Namespace Prefix='appx' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10'/&gt;">
 			<Output TaskParameter="Result" PropertyName="appxManifestVersion" />
 		</XmlPeek>
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="skip" gradientUnits="userSpaceOnUse" x1="5" y1="7" x2="44" y2="41"><stop stop-color="#5ffcff"/><stop offset=".5" stop-color="#13d5ff"/><stop offset="1" stop-color="#835cff"/></linearGradient>
+  </defs>
+  <path fill="#111528" stroke="#13d5ff" stroke-opacity=".24" stroke-width="8" stroke-linejoin="bevel" d="M6 8 34 24 6 40Zm30-1h7v34H32V11Z"/>
+  <path fill="#111528" stroke="url(#skip)" stroke-width="3.5" stroke-linejoin="bevel" d="M6 8 34 24 6 40Zm30-1h7v34H32V11Z"/>
+  <path fill="#9ff8ff" d="M10 13h3v11h-3z"/>
+  <path fill="#ff4fd8" d="M38 10h3v9h-3z"/>
+</svg>

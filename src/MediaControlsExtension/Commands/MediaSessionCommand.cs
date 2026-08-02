@@ -1,38 +1,39 @@
-﻿// ------------------------------------------------------------
-// 
-// Copyright (c) Jiří Polášek. All rights reserved.
-// 
 // ------------------------------------------------------------
-
-using MediaService = JPSoftworks.MediaControlsExtension.Services.MediaService;
+//
+// Copyright (c) Jiří Polášek. All rights reserved.
+//
+// ------------------------------------------------------------
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal partial class MediaSessionCommand : AsyncInvokableCommand
+internal partial class MediaSessionCommand : MediaInvokableCommand
 {
-    private readonly MediaService _mediaService;
-    private readonly MediaSource _mediaSource;
+    private readonly IMediaService _mediaService;
+    private readonly MediaSessionId _mediaSessionId;
     private readonly MediaSessionOp _mediaSessionOp;
-    private readonly YetAnotherHelper _yetAnotherHelper;
+
+    protected MediaSessionCommand(
+        IMediaService mediaService,
+        MediaSession mediaSession,
+        MediaSessionOp mediaSessionOp,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : base(resultFactory, loggerFactory)
+    {
+        this._mediaService = mediaService ?? throw new ArgumentNullException(nameof(mediaService));
+        ArgumentNullException.ThrowIfNull(mediaSession);
+        this._mediaSessionId = mediaSession.Id;
+        this._mediaSessionOp = mediaSessionOp ?? throw new ArgumentNullException(nameof(mediaSessionOp));
+    }
 
     public MediaSessionOp MediaSessionOp => this._mediaSessionOp;
 
-    protected MediaSessionCommand(MediaService mediaService, MediaSource mediaSource, MediaSessionOp mediaSessionOp, YetAnotherHelper yetAnotherHelper)
+    protected override async Task<ICommandResult> InvokeMediaAsync(CancellationToken cancellationToken)
     {
-        this._mediaService = mediaService;
-        this._mediaSource = mediaSource;
-        this._mediaSessionOp = mediaSessionOp;
-        this._yetAnotherHelper = yetAnotherHelper;
-    }
-
-    protected override async Task<ICommandResult> InvokeAsync()
-    {
-        var manager = this._mediaService.SessionManager;
-        var result = await this._mediaSessionOp.InvokeAsync(manager, this._mediaSource.Session);
-        if (result.Success)
-        {
-            this._mediaSource.Update();
-        }
-        return this._yetAnotherHelper.GetMediaCommandResult(result.Message);
+        var message = await this._mediaSessionOp.InvokeAsync(
+            this._mediaService,
+            MediaCommandTarget.ForSession(this._mediaSessionId),
+            cancellationToken).ConfigureAwait(false);
+        return this.CreateMediaCommandResult(message);
     }
 }

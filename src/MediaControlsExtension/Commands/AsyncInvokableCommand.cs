@@ -1,66 +1,77 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
-using System.Diagnostics;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal abstract class AsyncInvokableCommand : InvokableCommand
 {
-    protected virtual bool ReturnImmediately { get; set; }
+    protected AsyncInvokableCommand(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        this.Logger = loggerFactory.CreateLogger(
+            this.GetType().FullName ?? this.GetType().Name);
+    }
 
-    protected virtual ICommandResult Result { get; set; } = CommandResult.Dismiss();
-
-    protected virtual ICommandResult TimeoutResult { get; set; } = CommandResult.Dismiss();
+    protected ILogger Logger { get; }
 
     protected virtual TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
     public override ICommandResult Invoke()
     {
-        Logger.LogDebug("Invoking async command " + this.GetType().FullName);
-        var stopwatch = Stopwatch.StartNew();
+        var diagnostics = new ExtensionOperationDiagnostics(
+            $"async command {this.GetType().FullName ?? this.GetType().Name}",
+            this.Logger);
+        diagnostics.SetStage("capturing command invocation");
+        var invocation = this.CreateInvocation();
+        diagnostics.SetStage("creating timeout result");
+        var timeoutResult = this.CreateTimeoutResult();
+        diagnostics.SetStage("scheduling command body");
 
-        if (this.ReturnImmediately)
+        using var timeoutCts = new CancellationTokenSource();
+        var cmdResult = Task.Run(() => this.SafeInvokeAsync(invocation, diagnostics, timeoutResult, timeoutCts.Token));
+        if (cmdResult.Wait(this.Timeout))
         {
-            // If the command is set to return immediately, we just return a dismiss result
-            // and invoke the async operation in the background.
-            _ = Task.Run(this.SafeInvokeAsync);
-            Logger.LogDebug("Async command " + this.GetType().FullName + " returned immediately");
-            return this.Result;
+            return cmdResult.Result;
         }
-        else
-        {
-            // If the command is not set to return immediately, we will wait for the async operation to complete
-            // and return the result.
-            var cmdResult = Task.Run(this.SafeInvokeAsync);
-            if (cmdResult.Wait(this.Timeout))
-            {
-                Logger.LogDebug("Async command " + this.GetType().FullName + " returned after " + stopwatch.Elapsed);
-                return cmdResult.Result;
-            }
-            else
-            {
-                Logger.LogDebug("Async command " + this.GetType().FullName + " timed out " + stopwatch.Elapsed);
-                return this.TimeoutResult;
-            }
-        }
+
+        diagnostics.ReportCallerTimeout(this.Timeout);
+        timeoutCts.Cancel();
+        return timeoutResult;
     }
 
-    private Task<ICommandResult> SafeInvokeAsync()
+    private async Task<ICommandResult> SafeInvokeAsync(
+        Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> invocation,
+        ExtensionOperationDiagnostics diagnostics,
+        ICommandResult timeoutResult,
+        CancellationToken cancellationToken)
     {
         try
         {
-            return this.InvokeAsync();
+            diagnostics.SetStage("executing command body");
+            return await invocation(diagnostics, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return timeoutResult;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
-            return Task.FromResult<ICommandResult>(CommandResult.KeepOpen());
+            ExtensionLog.UnexpectedError(this.Logger, ex);
+            return CommandResult.KeepOpen();
+        }
+        finally
+        {
+            diagnostics.Complete();
         }
     }
 
-    protected abstract Task<ICommandResult> InvokeAsync();
+    protected virtual Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> CreateInvocation() =>
+        (_, cancellationToken) => this.InvokeAsync(cancellationToken);
+
+    protected virtual ICommandResult CreateTimeoutResult() => CommandResult.Dismiss();
+
+    protected abstract Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken);
 }

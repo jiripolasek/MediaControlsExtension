@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //
 // Copyright (c) Jiří Polášek. All rights reserved.
 //
@@ -8,16 +8,23 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed class SettingsManager : JsonSettingsManager
+internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 {
     private const string DefaultNamespace = "jpsoftworks.mediacontrols";
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showThumbnailsOption = new(
         Namespaced("ShowThumbnails"),
-        Strings.Settings_ShowThumbnails_Title! + Environment.NewLine + Strings.Settings_ShowThumbnails_Subtitle!,
-        "",
-        false);
+        Strings.Settings_ShowThumbnails_Title!,
+        Strings.Settings_ShowThumbnails_Subtitle!,
+        true);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _showDetailsOption = new(
+        Namespaced("ShowDetails"),
+        Strings.Settings_ShowDetails_Title!,
+        Strings.Settings_ShowDetails_Subtitle!,
+        true);
 
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
@@ -29,15 +36,14 @@ internal sealed class SettingsManager : JsonSettingsManager
             // first option is the default one (hardcoded in the extension SDK)
             new ChoiceSetSetting.Choice(Strings.Settings_GlobalCommands_Option_Enabled!, GlobalCommandsMode.Enabled.ToString("G")),
             new ChoiceSetSetting.Choice(Strings.Settings_GlobalCommands_Option_Disabled!, GlobalCommandsMode.Disabled.ToString("G")),
-            // new ChoiceSetSetting.Choice("With slash ('/') prefix", GlobalCommandsMode.SlashPrefix.ToString("G")),
         ]);
 
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _keepOpen = new(
         Namespaced("KeepOpen"),
-        Strings.Settings_KeepOpen_Title! + Environment.NewLine + Strings.Settings_KeepOpen_Subtitle!,
-        "",
+        Strings.Settings_KeepOpen_Title!,
+        Strings.Settings_KeepOpen_Subtitle!,
         true
         );
 
@@ -68,47 +74,81 @@ internal sealed class SettingsManager : JsonSettingsManager
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showToastMessages = new(
         Namespaced("ShowToastMessages"),
-        Strings.Settings_ShowToastMessages_Title! + Environment.NewLine + Strings.Settings_ShowToastMessages_Subtitle!,
-        "",
+        Strings.Settings_ShowToastMessages_Title!,
+        Strings.Settings_ShowToastMessages_Subtitle!,
         true
     );
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _pauseOthersOnPlay = new(
         Namespaced("PauseOthersOnPlay"),
-        Strings.Settings_PauseOthersOnPlay_Title! + Environment.NewLine + Strings.Settings_PauseOthersOnPlay_Subtitle!,
-        "",
+        Strings.Settings_PauseOthersOnPlay_Title!,
+        Strings.Settings_PauseOthersOnPlay_Subtitle!,
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showCurrentMediaAtTopLevel = new(
         Namespaced("ShowCurrentMediaAtTopLevel"),
-        Strings.Settings_ShowCurrentMediaAtTopLevel_Title! + Environment.NewLine + Strings.Settings_ShowCurrentMediaAtTopLevel_Subtitle!,
-        "",
+        Strings.Settings_ShowCurrentMediaAtTopLevel_Title!,
+        Strings.Settings_ShowCurrentMediaAtTopLevel_Subtitle!,
+        true);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _enableVolumeControls = new(
+        Namespaced("EnableVolumeControls"),
+        Strings.Settings_EnableVolumeControls_Title!,
+        Strings.Settings_EnableVolumeControls_Subtitle!,
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showSkipCommands = new(
         Namespaced("ShowSkipCommands"),
-        Strings.Settings_ShowSkipCommands_Title! + Environment.NewLine + Strings.Settings_ShowSkipCommands_Subtitle!,
-        "",
+        Strings.Settings_ShowSkipCommands_Title!,
+        Strings.Settings_ShowSkipCommands_Subtitle!,
         true);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showSkipCommandsInDockBand = new(
         Namespaced("ShowSkipCommandsInDockBand"),
-        Strings.Settings_ShowSkipCommandsInDock_Title! + Environment.NewLine + Strings.Settings_ShowSkipCommandsInDock_Subtitle!,
-        "",
+        Strings.Settings_ShowSkipCommandsInDock_Title!,
+        Strings.Settings_ShowSkipCommandsInDock_Subtitle!,
         true);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ToggleSetting _showVolumeAdjustmentCommandsInDockBand = new(
+        Namespaced("ShowVolumeAdjustmentCommandsInDockBand"),
+        Strings.Settings_ShowVolumeAdjustmentCommandsInDock_Title!,
+        Strings.Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle!,
+        false);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _dockCurrentMediaAction = new(
+        Namespaced("DockCurrentMediaAction"),
+        Strings.Settings_DockCurrentMediaAction_Title!,
+        Strings.Settings_DockCurrentMediaAction_Subtitle!,
+        CreateDockCurrentMediaActionChoices());
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _commandPaletteIconTheme = new(
+        Namespaced("CommandPaletteIconTheme"),
+        Resource("Settings_CommandPaletteIconTheme_Title"),
+        Resource("Settings_CommandPaletteIconTheme_Subtitle"),
+        CreateIconThemeChoices());
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
+    private readonly ChoiceSetSetting _dockIconTheme = new(
+        Namespaced("DockIconTheme"),
+        Resource("Settings_DockIconTheme_Title"),
+        Resource("Settings_DockIconTheme_Subtitle"),
+        CreateIconThemeChoices());
 
     public bool ShowThumbnails => this._showThumbnailsOption.Value;
 
-    public GlobalCommandsMode GlobalCommands =>
-        string.IsNullOrWhiteSpace(this._globalCommands.Value)
-            ? GlobalCommandsMode.Enabled
-            : Enum.TryParse(this._globalCommands.Value, true, out GlobalCommandsMode result)
-                ? result
-                : GlobalCommandsMode.Enabled;
+    public bool ShowDetails => this._showDetailsOption.Value;
+
+    public bool ShowTrackNavigationCommandsAtTopLevel =>
+        !Enum.TryParse(this._globalCommands.Value, true, out GlobalCommandsMode result) ||
+        result != GlobalCommandsMode.Disabled;
 
     public bool KeepOpen => this._keepOpen.Value;
 
@@ -124,22 +164,86 @@ internal sealed class SettingsManager : JsonSettingsManager
 
     public bool ShowCurrentMediaAtTopLevel => _showCurrentMediaAtTopLevel.Value;
 
+    public bool EnableVolumeControls => this._enableVolumeControls.Value;
+
     public bool ShowSkipCommands => _showSkipCommands.Value;
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
+
+    public bool ShowVolumeAdjustmentCommandsInDockBand =>
+        this._showVolumeAdjustmentCommandsInDockBand.Value;
+
+    public DockCurrentMediaActionMode DockCurrentMediaAction
+    {
+        get
+        {
+            if (!Enum.TryParse(
+                    this._dockCurrentMediaAction.Value,
+                    true,
+                    out DockCurrentMediaActionMode result) ||
+                !Enum.IsDefined(result))
+            {
+                return DockCurrentMediaActionMode.Default;
+            }
+
+#if !FF_ENABLE_FULL_METADATA_PAGE
+            if (result == DockCurrentMediaActionMode.OpenMediaMetadata)
+            {
+                return DockCurrentMediaActionMode.Default;
+            }
+#endif
+
+            return result;
+        }
+    }
+
+    public string CommandPaletteIconThemeId =>
+        IconThemeCatalog.ResolveSelection(this._commandPaletteIconTheme.Value);
+
+    public string DockIconThemeId =>
+        IconThemeCatalog.ResolveSelection(this._dockIconTheme.Value);
 
     public SettingsManager()
     {
         this.FilePath = SettingsJsonPath();
 
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.PalettePage"),
+            Strings.Settings_Group_PalettePage!,
+            showSeparator: false));
+        this.Settings.Add(this._commandPaletteIconTheme);
         this.Settings.Add(this._showCurrentMediaAtTopLevel);
+        this.Settings.Add(this._showDetailsOption);
         this.Settings.Add(this._showSkipCommands);
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.Dock"),
+            Strings.Settings_Group_Dock!));
+        this.Settings.Add(this._dockIconTheme);
+        this.Settings.Add(this._dockCurrentMediaAction);
         this.Settings.Add(this._showSkipCommandsInDockBand);
+        this.Settings.Add(this._showVolumeAdjustmentCommandsInDockBand);
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.CommandBehavior"),
+            Strings.Settings_Group_AppearanceAndBehavior!));
         this.Settings.Add(this._showThumbnailsOption);
         this.Settings.Add(this._keepOpen);
         this.Settings.Add(this._pauseOthersOnPlay);
         this.Settings.Add(this._showToastMessages);
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.Commands"),
+            Strings.Settings_Group_Commands!));
         this.Settings.Add(this._globalCommands);
+        this.Settings.Add(this._enableVolumeControls);
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.HelpAndAcknowledgements"),
+            Strings.Settings_Group_HelpAndAcknowledgements!));
+        this.Settings.Add(new TextBlockSetting(
+            Namespaced("Layout.Help"),
+            Strings.Settings_Help!));
+        this.Settings.Add(new TextBlockSetting(
+            Namespaced("Layout.Acknowledgements"),
+            Strings.Settings_Acknowledgements!,
+            isSubtle: true));
 
         //this.Settings.Add(this._keepOpenTogglePlayPauseCurrent);
         //this.Settings.Add(this._keepOpenSkipTrack);
@@ -156,6 +260,50 @@ internal sealed class SettingsManager : JsonSettingsManager
         return $"{DefaultNamespace}.{propertyName}";
     }
 
+    private static List<ChoiceSetSetting.Choice> CreateIconThemeChoices()
+    {
+        var defaultTheme = IconThemeCatalog.DefaultThemeInfo;
+        var choices = new List<ChoiceSetSetting.Choice>
+        {
+            new(
+                Resource("Settings_IconTheme_Default")
+                    .Replace("{0}", defaultTheme.DisplayName, StringComparison.Ordinal),
+                IconThemeCatalog.DefaultSelectionId),
+        };
+
+        choices.AddRange(IconThemeCatalog.Themes.Select(
+            static theme => new ChoiceSetSetting.Choice(theme.DisplayName, theme.Id)));
+        return choices;
+    }
+
+    private static List<ChoiceSetSetting.Choice> CreateDockCurrentMediaActionChoices()
+    {
+        List<ChoiceSetSetting.Choice> choices =
+        [
+            // The first option is the default one (hardcoded in the extension SDK).
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_Default!,
+                DockCurrentMediaActionMode.Default.ToString("G")),
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_SwitchToPlayer!,
+                DockCurrentMediaActionMode.SwitchToPlayer.ToString("G")),
+            new(
+                Strings.Settings_DockCurrentMediaAction_Option_OpenMediaControls!,
+                DockCurrentMediaActionMode.OpenMediaControls.ToString("G")),
+        ];
+
+#if FF_ENABLE_FULL_METADATA_PAGE
+        choices.Add(new(
+            Strings.Settings_DockCurrentMediaAction_Option_OpenMediaMetadata!,
+            DockCurrentMediaActionMode.OpenMediaMetadata.ToString("G")));
+#endif
+
+        return choices;
+    }
+
+    private static string Resource(string name)
+        => Strings.ResourceManager.GetString(name, Strings.Culture) ?? name;
+
     private static string SettingsJsonPath()
     {
         var directory = Utilities.BaseSettingsPath("Microsoft.CmdPal");
@@ -169,6 +317,13 @@ internal sealed class SettingsManager : JsonSettingsManager
 internal enum GlobalCommandsMode
 {
     Disabled = 0,
-    SlashPrefix = 1,
     Enabled = 2
+}
+
+internal enum DockCurrentMediaActionMode
+{
+    Default = 0,
+    SwitchToPlayer = 1,
+    OpenMediaControls = 2,
+    OpenMediaMetadata = 3
 }

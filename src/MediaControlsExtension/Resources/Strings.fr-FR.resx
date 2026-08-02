@@ -154,10 +154,10 @@
     <value>Toggle Repeat</value>
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
-    <value>Aléatoire (Toggle Shuffle)</value>
+    <value>Activer ou désactiver la lecture aléatoire</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Jouer</value>
+    <value>Lecture en cours</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Muet</value>
@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Gérez la lecture et passez facilement d'une application multimédia à l'autre</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Lecture</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Volume système</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sessions multimédias</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Commandes globales</value>
   </data>
@@ -200,7 +209,7 @@
 Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire temporairement l'inverse.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Jouer</value>
+    <value>Lire</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pause</value>
@@ -209,10 +218,10 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
     <value>Arrêter</value>
   </data>
   <data name="Command_NextApp" xml:space="preserve">
-    <value>Prochaine application</value>
+    <value>Application suivante</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>Demande précédente</value>
+    <value>Application précédente</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Recherche de commandes ou de sessions de médias...</value>
@@ -236,7 +245,7 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
     <value>Stop {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Jouer {0}</value>
+    <value>Lire {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>En cours de lecture {0}</value>
@@ -257,7 +266,7 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
     <value>Impossible de mettre la lecture en pause</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Jouer</value>
+    <value>Lecture en cours</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Impossible de lire la piste</value>
@@ -287,10 +296,10 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
     <value>Le contrôle de la lecture aléatoire n'est pas disponible pour cette session</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Aléatoire désactivé</value>
+    <value>Lecture aléatoire désactivée</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Aléatoire activé</value>
+    <value>Lecture aléatoire activée</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Impossible d'activer la lecture aléatoire</value>
@@ -323,7 +332,7 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
     <value>Impossible de passer à {0} : {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Jouer {0}</value>
+    <value>Lecture en cours dans {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Afficher les messages de toast</value>
@@ -355,6 +364,12 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Affichez "Piste suivante" et "Piste précédente" dans le Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Afficher les boutons de réglage du volume</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Affichez « Baisser le volume » et « Augmenter le volume » dans la bande du Dock dédiée au volume système.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Masquer après lecture/pause</value>
   </data>
@@ -363,5 +378,208 @@ Maintenez la touche Majuscule enfoncée tout en activant une commande pour faire
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Masquer après le basculement lecture/pause d'une session média</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>Afficher toutes les métadonnées</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Album</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Artiste de l'album</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>Identifiant de l'application</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Artiste</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Commandes</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Durée</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Genres</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Type de média</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Musique</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Inconnu</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Vidéo</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Indisponible</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>État de la lecture</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Lecteur</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Sous-titre</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Titre</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Piste</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} sur {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>Aucune métadonnée relative au fichier multimédia n'est disponible.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Pochette d'album</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Métadonnées multimédias</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Métadonnées</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Informations techniques</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Régler le volume à {0} %</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Baisser le volume</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Augmenter le volume</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Volume - {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Volume - désactivé</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>Afficher les détails des fichiers multimédias par défaut</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Ouvrir automatiquement le volet de détails sur la page « Commandes multimédia ».</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>Les commandes multimédia ne répondent plus. Redémarrez l'extension pour réessayer.</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Activer les commandes de volume</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Afficher les commandes de réglage du volume système de cette extension. Désactivez cette option si une autre extension les fournit déjà.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Page « Palette de commandes »</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Thème d'icônes</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Par défaut ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Choisissez des icônes pour la page d'accueil de la palette de commandes et la page de liste des commandes multimédia.</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Thème d'icônes</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Choisissez des icônes pour le dock de la palette de commandes.</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Aspect et comportement</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Commandes</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Aide et remerciements</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Obtenir de l'aide, signaler un problème ou consulter le code source](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Créé par [Jiří Polášek](https://jiripolasek.com)
+_Sous licence Apache 2.0_
+_Copyright © Jiří Polášek_
+
+Remerciements particuliers à [Mike Griese](https://github.com/zadjii-msft)</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>Action de l’élément multimédia actuel</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Choisissez l'action à effectuer lorsque vous sélectionnez l'élément multimédia actif dans le Dock.</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>Passer au lecteur</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>Ouvrir les commandes multimédias</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>Ouvrir les métadonnées du média</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>Par défaut (Passer au lecteur)</value>
+  </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Signaler un problème</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Pour signaler un problème :
+
+1. Reproduisez le problème.
+2. Enregistrez les journaux de diagnostic sur votre Bureau.
+3. Ouvrez GitHub Issues et créez un rapport.
+4. Joignez le fichier ZIP généré au rapport.
+
+Les journaux de diagnostic peuvent contenir des titres de médias, des noms de lecteurs et des détails techniques sur les erreurs. Vérifiez l’archive avant de la partager.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Enregistrer les journaux de diagnostic sur le Bureau</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Créer un fichier ZIP à joindre à un ticket GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Les journaux de diagnostic ont été enregistrés sur votre Bureau sous le nom {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Impossible d’enregistrer les journaux de diagnostic. Consultez les diagnostics de Command Palette pour plus d’informations.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Ouvrir GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Créer un rapport et joindre les journaux de diagnostic.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>Impossible d’ouvrir GitHub Issues. Réessayez ou ouvrez le dépôt à partir des Paramètres.</value>
   </data>
 </root>

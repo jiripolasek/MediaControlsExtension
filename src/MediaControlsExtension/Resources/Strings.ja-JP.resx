@@ -121,7 +121,7 @@
     <value>メディア・コントロール</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>オープン</value>
+    <value>開く</value>
   </data>
   <data name="TogglePlayPause" xml:space="preserve">
     <value>再生/一時停止の切り替え</value>
@@ -154,10 +154,10 @@
     <value>トグル・リピート</value>
   </data>
   <data name="Command_ToggleShuffle" xml:space="preserve">
-    <value>トグル・シャッフル</value>
+    <value>シャッフルを切り替える</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>プレー</value>
+    <value>再生中</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>ミュート</value>
@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>再生を管理し、メディアアプリを簡単に切り替えられる</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>再生</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>システム音量</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>メディア セッション</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>グローバルコマンド</value>
   </data>
@@ -200,7 +209,7 @@
 Shiftを押しながらコマンドを実行すると、一時的に逆の操作ができます。</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>プレー</value>
+    <value>再生</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>一時停止</value>
@@ -212,7 +221,7 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
     <value>次のアプリケーション</value>
   </data>
   <data name="Command_PreviousApp" xml:space="preserve">
-    <value>前回の申し込み</value>
+    <value>前のアプリケーション</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>メディア・コマンドやセッションを検索...</value>
@@ -236,7 +245,7 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
     <value>停止 {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>プレー {0}</value>
+    <value>{0}を再生</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>現在プレー中{0}</value>
@@ -257,7 +266,7 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
     <value>再生を一時停止できませんでした</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>プレー</value>
+    <value>再生中</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>トラックを再生できませんでした</value>
@@ -287,10 +296,10 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
     <value>このセッションではシャッフルコントロールは使用できません</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>シャッフル不可</value>
+    <value>シャッフル無効</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>シャッフル可能</value>
+    <value>シャッフル有効</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>シャッフルを切り替えられない</value>
@@ -323,7 +332,7 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
     <value>{0}に切り替えられなかった：{1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>{0}をプレーする</value>
+    <value>{0}で再生中</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>トーストメッセージを表示する</value>
@@ -355,6 +364,12 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Dockに "Next "と "Previous Track "を表示する。</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>音量調整ボタンを表示</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>システム音量の Dock バンドに「音量ダウン」と「音量を上げる」を表示します。</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>再生/一時停止後に隠す</value>
   </data>
@@ -363,5 +378,208 @@ Shiftを押しながらコマンドを実行すると、一時的に逆の操作
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>メディアセッションで再生/一時停止を切り替えた後に非表示にする</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>メタデータ全体を表示</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>アルバム</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>アルバムのアーティスト</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>アプリケーションID</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>アーティスト</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>コマンド</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>再生時間</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>ジャンル</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>メディアの種類</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>画像</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>音楽</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>不明</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>動画</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>利用不可</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>再生状況</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>プレーヤー</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>サブタイトル</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>タイトル</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>トラック</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>メディアのメタデータは利用できません。</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>アルバムのジャケット</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>メディアのメタデータ</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>メタデータ</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>技術情報</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>音量を{0}%に設定する</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>音量ダウン</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>音量を上げる</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>音量 - {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>音量 - ミュート</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>デフォルトでメディアの詳細を表示する</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>「メディアコントロール」ページで、詳細ペインを自動的に開く。</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>音量</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>メディアコントロールが応答しなくなりました。拡張機能を再起動して、もう一度お試しください。</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>音量調節機能を有効にする</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>この拡張機能のシステム音量コマンドを表示します。他の拡張機能ですでにこれらのコマンドが提供されている場合は、この機能をオフにしてください。</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>コマンドパレットのページ</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>アイコンテーマ</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>デフォルト ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>コマンドパレットのホームページとメディアコントロールの一覧ページに表示するアイコンを選択してください。</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>ドック</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>アイコンテーマ</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>コマンドパレット・ドックに表示するアイコンを選択してください。</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>外見と振る舞い</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>コマンド</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>ヘルプと謝辞</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[ヘルプの閲覧、問題の報告、ソースコードの確認](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>作成者：[Jiří Polášek](https://jiripolasek.com)
+_Apache 2.0 ライセンスの下で提供されています_
+_Copyright © Jiří Polášek_
+
+[Mike Griese](https://github.com/zadjii-msft) に深く感謝します</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>現在のメディア項目の操作</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Dockで現在のメディア項目を選択したときの動作を選択してください。</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>プレーヤーに切り替える</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>メディアコントロールを開く</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>メディアのメタデータを開く</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>デフォルト（プレーヤーに切り替える）</value>
+  </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>問題を報告</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>問題を報告するには：
+
+1. 問題を再現します。
+2. 診断ログをデスクトップに保存します。
+3. GitHub Issues を開いて報告を作成します。
+4. 生成された ZIP ファイルを報告に添付します。
+
+診断ログには、メディアのタイトル、プレーヤー名、技術的なエラーの詳細が含まれる場合があります。共有する前にアーカイブの内容を確認してください。</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>診断ログをデスクトップに保存</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>GitHub の Issue に添付する ZIP ファイルを作成します。</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>診断ログを {0} としてデスクトップに保存しました。</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>診断ログを保存できませんでした。詳細については、Command Palette の診断情報を確認してください。</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>GitHub Issues を開く</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>報告を作成して診断ログを添付します。</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>GitHub Issues を開けませんでした。もう一度試すか、設定からリポジトリを開いてください。</value>
   </data>
 </root>

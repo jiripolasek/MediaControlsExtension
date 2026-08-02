@@ -1,44 +1,56 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // 
 // Copyright (c) Jiří Polášek. All rights reserved.
 // 
 // ------------------------------------------------------------
 
-using AudioSwitcher.AudioApi;
-using AudioSwitcher.AudioApi.CoreAudio;
-
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 internal sealed partial class ToggleMuteMediaInvokableCommand : AsyncInvokableCommand
 {
-    private readonly YetAnotherHelper _yetAnotherHelper;
-    public override IconInfo Icon => Icons.ToggleMute;
-    public override string Name => Strings.Command_ToggleMute!;
+    private readonly SystemVolumeService _systemVolumeService;
+    private readonly MediaCommandResultFactory _resultFactory;
+    private readonly string _name;
 
-    public ToggleMuteMediaInvokableCommand(YetAnotherHelper yetAnotherHelper)
+    public override string Name => this._name;
+
+    public ToggleMuteMediaInvokableCommand(
+        SystemVolumeService systemVolumeService,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory)
+        : this(
+            systemVolumeService,
+            resultFactory,
+            loggerFactory,
+            Strings.Command_ToggleMute!)
     {
-        this._yetAnotherHelper = yetAnotherHelper;
     }
 
-    protected override async Task<ICommandResult> InvokeAsync()
+    internal ToggleMuteMediaInvokableCommand(
+        SystemVolumeService systemVolumeService,
+        MediaCommandResultFactory resultFactory,
+        ILoggerFactory loggerFactory,
+        string commandName)
+        : base(loggerFactory)
+    {
+        this._systemVolumeService = systemVolumeService;
+        this._resultFactory = resultFactory;
+        this._name = commandName;
+        this.Icon = Icons.ToggleMute;
+    }
+
+    protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
         try
         {
-            using CoreAudioController coreAudioController = new();
-            var playbackDevice = coreAudioController.GetDefaultDevice(DeviceType.Playback, Role.Console);
-            if (playbackDevice != null)
-            {
-                var isMuted = playbackDevice.IsMuted;
-                await playbackDevice.ToggleMuteAsync()!.ConfigureAwait(false);
-
-                return this._yetAnotherHelper.GetMediaCommandResult(isMuted ? $"🔊 {Strings.Toast_Unmuted}" : $"🔇 {Strings.Toast_Muted}");
-            }
+            var state = this._systemVolumeService.ToggleMute(cancellationToken);
+            return Task.FromResult(this._resultFactory.Create(state.IsMuted ? $"🔇 {Strings.Toast_Muted}" : $"🔊 {Strings.Toast_Unmuted}"));
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex);
+            ExtensionLog.UnexpectedError(this.Logger, ex);
         }
 
-        return this._yetAnotherHelper.GetMediaCommandResult(Strings.Toast_CantChangeVolume!);
+        return Task.FromResult(this._resultFactory.Create(Strings.Toast_CantChangeVolume!));
     }
 }

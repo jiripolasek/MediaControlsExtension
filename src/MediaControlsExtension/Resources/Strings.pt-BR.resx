@@ -157,7 +157,7 @@
     <value>Alternar reprodução aleatória</value>
   </data>
   <data name="Tags_Playing" xml:space="preserve">
-    <value>Jogando</value>
+    <value>Tocando</value>
   </data>
   <data name="Command_Mute" xml:space="preserve">
     <value>Mudo</value>
@@ -180,6 +180,15 @@
   <data name="MediaControls_Subtitle" xml:space="preserve">
     <value>Gerencie a reprodução e alterne entre aplicativos de mídia com facilidade</value>
   </data>
+  <data name="Page_Section_Playback" xml:space="preserve">
+    <value>Reprodução</value>
+  </data>
+  <data name="Page_Section_SystemVolume" xml:space="preserve">
+    <value>Volume do sistema</value>
+  </data>
+  <data name="Page_Section_MediaSessions" xml:space="preserve">
+    <value>Sessões de mídia</value>
+  </data>
   <data name="Settings_GlobalCommands_Title" xml:space="preserve">
     <value>Comandos Globais</value>
   </data>
@@ -200,7 +209,7 @@
 Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o oposto.</value>
   </data>
   <data name="Command_Play" xml:space="preserve">
-    <value>Jogar</value>
+    <value>Tocar</value>
   </data>
   <data name="Command_Pause" xml:space="preserve">
     <value>Pausar</value>
@@ -236,7 +245,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Pare {0}</value>
   </data>
   <data name="NowPlaying_Play" xml:space="preserve">
-    <value>Jogar {0}</value>
+    <value>Tocar {0}</value>
   </data>
   <data name="NowPlaying_NowPlaying" xml:space="preserve">
     <value>Tocando agora {0}</value>
@@ -257,7 +266,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Não foi possível pausar a reprodução</value>
   </data>
   <data name="Toast_Playing" xml:space="preserve">
-    <value>Jogando</value>
+    <value>Tocando</value>
   </data>
   <data name="Toast_CouldNotPlay" xml:space="preserve">
     <value>Não foi possível reproduzir a faixa</value>
@@ -287,10 +296,10 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>O controle de reprodução aleatória não está disponível para esta sessão</value>
   </data>
   <data name="Toast_ShuffleDisabled" xml:space="preserve">
-    <value>Embaralhamento desativado</value>
+    <value>Modo aleatório desativado</value>
   </data>
   <data name="Toast_ShuffleEnabled" xml:space="preserve">
-    <value>Embaralhamento ativado</value>
+    <value>Modo aleatório ativado</value>
   </data>
   <data name="Toast_CouldNotToggleShuffle" xml:space="preserve">
     <value>Não foi possível alternar o modo aleatório</value>
@@ -323,7 +332,7 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
     <value>Não foi possível alternar para {0}: {1}</value>
   </data>
   <data name="Toast_PlayingName" xml:space="preserve">
-    <value>Jogando {0}</value>
+    <value>Tocando {0}</value>
   </data>
   <data name="Settings_ShowToastMessages_Title" xml:space="preserve">
     <value>Mostrar mensagens de toast</value>
@@ -355,6 +364,12 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Exibir “Próxima” e “Faixa anterior” no Dock.</value>
   </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
+    <value>Mostrar botões de ajuste de volume</value>
+  </data>
+  <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle" xml:space="preserve">
+    <value>Exibir “Baixar o volume” e “Aumentar o volume” na faixa de volume do sistema do Dock.</value>
+  </data>
   <data name="Settings_HideAfterPlayPause" xml:space="preserve">
     <value>Ocultar após reproduzir/pausar</value>
   </data>
@@ -363,5 +378,208 @@ Mantenha Shift pressionado ao ativar um comando para fazer temporariamente o opo
   </data>
   <data name="Settings_HideAfterTogglePlayPause" xml:space="preserve">
     <value>Ocultar após alternar reproduzir/pausar na sessão de mídia</value>
+  </data>
+  <data name="Command_ViewMetadata" xml:space="preserve">
+    <value>Ver metadados completos</value>
+  </data>
+  <data name="Details_Album" xml:space="preserve">
+    <value>Álbum</value>
+  </data>
+  <data name="Details_AlbumArtist" xml:space="preserve">
+    <value>Artista do álbum</value>
+  </data>
+  <data name="Details_ApplicationId" xml:space="preserve">
+    <value>ID do aplicativo</value>
+  </data>
+  <data name="Details_Artist" xml:space="preserve">
+    <value>Artista</value>
+  </data>
+  <data name="Details_Commands" xml:space="preserve">
+    <value>Comandos</value>
+  </data>
+  <data name="Details_Length" xml:space="preserve">
+    <value>Duração</value>
+  </data>
+  <data name="Details_Genres" xml:space="preserve">
+    <value>Géneros</value>
+  </data>
+  <data name="Details_MediaType" xml:space="preserve">
+    <value>Tipo de mídia</value>
+  </data>
+  <data name="Details_MediaType_Image" xml:space="preserve">
+    <value>Imagem</value>
+  </data>
+  <data name="Details_MediaType_Music" xml:space="preserve">
+    <value>Música</value>
+  </data>
+  <data name="Details_MediaType_Unknown" xml:space="preserve">
+    <value>Desconhecido</value>
+  </data>
+  <data name="Details_MediaType_Video" xml:space="preserve">
+    <value>Vídeo</value>
+  </data>
+  <data name="Details_NotAvailable" xml:space="preserve">
+    <value>Não disponível</value>
+  </data>
+  <data name="Details_PlaybackStatus" xml:space="preserve">
+    <value>Estado da reprodução</value>
+  </data>
+  <data name="Details_Player" xml:space="preserve">
+    <value>Reprodutor</value>
+  </data>
+  <data name="Details_Subtitle" xml:space="preserve">
+    <value>Subtítulo</value>
+  </data>
+  <data name="Details_Title" xml:space="preserve">
+    <value>Título</value>
+  </data>
+  <data name="Details_TrackNumber" xml:space="preserve">
+    <value>Faixa</value>
+  </data>
+  <data name="Details_TrackNumberWithCount" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="Metadata_NoMedia" xml:space="preserve">
+    <value>Não estão disponíveis metadados da mídia.</value>
+  </data>
+  <data name="Metadata_ArtworkAltText" xml:space="preserve">
+    <value>Capa do álbum</value>
+  </data>
+  <data name="Metadata_PageTitle" xml:space="preserve">
+    <value>Metadados de mídia</value>
+  </data>
+  <data name="Metadata_Section" xml:space="preserve">
+    <value>Metadados</value>
+  </data>
+  <data name="Metadata_TechnicalSection" xml:space="preserve">
+    <value>Informações técnicas</value>
+  </data>
+  <data name="Command_SetVolume" xml:space="preserve">
+    <value>Definir o volume para {0}%</value>
+  </data>
+  <data name="Command_VolumeDown" xml:space="preserve">
+    <value>Baixar o volume</value>
+  </data>
+  <data name="Command_VolumeUp" xml:space="preserve">
+    <value>Aumentar o volume</value>
+  </data>
+  <data name="Volume_Status" xml:space="preserve">
+    <value>Volume - {0} %</value>
+  </data>
+  <data name="Volume_StatusMuted" xml:space="preserve">
+    <value>Volume - silenciado</value>
+  </data>
+  <data name="Volume_Level" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Settings_ShowDetails_Title" xml:space="preserve">
+    <value>Mostrar detalhes da mídia por padrão</value>
+  </data>
+  <data name="Settings_ShowDetails_Subtitle" xml:space="preserve">
+    <value>Abrir automaticamente o painel de detalhes na página “Controles de Mídia”.</value>
+  </data>
+  <data name="Toast_Volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="Toast_MediaControlsUnavailable" xml:space="preserve">
+    <value>Os controles de mídia pararam de responder. Reinicie a extensão para tentar novamente.</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Title" xml:space="preserve">
+    <value>Ativar controles de volume</value>
+  </data>
+  <data name="Settings_EnableVolumeControls_Subtitle" xml:space="preserve">
+    <value>Mostrar os comandos de volume do sistema desta extensão. Desative esta opção se outra extensão já os fornecer.</value>
+  </data>
+  <data name="Settings_Group_PalettePage" xml:space="preserve">
+    <value>Página da Paleta de Comandos</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Title" xml:space="preserve">
+    <value>Tema de ícones</value>
+  </data>
+  <data name="Settings_IconTheme_Default" xml:space="preserve">
+    <value>Padrão ({0})</value>
+  </data>
+  <data name="Settings_CommandPaletteIconTheme_Subtitle" xml:space="preserve">
+    <value>Escolha ícones para a página inicial da Paleta de Comandos e para a página da lista de Controles de Mídia.</value>
+  </data>
+  <data name="Settings_Group_Dock" xml:space="preserve">
+    <value>Dock</value>
+  </data>
+  <data name="Settings_DockIconTheme_Title" xml:space="preserve">
+    <value>Tema de ícones</value>
+  </data>
+  <data name="Settings_DockIconTheme_Subtitle" xml:space="preserve">
+    <value>Escolha ícones para o Dock da Paleta de Comandos.</value>
+  </data>
+  <data name="Settings_Group_AppearanceAndBehavior" xml:space="preserve">
+    <value>Aparência e comportamento</value>
+  </data>
+  <data name="Settings_Group_Commands" xml:space="preserve">
+    <value>Comandos</value>
+  </data>
+  <data name="Settings_Group_HelpAndAcknowledgements" xml:space="preserve">
+    <value>Ajuda e agradecimentos</value>
+  </data>
+  <data name="Settings_Help" xml:space="preserve">
+    <value>[Obter ajuda, relatar um problema ou ver o código-fonte](https://github.com/jiripolasek/MediaControlsExtension)</value>
+  </data>
+  <data name="Settings_Acknowledgements" xml:space="preserve">
+    <value>Criado por [Jiří Polášek](https://jiripolasek.com)
+_Disponibilizado sob a licença Apache 2.0_
+_Direitos autorais © Jiří Polášek_
+
+Agradecimentos especiais a [Mike Griese](https://github.com/zadjii-msft)</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
+    <value>Ação do item de mídia atual</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Subtitle" xml:space="preserve">
+    <value>Escolha o que acontece ao selecionar o item de mídia atual no Dock.</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_SwitchToPlayer" xml:space="preserve">
+    <value>Alternar para o reprodutor</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaControls" xml:space="preserve">
+    <value>Abrir Controles de Mídia</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_OpenMediaMetadata" xml:space="preserve">
+    <value>Abrir metadados de mídia</value>
+  </data>
+  <data name="Settings_DockCurrentMediaAction_Option_Default" xml:space="preserve">
+    <value>Padrão (Alternar para o reprodutor)</value>
+  </data>
+  <data name="ReportProblem_Title" xml:space="preserve">
+    <value>Relatar um problema</value>
+  </data>
+  <data name="ReportProblem_Instructions" xml:space="preserve">
+    <value>Para relatar um problema:
+
+1. Reproduza o problema.
+2. Salve os logs de diagnóstico na Área de Trabalho.
+3. Abra o GitHub Issues e crie um relatório.
+4. Anexe o arquivo ZIP gerado ao relatório.
+
+Os logs de diagnóstico podem conter títulos de mídia, nomes de reprodutores e detalhes técnicos de erros. Revise o arquivo antes de compartilhá-lo.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
+    <value>Salvar logs de diagnóstico na Área de Trabalho</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Subtitle" xml:space="preserve">
+    <value>Criar um arquivo ZIP para anexar a um problema no GitHub.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Succeeded" xml:space="preserve">
+    <value>Os logs de diagnóstico foram salvos na Área de Trabalho como {0}.</value>
+  </data>
+  <data name="ReportProblem_SaveLogs_Failed" xml:space="preserve">
+    <value>Não foi possível salvar os logs de diagnóstico. Consulte os diagnósticos da Command Palette para obter detalhes.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Title" xml:space="preserve">
+    <value>Abrir o GitHub Issues</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Subtitle" xml:space="preserve">
+    <value>Criar um relatório e anexar os logs de diagnóstico.</value>
+  </data>
+  <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
+    <value>Não foi possível abrir o GitHub Issues. Tente novamente ou abra o repositório em Configurações.</value>
   </data>
 </root>

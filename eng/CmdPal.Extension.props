@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <CmdPalPackagingTemplateVersion>4</CmdPalPackagingTemplateVersion>
+    <CmdPalRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</CmdPalRepositoryRoot>
+
+    <CmdPalExtensionProject>$(CmdPalRepositoryRoot)src\MediaControlsExtension\JPSoftworks.MediaControlsExtension.csproj</CmdPalExtensionProject>
+    <CmdPalExtensionProjectReference>..\MediaControlsExtension\JPSoftworks.MediaControlsExtension.csproj</CmdPalExtensionProjectReference>
+    <CmdPalExtensionAssemblyName>JPSoftworks.MediaControlsExtension</CmdPalExtensionAssemblyName>
+
+    <CmdPalPackageProject>$(CmdPalRepositoryRoot)src\MediaControlsExtension.Package\JPSoftworks.MediaControlsExtension.Package.wapproj</CmdPalPackageProject>
+    <CmdPalPackageManifest>$(CmdPalRepositoryRoot)src\MediaControlsExtension.Package\Package.appxmanifest</CmdPalPackageManifest>
+    <CmdPalPackageExecutable>JPSoftworks.MediaControlsExtension\JPSoftworks.MediaControlsExtension.exe</CmdPalPackageExecutable>
+    <CmdPalPackageProjectGuid>adbc4a7c-0040-46ca-9a12-45cf4ba03d6e</CmdPalPackageProjectGuid>
+
+    <CmdPalTargetFramework>net10.0-windows10.0.26100.0</CmdPalTargetFramework>
+    <CmdPalTargetPlatformVersion>10.0.26100.0</CmdPalTargetPlatformVersion>
+    <CmdPalTargetPlatformMinVersion>10.0.19041.0</CmdPalTargetPlatformMinVersion>
+    <CmdPalRuntimeIdentifiers>win-x64;win-arm64</CmdPalRuntimeIdentifiers>
+    <CmdPalDefaultLanguage>en-US</CmdPalDefaultLanguage>
+
+    <CmdPalArtifactsPath>$(CmdPalRepositoryRoot)artifacts\</CmdPalArtifactsPath>
+    <CmdPalSupportsNativeAot>true</CmdPalSupportsNativeAot>
+    <CmdPalWindowsSdkBuildToolsVersion>10.0.28000.2526</CmdPalWindowsSdkBuildToolsVersion>
+  </PropertyGroup>
+</Project>
