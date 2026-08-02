@@ -321,7 +321,8 @@ Resolve every failure before building. Warnings require an explicit review.
 - [ ] Build the application project independently.
 - [ ] Confirm both publish profiles use the intended self-contained or
   framework-dependent deployment mode.
-- [ ] Perform the redirected restore required by the WAP publish.
+- [ ] Confirm the WAP restores the evaluated Desktop Bridge publish graph before
+  `_BuildDependentProjects`.
 - [ ] Build `Release|x64` with Visual Studio MSBuild.
 - [ ] Build `Release|ARM64`.
 - [ ] Confirm the MSIX is produced under the configured artifacts directory.
@@ -396,10 +397,12 @@ An automation agent performing a migration must:
 
 ### `NETSDK1004` under `obj\wappublish`
 
-Restore the application using the same RID, AOT/trimming values, self-contained
-setting, and redirected `BaseIntermediateOutputPath` that the WAP publish will
-use. A normal solution restore does not necessarily create this redirected
-assets file.
+Update the WAP from the current template. Its `RestoreCmdPalWapPublishAssets`
+target restores `ProjectReferenceWithPublishProps` before Desktop Bridge builds
+the application, so the restore uses the same RID, publish profile,
+self-contained setting, and redirected project extensions path as the following
+publish. A normal solution restore alone does not necessarily create this
+redirected assets file.
 
 ### Extension is installed but not discovered
 

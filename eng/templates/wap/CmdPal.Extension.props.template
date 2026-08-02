@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <CmdPalPackagingTemplateVersion>3</CmdPalPackagingTemplateVersion>
+    <CmdPalPackagingTemplateVersion>4</CmdPalPackagingTemplateVersion>
     <CmdPalRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)__REPOSITORY_ROOT_RELATIVE_PATH__\'))</CmdPalRepositoryRoot>
 
     <CmdPalExtensionProject>$(CmdPalRepositoryRoot)__APP_PROJECT_RELATIVE_PATH__</CmdPalExtensionProject>

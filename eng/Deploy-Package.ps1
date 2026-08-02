@@ -3,9 +3,9 @@
 Builds and deploys the configured WAP package.
 
 .DESCRIPTION
-Restores the application into DesktopBridge's redirected wappublish
-intermediate directory, builds the packaging project with Visual Studio
-MSBuild, unpacks the generated unsigned MSIX, and registers the unpacked
+Builds the packaging project with Visual Studio MSBuild (the WAP itself
+restores the redirected publish graph before building the application),
+unpacks the generated unsigned MSIX, and registers the unpacked
 development package in Visual Studio's standard AppX output directory while
 preserving application data. Use -Aot to enable Native AOT and trimming;
 otherwise the script publishes a managed, untrimmed development package.
@@ -108,8 +108,6 @@ $packageExecutableRelativePath = [string] $packageConfig.PackageExecutablePath
 if ([IO.Path]::IsPathRooted($packageExecutableRelativePath)) {
     throw "PackageExecutablePath in '$ConfigPath' must be relative to the package root."
 }
-
-$runtimeIdentifier = [string] $packageConfig.RuntimeIdentifiers[$Platform]
 
 function Invoke-CheckedCommand {
     param(
@@ -240,7 +238,6 @@ if ([string]::IsNullOrWhiteSpace($configuredPackageIdentityName)) {
 $visualStudioInstallation = Find-VisualStudioInstallation
 $msbuildPath = Join-Path $visualStudioInstallation 'MSBuild\Current\Bin\MSBuild.exe'
 $makeAppxPath = Find-MakeAppx
-$redirectedIntermediatePath = "obj\wappublish\$runtimeIdentifier\"
 $wapOutputPath = Join-Path (Split-Path -Parent $wapProjectPath) "bin\$Platform\$Configuration"
 $publishAot = $Aot.IsPresent.ToString().ToLowerInvariant()
 $publishTrimmed = $Aot.IsPresent.ToString().ToLowerInvariant()
@@ -251,20 +248,7 @@ else {
     'managed without trimming'
 }
 
-Write-Host "Restoring redirected WAP publish assets for $runtimeIdentifier ($publishMode)..."
-Invoke-CheckedCommand -FilePath 'dotnet' -ArgumentList @(
-    'restore'
-    $appProjectPath
-    "-p:Configuration=$Configuration"
-    "-p:Platform=$Platform"
-    "-p:RuntimeIdentifier=$runtimeIdentifier"
-    '-p:SelfContained=true'
-    "-p:PublishAot=$publishAot"
-    "-p:PublishTrimmed=$publishTrimmed"
-    "-p:BaseIntermediateOutputPath=$redirectedIntermediatePath"
-)
-
-Write-Host "Building the WAP ($Configuration|$Platform)..."
+Write-Host "Building the WAP ($Configuration|$Platform, $publishMode)..."
 Invoke-CheckedCommand -FilePath $msbuildPath -ArgumentList @(
     $wapProjectPath
     '/restore'

@@ -49,6 +49,10 @@
 	</ItemGroup>
 
 	<PropertyGroup>
+		<!-- Uncomment (or pass -p:ForceManagedPublish=true) to publish managed, untrimmed
+		     output in Release while tracking an issue down. -->
+		<!-- <ForceManagedPublish>true</ForceManagedPublish> -->
+		<PublishAot Condition="'$(PublishAot)' == '' and '$(Configuration)' == 'Release' and '$(ForceManagedPublish)' != 'true'">true</PublishAot>
 		<PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
 		<SelfContained>true</SelfContained>
 		<IsAotCompatible>true</IsAotCompatible>
@@ -58,7 +62,7 @@
 		<!-- Keep the CsWinRT Windows.Foundation fallback warning visible without failing AOT. -->
 		<WarningsNotAsErrors>$(WarningsNotAsErrors);IL2081</WarningsNotAsErrors>
 
-		<PublishTrimmed Condition="'$(PublishTrimmed)' == ''">false</PublishTrimmed>
+		<PublishTrimmed Condition="'$(PublishTrimmed)' == ''">$(PublishAot)</PublishTrimmed>
 		<TrimMode>full</TrimMode>
 		<PublishSingleFile>false</PublishSingleFile>
 		<BuiltInComInteropSupport>false</BuiltInComInteropSupport>

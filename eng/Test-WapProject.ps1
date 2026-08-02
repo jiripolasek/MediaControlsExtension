@@ -380,6 +380,35 @@ if ($canContinue) {
             -Message 'Entry point and ProjectReference use the shared contract.'
     }
 
+    $publishRestoreTarget = $wapProject.SelectSingleNode(
+        "//*[local-name()='Target' and @Name='RestoreCmdPalWapPublishAssets']")
+    $publishRestoreTask = if ($null -ne $publishRestoreTarget) {
+        $publishRestoreTarget.SelectSingleNode("./*[local-name()='MSBuild']")
+    }
+    $publishRestoreTargetIsValid =
+        $null -ne $publishRestoreTarget -and
+        $publishRestoreTarget.GetAttribute('BeforeTargets') -eq '_BuildDependentProjects' -and
+        $publishRestoreTarget.GetAttribute('DependsOnTargets') -eq '_WapProjGetProjectClosure' -and
+        $publishRestoreTarget.GetAttribute('Condition').Contains('_IsGeneratingAppxPackage') -and
+        -not $publishRestoreTarget.GetAttribute('Condition').Contains('BuildingInsideVisualStudio') -and
+        $null -ne $publishRestoreTask -and
+        $publishRestoreTask.GetAttribute('Projects') -eq '@(ProjectReferenceWithPublishProps)' -and
+        $publishRestoreTask.GetAttribute('Targets') -eq 'Restore' -and
+        $publishRestoreTask.GetAttribute('Properties') -eq '%(ProjectReferenceWithPublishProps.SetConfiguration);%(ProjectReferenceWithPublishProps.SetPlatform)' -and
+        $publishRestoreTask.GetAttribute('Condition').Contains('.NETCoreApp')
+    if (-not $publishRestoreTargetIsValid) {
+        Add-Result `
+            -Status Fail `
+            -Check 'Publish restore' `
+            -Message 'The WAP must restore DesktopBridge ProjectReferenceWithPublishProps before _BuildDependentProjects for every packaging build, not only inside Visual Studio.'
+    }
+    else {
+        Add-Result `
+            -Status Pass `
+            -Check 'Publish restore' `
+            -Message 'The WAP restores the evaluated publish graph before building it.'
+    }
+
     $packageAssetItem = $wapProject.SelectSingleNode(
         "//*[local-name()='Content' and starts-with(@Include, 'Assets\')]")
     $packagePriItem = $wapProject.SelectSingleNode(

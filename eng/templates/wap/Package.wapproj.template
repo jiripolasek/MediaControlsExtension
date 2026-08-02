@@ -87,6 +87,19 @@
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
 
+  <Target
+    Name="RestoreCmdPalWapPublishAssets"
+    BeforeTargets="_BuildDependentProjects"
+    DependsOnTargets="_WapProjGetProjectClosure"
+    Condition="'$(_IsGeneratingAppxPackage)' == 'true'">
+    <MSBuild
+      Projects="@(ProjectReferenceWithPublishProps)"
+      Targets="Restore"
+      BuildInParallel="$(BuildInParallel)"
+      Properties="%(ProjectReferenceWithPublishProps.SetConfiguration);%(ProjectReferenceWithPublishProps.SetPlatform)"
+      Condition="'%(ProjectReferenceWithPublishProps.TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </Target>
+
   <Target Name="ValidateCmdPalWapConfiguration" BeforeTargets="PrepareForBuild">
     <Error
       Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' == ''"

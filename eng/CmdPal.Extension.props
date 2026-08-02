@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <CmdPalPackagingTemplateVersion>3</CmdPalPackagingTemplateVersion>
+    <CmdPalPackagingTemplateVersion>4</CmdPalPackagingTemplateVersion>
     <CmdPalRepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\'))</CmdPalRepositoryRoot>
 
     <CmdPalExtensionProject>$(CmdPalRepositoryRoot)src\MediaControlsExtension\JPSoftworks.MediaControlsExtension.csproj</CmdPalExtensionProject>
