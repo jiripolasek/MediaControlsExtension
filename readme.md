@@ -9,6 +9,10 @@ Take full control of your media playback without leaving your workflow. Media Co
 
 The extension works with desktop apps, Microsoft Store apps, and browser tabs that publish a Windows Global System Media Transport Controls (GSMTC) session.
 
+<div align="center">
+<img src="./art/screenshot_01.png" alt="Screenshot" />
+</div>
+
 ## Features
 
 - **Playback controls** — Play, pause, stop, skip tracks, and change shuffle or repeat mode when the active player makes those actions available.
