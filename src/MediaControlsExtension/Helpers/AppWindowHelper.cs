@@ -28,7 +28,13 @@ internal static class AppWindowHelper
             switch (app)
             {
                 case ModernAppInfo appInfo:
-                    var appEntries = appInfo.AppInfo.Package?.GetAppListEntries();
+                    var package = appInfo.AppInfo.Package;
+                    if (package is null)
+                    {
+                        return false;
+                    }
+
+                    var appEntries = package.GetAppListEntries();
                     if (appEntries is not { Count: > 0 })
                     {
                         return false;
@@ -38,7 +44,7 @@ internal static class AppWindowHelper
                     //    because LaunchAsync() will start a new instance of the PWA app instead switching to the existing one
                     foreach (var appEntry in appEntries)
                     {
-                        if (appEntry.IsPwaAsync() && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
+                        if (appEntry.IsPwa(package) && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
                         {
                             var pwaWindowFound = PwaWindowManager.SwitchToPwaWindow(appEntry.DisplayInfo.DisplayName, mediaTitle);
                             if (pwaWindowFound)

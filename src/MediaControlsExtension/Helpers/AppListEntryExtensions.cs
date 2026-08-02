@@ -5,20 +5,24 @@
 // ------------------------------------------------------------
 
 using System.Xml;
+using Windows.ApplicationModel;
 using Windows.ApplicationModel.Core;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
 internal static class AppListEntryExtensions
 {
-    public static bool IsPwaAsync(this AppListEntry appListEntry)
+    public static bool IsPwa(this AppListEntry appListEntry, Package package)
     {
+        ArgumentNullException.ThrowIfNull(appListEntry);
+        ArgumentNullException.ThrowIfNull(package);
+
         if (string.IsNullOrWhiteSpace(appListEntry.AppUserModelId))
         {
             return false;
         }
 
-        if (appListEntry.AppInfo?.Package?.InstalledPath == null)
+        if (string.IsNullOrWhiteSpace(package.InstalledPath))
         {
             return false;
         }
@@ -31,7 +35,6 @@ internal static class AppListEntryExtensions
                 return false;
             }
 
-            var package = appListEntry.AppInfo!.Package;
             var manifestPath = Path.Combine(package.InstalledPath, "AppXManifest.xml");
 
             if (!File.Exists(manifestPath))
