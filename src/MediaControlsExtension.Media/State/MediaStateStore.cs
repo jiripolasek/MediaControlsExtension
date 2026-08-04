@@ -59,6 +59,7 @@ internal sealed class MediaStateStore
         lock (this._stateLock)
         {
             var liveSessionIds = backendSnapshot.Sessions
+                .Where(static session => session.IsAvailable)
                 .Select(static session => new MediaSessionId(session.Id.Value))
                 .ToHashSet();
             foreach (var removedId in this._pendingPlayback.Keys.Where(id => !liveSessionIds.Contains(id)).ToArray())
@@ -91,6 +92,7 @@ internal sealed class MediaStateStore
                 sessions.Add(new(
                     sessionId,
                     backendSession.BindingGeneration,
+                    backendSession.IsAvailable,
                     backendSession.MediaProperties,
                     backendSession.TimelineProperties,
                     new(
@@ -171,6 +173,11 @@ internal sealed class MediaStateStore
             }
 
             var target = this._current.Sessions[targetIndex];
+            if (!target.IsAvailable)
+            {
+                return MediaCommandSubmissionStatus.SessionGone;
+            }
+
             if (operation == MediaOperation.TogglePlayback)
             {
                 operation = target.PlaybackInfo.PrimaryOperation;

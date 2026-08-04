@@ -12,6 +12,7 @@ internal sealed class SkipPreviousTrackMop : MediaSessionOp
     public override MediaOperation Operation => MediaOperation.SkipPrevious;
 
     public override bool CanExecute(MediaSession session) =>
+        session.IsAvailable &&
         session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.SkipPrevious);
 
     protected override ValueTask<string> GetSuccessMessageAsync(

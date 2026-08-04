@@ -279,6 +279,62 @@ public sealed class MediaServiceConcurrencyTests
     }
 
     [TestMethod]
+    public async Task RetainedUnavailableSessionKeepsIdentityAndRejectsCommandsUntilRebound()
+    {
+        var initialSnapshot = FakeMediaBackend.CreateSnapshot(1, "Initial");
+        var backend = new FakeMediaBackend(initialSnapshot);
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+
+        var session = service.CurrentSession;
+        Assert.IsNotNull(session);
+        var becameUnavailable = new TaskCompletionSource<MediaSessionChangedEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var becameAvailable = new TaskCompletionSource<MediaSessionChangedEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        session.Changed += (_, args) =>
+        {
+            if (!session.IsAvailable)
+            {
+                becameUnavailable.TrySetResult(args);
+            }
+            else if (args.Changes.HasFlag(MediaSessionChanges.Rebound))
+            {
+                becameAvailable.TrySetResult(args);
+            }
+        };
+
+        backend.SetSnapshot(initialSnapshot with
+        {
+            Revision = 2,
+            Sessions = [initialSnapshot.Sessions[0] with { IsAvailable = false }],
+            CurrentSessionId = null,
+        });
+
+        var unavailableArgs = await becameUnavailable.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.AreEqual(MediaSessionChanges.Availability, unavailableArgs.Changes);
+        Assert.AreSame(session, service.Sessions.Single());
+        Assert.IsNull(service.CurrentSession);
+        Assert.AreEqual(
+            MediaCommandSubmissionStatus.SessionGone,
+            service.TrySubmit(new(
+                MediaCommandTarget.ForSession(session.Id),
+                MediaOperation.Play)).Status);
+
+        backend.SetSnapshot(FakeMediaBackend.CreateSnapshot(
+            3,
+            "Initial",
+            bindingGeneration: 2));
+
+        var availableArgs = await becameAvailable.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.IsTrue(availableArgs.Changes.HasFlag(MediaSessionChanges.Availability));
+        Assert.IsTrue(availableArgs.Changes.HasFlag(MediaSessionChanges.Rebound));
+        Assert.IsTrue(session.IsAvailable);
+        Assert.AreSame(session, service.CurrentSession);
+        Assert.AreSame(session, service.Sessions.Single());
+    }
+
+    [TestMethod]
     public async Task CurrentSessionChangedReportsTheLatestCurrentSession()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(

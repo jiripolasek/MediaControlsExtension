@@ -164,6 +164,7 @@ internal sealed record MediaServiceState(
 internal sealed record MediaSessionSnapshot(
     MediaSessionId Id,
     long BindingGeneration,
+    bool IsAvailable,
     MediaPropertiesSnapshot MediaProperties,
     MediaTimelinePropertiesSnapshot TimelineProperties,
     MediaPlaybackInfoSnapshot PlaybackInfo);

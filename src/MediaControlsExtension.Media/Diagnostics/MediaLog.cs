@@ -194,4 +194,21 @@ internal static partial class MediaLog
         long callId,
         string operation,
         TimeSpan elapsed);
+
+    [LoggerMessage(EventId = 29, Level = LogLevel.Debug, Message = "Retaining missing GSMTC session {ApplicationId} for {GracePeriod} while waiting for recreation.")]
+    public static partial void SessionRetentionStarted(
+        ILogger logger,
+        string applicationId,
+        TimeSpan gracePeriod);
+
+    [LoggerMessage(EventId = 30, Level = LogLevel.Information, Message = "Measured a transient GSMTC absence for application {ApplicationId}; future unambiguous removals receive up to {GracePeriod} of grace.")]
+    public static partial void SessionRecreationGraceIncreased(
+        ILogger logger,
+        string applicationId,
+        TimeSpan gracePeriod);
+
+    [LoggerMessage(EventId = 31, Level = LogLevel.Debug, Message = "GSMTC session {ApplicationId} did not return within its retention grace.")]
+    public static partial void SessionRetentionExpired(
+        ILogger logger,
+        string applicationId);
 }

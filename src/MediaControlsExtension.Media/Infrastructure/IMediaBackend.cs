@@ -46,7 +46,8 @@ internal sealed record MediaBackendSessionSnapshot(
     MediaPropertiesSnapshot MediaProperties,
     MediaTimelinePropertiesSnapshot TimelineProperties,
     MediaPlaybackState PlaybackState,
-    MediaCapabilities Capabilities);
+    MediaCapabilities Capabilities,
+    bool IsAvailable = true);
 
 internal sealed record MediaBackendSnapshot(
     long Revision,
