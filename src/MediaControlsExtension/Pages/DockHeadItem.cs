@@ -25,6 +25,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
     private MediaSessionViewModel? _currentSession;
     private NiceIconInfo? _lastIcon;
+    private string? _title;
     private bool _disposed;
 
     public DockHeadItem(
@@ -92,6 +93,14 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         {
             this.SetCurrentSessionUnderLock(this.ResolveCurrentSession());
         }
+    }
+
+    // CommandItem.Title falls back to Command.Name when it is empty. This item's
+    // dock presentation must remain independent from named page commands.
+    public override string Title
+    {
+        get => this._title ?? string.Empty;
+        set => this.SetProperty(ref this._title, value ?? string.Empty);
     }
 
     private void MediaServiceOnCurrentSessionChanged(object? sender, EventArgs args)
@@ -212,7 +221,14 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 
     private ICommand ResolvePrimaryCommand(MediaSessionViewModel? viewModel)
     {
-        return this._settingsManager.DockCurrentMediaAction switch
+        var action = this._settingsManager.DockCurrentMediaAction;
+        if (viewModel is not { IsAvailable: true } &&
+            action != DockCurrentMediaActionMode.OpenMediaControls)
+        {
+            return this._noOpCommand;
+        }
+
+        return action switch
         {
             DockCurrentMediaActionMode.Default =>
                 this.ResolveDefaultPrimaryCommand(viewModel),
