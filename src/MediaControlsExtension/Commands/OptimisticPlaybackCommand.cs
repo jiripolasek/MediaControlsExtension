@@ -64,6 +64,7 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         lock (this._presentationLock)
         {
             this._target = target is null
+                || !target.IsAvailable
                 ? null
                 : new(
                     target.Id,

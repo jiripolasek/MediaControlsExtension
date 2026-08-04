@@ -57,10 +57,30 @@ internal sealed class GsmtcBackend : IMediaBackend
         string Path,
         MediaBackendSessionId? CurrentSessionId);
 
+    private readonly record struct ObservedSession(
+        GlobalSystemMediaTransportControlsSession Session,
+        string ApplicationId);
+
+    private readonly record struct RecentSessionBinding(
+        SessionBinding Binding,
+        TimeSpan ExpiresAt);
+
+    private readonly record struct MissingSessionRetention(
+        long Version);
+
+    private enum RetentionExpiryStatus
+    {
+        Inactive,
+        Waiting,
+        Expired,
+    }
+
     private readonly GsmtcControlGate _controlGate;
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly ILogger _logger;
     private readonly GsmtcObservationGate _observationGate;
+    private readonly List<RecentSessionBinding> _recentlyRemovedBindings = [];
+    private readonly AdaptiveSessionRetentionPolicy _sessionRetentionPolicy = new();
     private readonly Channel<bool> _signals;
     private readonly Lock _stateLock = new();
     private readonly Dictionary<MediaBackendSessionId, SessionBinding> _bindings = [];
@@ -175,6 +195,16 @@ internal sealed class GsmtcBackend : IMediaBackend
         foreach (var binding in bindings)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (binding.IsMissing)
+            {
+                snapshots.Add(
+                    (binding.LastSnapshot ?? CreateFallbackSnapshot(binding)) with
+                    {
+                        IsAvailable = false,
+                    });
+                continue;
+            }
+
             var plan = binding.BeginObservation();
             if (plan.Changes == SessionObservationChanges.None)
             {
@@ -254,12 +284,14 @@ internal sealed class GsmtcBackend : IMediaBackend
             this._bindings.TryGetValue(command.SessionId, out target);
             sessionsToPause = command.SessionsToPause
                 .Select(id => this._bindings.GetValueOrDefault(id))
-                .Where(static binding => binding is not null)
+                .Where(static binding => binding is { IsMissing: false })
                 .Cast<SessionBinding>()
                 .ToArray();
         }
 
-        if (target is null || target.Generation != command.BindingGeneration)
+        if (target is null ||
+            target.IsMissing ||
+            target.Generation != command.BindingGeneration)
         {
             return new(MediaBackendCommandStatus.SessionGone, "The target session was replaced or removed.");
         }
@@ -379,6 +411,7 @@ internal sealed class GsmtcBackend : IMediaBackend
             this._manager = null;
             bindings = [.. this._bindings.Values];
             this._bindings.Clear();
+            this._recentlyRemovedBindings.Clear();
             this._currentSessionId = null;
         }
 
@@ -898,12 +931,16 @@ internal sealed class GsmtcBackend : IMediaBackend
     {
         GlobalSystemMediaTransportControlsSessionManager manager;
         SessionBinding[] existingBindings;
+        RecentSessionBinding[] recentBindings;
         lock (this._stateLock)
         {
             manager = this._manager ?? throw new InvalidOperationException("The GSMTC backend is not started.");
             existingBindings = [.. this._bindings.Values];
+            recentBindings = [.. this._recentlyRemovedBindings];
         }
 
+        var retentionsToSchedule = new List<(SessionBinding Binding, MissingSessionRetention Retention)>();
+        var recentCleanupsToSchedule = new List<RecentSessionBinding>();
         await this._controlGate.RunAsync(
             () =>
             {
@@ -913,26 +950,47 @@ internal sealed class GsmtcBackend : IMediaBackend
                 var currentCall = this.BeginManagerCall("GetCurrentSession");
                 var currentSession = manager.GetCurrentSession();
                 this.CompleteManagerCall("GetCurrentSession", currentCall);
-                var availableExisting = existingBindings.ToList();
-                var nextBindings = new Dictionary<MediaBackendSessionId, SessionBinding>();
-                var replacedBindings = new List<SessionBinding>();
+                var now = GsmtcUnbiasedClock.GetTime();
+                var observedSessions = new List<ObservedSession>(sessions.Count);
                 var addedCount = 0;
                 var retainedCount = 0;
                 var reboundCount = 0;
-
+                var removedCount = 0;
                 foreach (var session in sessions)
                 {
-                    string applicationId;
                     try
                     {
-                        applicationId = session.SourceAppUserModelId;
+                        observedSessions.Add(new(session, session.SourceAppUserModelId));
                     }
                     catch (Exception ex) when (GsmtcErrors.IndicatesStaleSession(ex))
                     {
-                        continue;
                     }
+                }
 
-                    var existing = FindExistingBinding(availableExisting, session, applicationId);
+                var observedApplicationCounts = observedSessions
+                    .GroupBy(static session => session.ApplicationId, StringComparer.Ordinal)
+                    .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
+                var availableActive = existingBindings.ToList();
+                var availableRecent = recentBindings
+                    .Where(binding => binding.ExpiresAt > now)
+                    .ToList();
+                var availableCandidates = availableActive
+                    .Concat(availableRecent.Select(static binding => binding.Binding))
+                    .ToList();
+                var candidateApplicationCounts = availableCandidates
+                    .GroupBy(static binding => binding.ApplicationId, StringComparer.Ordinal)
+                    .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
+                var nextBindings = new Dictionary<MediaBackendSessionId, SessionBinding>();
+
+                foreach (var observed in observedSessions)
+                {
+                    var applicationIsUnambiguous =
+                        observedApplicationCounts[observed.ApplicationId] == 1;
+                    var existing = FindExistingBinding(
+                        availableCandidates,
+                        observed.Session,
+                        observed.ApplicationId,
+                        applicationIsUnambiguous);
                     SessionBinding binding;
                     if (existing is null)
                     {
@@ -941,32 +999,102 @@ internal sealed class GsmtcBackend : IMediaBackend
                             this,
                             new(Interlocked.Increment(ref this._nextSessionId)),
                             1,
-                            applicationId,
-                            session);
+                            observed.ApplicationId,
+                            observed.Session);
                         binding.Hook();
-                    }
-                    else if (ReferenceEquals(existing.Session, session))
-                    {
-                        retainedCount++;
-                        binding = existing;
-                        availableExisting.Remove(existing);
                     }
                     else
                     {
-                        reboundCount++;
-                        binding = new(
-                            this,
-                            existing.Id,
-                            existing.Generation + 1,
-                            applicationId,
-                            session);
-                        binding.SeedSnapshot(existing.LastSnapshot);
-                        binding.Hook();
-                        availableExisting.Remove(existing);
-                        replacedBindings.Add(existing);
+                        var wasActive = availableActive.Remove(existing);
+                        var recentIndex = availableRecent.FindIndex(
+                            candidate => ReferenceEquals(candidate.Binding, existing));
+                        var wasRecent = recentIndex >= 0;
+                        if (wasRecent)
+                        {
+                            availableRecent.RemoveAt(recentIndex);
+                        }
+
+                        availableCandidates.Remove(existing);
+                        if (wasActive &&
+                            !existing.IsMissing &&
+                            ReferenceEquals(existing.Session, observed.Session))
+                        {
+                            retainedCount++;
+                            binding = existing;
+                        }
+                        else
+                        {
+                            reboundCount++;
+                            binding = new(
+                                this,
+                                existing.Id,
+                                existing.Generation + 1,
+                                observed.ApplicationId,
+                                observed.Session);
+                            binding.SeedSnapshot(existing.LastSnapshot);
+                            binding.Hook();
+                            existing.Unhook();
+
+                            var evidence = wasRecent
+                                ? SessionRecreationEvidence.Weak
+                                : SessionRecreationEvidence.Strong;
+                            if (this._sessionRetentionPolicy.RecordRecreation(
+                                observed.ApplicationId,
+                                evidence,
+                                existing.GetMissingDuration(now),
+                                now))
+                            {
+                                var gracePeriod = this._sessionRetentionPolicy.GetGracePeriod(
+                                    observed.ApplicationId,
+                                    now,
+                                    isUnambiguous: true);
+                                MediaLog.SessionRecreationGraceIncreased(
+                                    this._logger,
+                                    observed.ApplicationId,
+                                    gracePeriod);
+                            }
+                        }
                     }
 
                     nextBindings.Add(binding.Id, binding);
+                }
+
+                foreach (var missing in availableActive)
+                {
+                    if (!missing.IsMissing)
+                    {
+                        var isUnambiguous =
+                            candidateApplicationCounts.GetValueOrDefault(missing.ApplicationId) == 1 &&
+                            observedApplicationCounts.GetValueOrDefault(missing.ApplicationId) == 0;
+                        var gracePeriod = this._sessionRetentionPolicy.GetGracePeriod(
+                            missing.ApplicationId,
+                            now,
+                            isUnambiguous);
+                        var retention = missing.BeginMissingRetention(
+                            now,
+                            now + gracePeriod);
+                        missing.Unhook();
+                        retentionsToSchedule.Add((missing, retention));
+                        MediaLog.SessionRetentionStarted(
+                            this._logger,
+                            missing.ApplicationId,
+                            gracePeriod);
+                    }
+
+                    if (!missing.IsRemovalDue)
+                    {
+                        retainedCount++;
+                        nextBindings.Add(missing.Id, missing);
+                        continue;
+                    }
+
+                    removedCount++;
+                    var recent = new RecentSessionBinding(
+                        missing,
+                        now + this._sessionRetentionPolicy.RecentRemovalWindow);
+                    availableRecent.Add(recent);
+                    recentCleanupsToSchedule.Add(recent);
+                    MediaLog.SessionRetentionExpired(this._logger, missing.ApplicationId);
                 }
 
                 var currentSessionId = FindCurrentSessionId(nextBindings.Values, currentSession);
@@ -978,12 +1106,9 @@ internal sealed class GsmtcBackend : IMediaBackend
                         this._bindings.Add(id, binding);
                     }
 
+                    this._recentlyRemovedBindings.Clear();
+                    this._recentlyRemovedBindings.AddRange(availableRecent);
                     this._currentSessionId = currentSessionId;
-                }
-
-                foreach (var removed in availableExisting.Concat(replacedBindings))
-                {
-                    removed.Unhook();
                 }
 
                 MediaLog.SessionReconciliationCompleted(
@@ -993,24 +1118,41 @@ internal sealed class GsmtcBackend : IMediaBackend
                     addedCount,
                     retainedCount,
                     reboundCount,
-                    availableExisting.Count);
+                    removedCount);
 
                 return Task.FromResult(true);
             },
             "RefreshSessions",
             cancellationToken).ConfigureAwait(false);
+
+        var disposeToken = this._disposeCts.Token;
+        foreach (var (binding, retention) in retentionsToSchedule)
+        {
+            _ = this.ExpireRetentionAsync(binding, retention, disposeToken);
+        }
+
+        foreach (var recent in recentCleanupsToSchedule)
+        {
+            _ = this.ExpireRecentBindingAsync(recent, disposeToken);
+        }
     }
 
     private static SessionBinding? FindExistingBinding(
         IReadOnlyCollection<SessionBinding> existingBindings,
         GlobalSystemMediaTransportControlsSession session,
-        string applicationId)
+        string applicationId,
+        bool allowApplicationMatch)
     {
         var referenceMatch = existingBindings.FirstOrDefault(
             binding => ReferenceEquals(binding.Session, session));
         if (referenceMatch is not null)
         {
             return referenceMatch;
+        }
+
+        if (!allowApplicationMatch)
+        {
+            return null;
         }
 
         var applicationMatches = existingBindings
@@ -1021,6 +1163,86 @@ internal sealed class GsmtcBackend : IMediaBackend
             .Take(2)
             .ToArray();
         return applicationMatches.Length == 1 ? applicationMatches[0] : null;
+    }
+
+    private async Task ExpireRetentionAsync(
+        SessionBinding binding,
+        MissingSessionRetention retention,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (true)
+            {
+                var status = binding.TryExpireRetention(
+                    retention.Version,
+                    GsmtcUnbiasedClock.GetTime(),
+                    out var remaining);
+                if (status == RetentionExpiryStatus.Inactive)
+                {
+                    return;
+                }
+
+                if (status == RetentionExpiryStatus.Expired)
+                {
+                    break;
+                }
+
+                await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
+            }
+
+            var isCurrentBinding = false;
+            lock (this._stateLock)
+            {
+                isCurrentBinding = this._bindings.TryGetValue(binding.Id, out var current) &&
+                                   ReferenceEquals(current, binding);
+            }
+
+            if (isCurrentBinding)
+            {
+                this.InvalidateManagerState(
+                    ManagerChanges.All,
+                    MediaBackendSignal.SessionsChanged |
+                    MediaBackendSignal.CurrentSessionChanged);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task ExpireRecentBindingAsync(
+        RecentSessionBinding recent,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var remaining = recent.ExpiresAt - GsmtcUnbiasedClock.GetTime();
+            while (remaining > TimeSpan.Zero)
+            {
+                await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
+                remaining = recent.ExpiresAt - GsmtcUnbiasedClock.GetTime();
+            }
+
+            var isCurrentTombstone = false;
+            lock (this._stateLock)
+            {
+                isCurrentTombstone = this._recentlyRemovedBindings.Any(
+                    candidate =>
+                        ReferenceEquals(candidate.Binding, recent.Binding) &&
+                        candidate.ExpiresAt == recent.ExpiresAt);
+            }
+
+            if (isCurrentTombstone)
+            {
+                this.InvalidateManagerState(
+                    ManagerChanges.Sessions,
+                    MediaBackendSignal.ObservationsChanged);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
     }
 
     private static MediaBackendSessionId? FindCurrentSessionId(
@@ -1131,9 +1353,15 @@ internal sealed class GsmtcBackend : IMediaBackend
         private readonly Lock _stateLock = new();
         private IRandomAccessStreamReference? _artworkReference;
         private bool _artworkChanged = true;
+        private int _isHooked;
+        private bool _isMissing;
+        private TimeSpan _missingSince;
         private long _artworkVersion;
         private MediaBackendSessionSnapshot? _lastSnapshot;
         private SessionObservationChanges _pendingChanges = SessionObservationChanges.All;
+        private bool _removalDue;
+        private TimeSpan _retentionDeadline;
+        private long _retentionVersion;
 
         public MediaBackendSessionId Id { get; } = id;
 
@@ -1142,6 +1370,28 @@ internal sealed class GsmtcBackend : IMediaBackend
         public string ApplicationId { get; } = applicationId;
 
         public GlobalSystemMediaTransportControlsSession Session { get; } = session;
+
+        public bool IsMissing
+        {
+            get
+            {
+                lock (this._stateLock)
+                {
+                    return this._isMissing;
+                }
+            }
+        }
+
+        public bool IsRemovalDue
+        {
+            get
+            {
+                lock (this._stateLock)
+                {
+                    return this._removalDue;
+                }
+            }
+        }
 
         public MediaBackendSessionSnapshot? LastSnapshot
         {
@@ -1199,6 +1449,65 @@ internal sealed class GsmtcBackend : IMediaBackend
             }
         }
 
+        public MissingSessionRetention BeginMissingRetention(
+            TimeSpan missingSince,
+            TimeSpan deadline)
+        {
+            lock (this._stateLock)
+            {
+                if (this._isMissing)
+                {
+                    throw new InvalidOperationException("The session is already being retained as missing.");
+                }
+
+                this._isMissing = true;
+                this._missingSince = missingSince;
+                this._removalDue = false;
+                this._retentionDeadline = deadline;
+                this._retentionVersion++;
+                return new(this._retentionVersion);
+            }
+        }
+
+        public TimeSpan? GetMissingDuration(TimeSpan now)
+        {
+            lock (this._stateLock)
+            {
+                if (!this._isMissing)
+                {
+                    return null;
+                }
+
+                var duration = now - this._missingSince;
+                return duration > TimeSpan.Zero ? duration : TimeSpan.Zero;
+            }
+        }
+
+        public RetentionExpiryStatus TryExpireRetention(
+            long version,
+            TimeSpan now,
+            out TimeSpan remaining)
+        {
+            lock (this._stateLock)
+            {
+                if (!this._isMissing || version != this._retentionVersion)
+                {
+                    remaining = TimeSpan.Zero;
+                    return RetentionExpiryStatus.Inactive;
+                }
+
+                remaining = this._retentionDeadline - now;
+                if (remaining > TimeSpan.Zero)
+                {
+                    return RetentionExpiryStatus.Waiting;
+                }
+
+                this._removalDue = true;
+                remaining = TimeSpan.Zero;
+                return RetentionExpiryStatus.Expired;
+            }
+        }
+
         public MediaArtworkKey? UpdateArtworkReference(
             IRandomAccessStreamReference? reference)
         {
@@ -1232,7 +1541,8 @@ internal sealed class GsmtcBackend : IMediaBackend
         {
             lock (this._stateLock)
             {
-                if (version == this._artworkVersion &&
+                if (!this._isMissing &&
+                    version == this._artworkVersion &&
                     this._artworkReference is { } current)
                 {
                     reference = current;
@@ -1246,6 +1556,11 @@ internal sealed class GsmtcBackend : IMediaBackend
 
         public void Hook()
         {
+            if (Interlocked.Exchange(ref this._isHooked, 1) != 0)
+            {
+                return;
+            }
+
             this.Session.PlaybackInfoChanged += this.SessionOnPlaybackInfoChanged;
             this.Session.MediaPropertiesChanged += this.SessionOnMediaPropertiesChanged;
             this.Session.TimelinePropertiesChanged += this.SessionOnTimelinePropertiesChanged;
@@ -1253,6 +1568,11 @@ internal sealed class GsmtcBackend : IMediaBackend
 
         public void Unhook()
         {
+            if (Interlocked.Exchange(ref this._isHooked, 0) == 0)
+            {
+                return;
+            }
+
             this.Session.PlaybackInfoChanged -= this.SessionOnPlaybackInfoChanged;
             this.Session.MediaPropertiesChanged -= this.SessionOnMediaPropertiesChanged;
             this.Session.TimelinePropertiesChanged -= this.SessionOnTimelinePropertiesChanged;

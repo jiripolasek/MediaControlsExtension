@@ -11,7 +11,7 @@ internal abstract class MediaSessionOp
 {
     public abstract MediaOperation Operation { get; }
 
-    public virtual bool CanExecute(MediaSession session) => true;
+    public virtual bool CanExecute(MediaSession session) => session.IsAvailable;
 
     public async Task<string?> InvokeAsync(
         IMediaService mediaService,

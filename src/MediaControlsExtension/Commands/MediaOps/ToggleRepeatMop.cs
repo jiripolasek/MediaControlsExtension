@@ -12,6 +12,7 @@ internal sealed class ToggleRepeatMop : MediaSessionOp
     public override MediaOperation Operation => MediaOperation.ToggleRepeat;
 
     public override bool CanExecute(MediaSession session) =>
+        session.IsAvailable &&
         session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.ToggleRepeat);
 
     protected override ValueTask<string> GetSuccessMessageAsync(

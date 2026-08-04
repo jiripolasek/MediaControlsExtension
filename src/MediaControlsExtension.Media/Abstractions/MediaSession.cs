@@ -26,7 +26,7 @@ public sealed class MediaSession
         this._bindingGeneration = snapshot.BindingGeneration;
         this._state = new(
             1,
-            true,
+            snapshot.IsAvailable,
             snapshot.MediaProperties,
             snapshot.TimelineProperties,
             snapshot.PlaybackInfo);
@@ -77,7 +77,7 @@ public sealed class MediaSession
             changes |= MediaSessionChanges.PlaybackInfo;
         }
 
-        if (!previous.IsAvailable)
+        if (snapshot.IsAvailable != previous.IsAvailable)
         {
             changes |= MediaSessionChanges.Availability;
         }
@@ -97,7 +97,7 @@ public sealed class MediaSession
             ref this._state,
             new(
                 previous.Revision + 1,
-                true,
+                snapshot.IsAvailable,
                 mediaProperties,
                 timelineProperties,
                 playbackInfo));

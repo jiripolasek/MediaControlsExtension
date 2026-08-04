@@ -12,6 +12,7 @@ internal sealed class ToggleShuffleMop : MediaSessionOp
     public override MediaOperation Operation => MediaOperation.ToggleShuffle;
 
     public override bool CanExecute(MediaSession session) =>
+        session.IsAvailable &&
         session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.ToggleShuffle);
 
     protected override ValueTask<string> GetSuccessMessageAsync(
