@@ -15,7 +15,9 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
 {
     private readonly TaskCompletionSource _commandStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _releaseCommands = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _releaseSnapshotReads = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _releaseStart = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _snapshotReadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TaskCompletionSource _startStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Channel<MediaBackendSignal> _signals = Channel.CreateBounded<MediaBackendSignal>(
         new BoundedChannelOptions(1)
@@ -29,6 +31,7 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
     private readonly List<ImmutableArray<MediaBackendObservationRequest>> _observationInvalidations = [];
     private MediaBackendSnapshot _snapshot = initialSnapshot;
     private int _blockCommands;
+    private int _blockSnapshotReads;
     private int _blockStart;
     private int _disposeCount;
     private int _snapshotReadCount;
@@ -42,6 +45,8 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
     public int DisposeCount => Volatile.Read(ref this._disposeCount);
 
     public int SnapshotReadCount => Volatile.Read(ref this._snapshotReadCount);
+
+    public Task SnapshotReadStarted => this._snapshotReadStarted.Task;
 
     public Task StartStarted => this._startStarted.Task;
 
@@ -79,7 +84,22 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
     public void SetSnapshot(MediaBackendSnapshot snapshot)
     {
         this.SetSnapshotWithoutSignal(snapshot);
-        this._signals.Writer.TryWrite(MediaBackendSignal.StateChanged);
+        this.Signal(MediaBackendSignal.ObservationsChanged);
+    }
+
+    public void BlockSnapshotReads()
+    {
+        Volatile.Write(ref this._blockSnapshotReads, 1);
+    }
+
+    public void ReleaseSnapshotReads()
+    {
+        this._releaseSnapshotReads.TrySetResult();
+    }
+
+    public void Signal(MediaBackendSignal signal)
+    {
+        this._signals.Writer.TryWrite(signal);
     }
 
     public void SetSnapshotWithoutSignal(MediaBackendSnapshot snapshot)
@@ -99,7 +119,10 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        this._signals.Writer.TryWrite(MediaBackendSignal.StateChanged);
+        this.Signal(
+            MediaBackendSignal.ObservationsChanged |
+            MediaBackendSignal.SessionsChanged |
+            MediaBackendSignal.CurrentSessionChanged);
     }
 
     public async IAsyncEnumerable<MediaBackendSignal> WatchAsync(
@@ -111,13 +134,19 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         }
     }
 
-    public Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken)
+    public async Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         Interlocked.Increment(ref this._snapshotReadCount);
+        if (Volatile.Read(ref this._blockSnapshotReads) != 0)
+        {
+            this._snapshotReadStarted.TrySetResult();
+            await this._releaseSnapshotReads.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         lock (this._stateLock)
         {
-            return Task.FromResult(this._snapshot);
+            return this._snapshot;
         }
     }
 
@@ -156,6 +185,7 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         Interlocked.Increment(ref this._disposeCount);
         this._signals.Writer.TryComplete();
         this._releaseCommands.TrySetResult();
+        this._releaseSnapshotReads.TrySetResult();
         this._releaseStart.TrySetResult();
         return ValueTask.CompletedTask;
     }

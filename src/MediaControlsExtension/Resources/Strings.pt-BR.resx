@@ -561,6 +561,27 @@ Agradecimentos especiais a [Mike Griese](https://github.com/zadjii-msft)</value>
 
 Os logs de diagnóstico podem conter títulos de mídia, nomes de reprodutores e detalhes técnicos de erros. Revise o arquivo antes de compartilhá-lo.</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>Ativar</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>Desativar</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>Registro detalhado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>Ativado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>Desativado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>Ative entradas Debug e Trace de alto volume nos arquivos de log diários somente nesta execução; a opção é redefinida ao reiniciar.</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>Os arquivos de log diários incluem entradas Debug e Trace de alto volume até que você desative a opção ou a extensão seja reiniciada.</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>Salvar logs de diagnóstico na Área de Trabalho</value>
   </data>

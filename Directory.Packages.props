@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-      <ToolkitVersion>0.9.3-preview.1</ToolkitVersion>
+      <ToolkitVersion>0.9.3-preview.2</ToolkitVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="JPSoftworks.CommandPalette.Extensions.Toolkit" Version="$(ToolkitVersion)" />

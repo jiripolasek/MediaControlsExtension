@@ -43,6 +43,11 @@ internal sealed partial class ReportProblemPage : ListPage
                 Subtitle = Strings.ReportProblem_OpenGitHub_Subtitle!,
                 Details = instructions,
             },
+            new Separator(),
+            new DetailedLoggingListItem()
+            {
+                Details = instructions,
+            },
         ];
     }
 

@@ -561,6 +561,27 @@ Met speciale dank aan [Mike Griese](https://github.com/zadjii-msft)</value>
 
 Diagnostische logboeken kunnen mediatitels, namen van mediaspelers en technische foutgegevens bevatten. Controleer het archief voordat u het deelt.</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>Inschakelen</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>Uitschakelen</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>Gedetailleerde logboekregistratie</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>Ingeschakeld</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>Uitgeschakeld</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>Schakel grote aantallen Debug- en Trace-vermeldingen alleen voor deze uitvoering in de dagelijkse logboekbestanden in; de optie wordt bij opnieuw starten hersteld.</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>De dagelijkse logboekbestanden bevatten grote aantallen Debug- en Trace-vermeldingen totdat u de optie uitschakelt of de extensie opnieuw wordt gestart.</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>Diagnostische logboeken op het bureaublad opslaan</value>
   </data>

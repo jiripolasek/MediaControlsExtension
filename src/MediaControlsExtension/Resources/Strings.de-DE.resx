@@ -561,6 +561,27 @@ Besonderer Dank gilt [Mike Griese](https://github.com/zadjii-msft)</value>
 
 Diagnoseprotokolle können Medientitel, Playernamen und technische Fehlerdetails enthalten. Überprüfen Sie das Archiv, bevor Sie es weitergeben.</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>Aktivieren</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>Deaktivieren</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>Detaillierte Protokollierung</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>Aktiviert</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>Deaktiviert</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>Debug- und Trace-Einträge mit hohem Datenaufkommen nur für diese Ausführung in den täglichen Protokolldateien aktivieren; die Option wird beim Neustart zurückgesetzt.</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>Die täglichen Protokolldateien enthalten Debug- und Trace-Einträge mit hohem Datenaufkommen, bis Sie die Option deaktivieren oder die Erweiterung neu gestartet wird.</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>Diagnoseprotokolle auf dem Desktop speichern</value>
   </data>

@@ -561,6 +561,27 @@ _Copyright © Jiří Polášek_
 
 診断ログには、メディアのタイトル、プレーヤー名、技術的なエラーの詳細が含まれる場合があります。共有する前にアーカイブの内容を確認してください。</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>有効にする</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>無効にする</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>詳細ログ</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>今回の実行中のみ、日次ログ ファイルに大量の Debug および Trace エントリを記録します。このオプションは再起動するとリセットされます。</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>このオプションを無効にするか拡張機能を再起動するまで、日次ログ ファイルに大量の Debug および Trace エントリが記録されます。</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>診断ログをデスクトップに保存</value>
   </data>

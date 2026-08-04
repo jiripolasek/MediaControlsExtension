@@ -561,6 +561,27 @@ _版权所有 © Jiří Polášek_
 
 诊断日志可能包含媒体标题、播放器名称和技术错误详细信息。共享前请检查压缩包内容。</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>禁用</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>详细日志记录</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>已启用</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>已禁用</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>仅在本次运行期间将大量 Debug 和 Trace 条目写入每日日志文件；重启后此选项会重置。</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>在关闭此选项或扩展重启之前，每日日志文件会包含大量 Debug 和 Trace 条目。</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>将诊断日志保存到桌面</value>
   </data>

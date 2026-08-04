@@ -21,11 +21,14 @@ internal static class Program
                 PublisherMoniker = ExtensionHostIdentity.PublisherMoniker,
                 ProductMoniker = ExtensionHostIdentity.ProductMoniker,
             });
+        DetailedLoggingMode.InitializeForProcess(host.IsDebug);
 
         using var loggerFactory = LoggerFactory.Create(builder =>
             builder
                 .AddDailyFile(host)
-                .AddCommandPalette(host));
+                .AddFilter<DailyFileLoggerProvider>(static (_, level) => DetailedLoggingMode.ShouldWriteToFile(level))
+                .AddCommandPalette(host)
+                .AddFilter<CommandPaletteLoggerProvider>(static (_, level) => level is >= LogLevel.Critical and < LogLevel.None));
 
         await ExtensionHostRunner.CreateBuilder(host)
             .AddHostedExtensionFactory(context => new MediaControlsExtension(context.ExtensionDisposedEvent, loggerFactory))

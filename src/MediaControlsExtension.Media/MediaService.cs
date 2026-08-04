@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Threading.Channels;
 using JPSoftworks.MediaControlsExtension.Media.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
@@ -29,6 +30,8 @@ public sealed class MediaService : IMediaService
     private readonly Dictionary<MediaBackendSessionId, MediaBackendObservationChanges>
         _commandSettleRefreshRequests = [];
     private readonly Timer _commandSettleRefreshTimer;
+    private readonly Lock _refreshAdmissionLock = new();
+    private readonly MediaRefreshRegulator _refreshRegulator;
     private readonly Channel<bool> _refreshRequests;
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Lock _lifecycleLock = new();
@@ -46,7 +49,12 @@ public sealed class MediaService : IMediaService
     private Task? _backendSignalPumpTask;
     private Task? _disposeTask;
     private Task? _refreshPumpTask;
+    private CancellationTokenSource? _activeRefreshDelayCts;
+    private MediaRefreshMode? _activeRefreshDelayMode;
     private long _nextOperationId;
+    private long _nextRefreshId;
+    private MediaRefreshReason _pendingRefreshReasons;
+    private int _pendingRefreshRequestCount;
     private int _startState;
     private int _disposeState;
 
@@ -58,6 +66,7 @@ public sealed class MediaService : IMediaService
         this._commandQueue = CreateCommandQueue();
         this._refreshRequests = CreateRefreshQueue();
         this._timeProvider = TimeProvider.System;
+        this._refreshRegulator = new(this._timeProvider, MediaRefreshPolicy.Default);
         this._playbackPredictionLifetime = PlaybackPredictionLifetime;
         this._commandSettleRefreshTimer = this.CreateCommandSettleRefreshTimer();
         this._notificationHub = new(this.RaiseChanged, this._logger);
@@ -68,13 +77,17 @@ public sealed class MediaService : IMediaService
         IMediaBackend backend,
         ILogger<MediaService>? logger = null,
         TimeProvider? timeProvider = null,
-        TimeSpan? playbackPredictionLifetime = null)
+        TimeSpan? playbackPredictionLifetime = null,
+        MediaRefreshPolicy? refreshPolicy = null)
     {
         this._backend = backend ?? throw new ArgumentNullException(nameof(backend));
         this._logger = logger ?? NullLogger<MediaService>.Instance;
         this._commandQueue = CreateCommandQueue();
         this._refreshRequests = CreateRefreshQueue();
         this._timeProvider = timeProvider ?? TimeProvider.System;
+        this._refreshRegulator = new(
+            this._timeProvider,
+            refreshPolicy ?? MediaRefreshPolicy.Default);
         this._playbackPredictionLifetime =
             playbackPredictionLifetime ?? PlaybackPredictionLifetime;
         if (this._playbackPredictionLifetime <= TimeSpan.Zero)
@@ -151,7 +164,6 @@ public sealed class MediaService : IMediaService
                 this._backendSignalPumpTask = Task.Run(
                     () => this.ProcessBackendSignalsAsync(disposeToken),
                     CancellationToken.None);
-                this.RequestRefresh();
 
                 this._startState = 2;
                 MediaLog.ServiceReady(this._logger, this.Sessions.Length);
@@ -436,16 +448,16 @@ public sealed class MediaService : IMediaService
             this.ScheduleCommandSettleRefresh(command);
         }
 
-        this.RequestRefresh();
+        this.RequestRefresh(MediaRefreshReason.CommandCompleted);
     }
 
     private async Task ProcessBackendSignalsAsync(CancellationToken cancellationToken)
     {
         try
         {
-            await foreach (var _ in this._backend.WatchAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var signal in this._backend.WatchAsync(cancellationToken).ConfigureAwait(false))
             {
-                this.RequestRefresh();
+                this.RequestRefresh(MapRefreshReason(signal));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -465,9 +477,90 @@ public sealed class MediaService : IMediaService
     {
         try
         {
-            await foreach (var _ in this._refreshRequests.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            while (await this._refreshRequests.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                await this.RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                while (this._refreshRequests.Reader.TryRead(out _))
+                {
+                }
+
+                while (true)
+                {
+                    MediaRefreshAdmission admission;
+                    lock (this._refreshAdmissionLock)
+                    {
+                        if (this._pendingRefreshReasons == MediaRefreshReason.None)
+                        {
+                            break;
+                        }
+
+                        admission = this._refreshRegulator.GetAdmission(
+                            this._timeProvider.GetTimestamp(),
+                            this._pendingRefreshReasons);
+                    }
+
+                    if (admission.Delay > TimeSpan.Zero &&
+                        await this.WaitForRefreshAdmissionAsync(
+                            admission.Delay,
+                            admission.Mode,
+                            cancellationToken).ConfigureAwait(false))
+                    {
+                        continue;
+                    }
+
+                    MediaRefreshReason reasons;
+                    int requestCount;
+                    lock (this._refreshAdmissionLock)
+                    {
+                        reasons = this._pendingRefreshReasons;
+                        requestCount = this._pendingRefreshRequestCount;
+                        this._pendingRefreshReasons = MediaRefreshReason.None;
+                        this._pendingRefreshRequestCount = 0;
+                        admission = this._refreshRegulator.GetAdmission(
+                            this._timeProvider.GetTimestamp(),
+                            reasons);
+                    }
+
+                    if (reasons == MediaRefreshReason.None)
+                    {
+                        break;
+                    }
+
+                    var refreshId = Interlocked.Increment(ref this._nextRefreshId);
+                    MediaLog.RefreshStarting(
+                        this._logger,
+                        refreshId,
+                        admission.Mode,
+                        requestCount,
+                        reasons,
+                        admission.BurstCredits,
+                        admission.TopologyBurstCredits);
+                    var startedAt = Stopwatch.GetTimestamp();
+                    await this.RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                    var completedAt = this._timeProvider.GetTimestamp();
+                    lock (this._refreshAdmissionLock)
+                    {
+                        this._refreshRegulator.RegisterExecution(completedAt, reasons);
+                    }
+
+                    if (this._logger.IsEnabled(LogLevel.Debug))
+                    {
+                        var refreshElapsed = Stopwatch.GetElapsedTime(startedAt);
+                        var sessionCount = this.Sessions.Length;
+                        var currentSessionId = this.CurrentSession?.Id.Value;
+                        var status = this.Status;
+                        MediaLog.RefreshCompleted(
+                            this._logger,
+                            refreshId,
+                            refreshElapsed,
+                            sessionCount,
+                            currentSessionId,
+                            status);
+                    }
+
+                    while (this._refreshRequests.Reader.TryRead(out _))
+                    {
+                    }
+                }
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -497,8 +590,106 @@ public sealed class MediaService : IMediaService
         }
     }
 
-    private void RequestRefresh()
+    private static MediaRefreshReason MapRefreshReason(MediaBackendSignal signal)
     {
+        var reason = MediaRefreshReason.None;
+        if ((signal & MediaBackendSignal.ObservationsChanged) != 0)
+        {
+            reason |= MediaRefreshReason.ObservationsChanged;
+        }
+
+        if ((signal & MediaBackendSignal.SessionsChanged) != 0)
+        {
+            reason |= MediaRefreshReason.SessionsChanged;
+        }
+
+        if ((signal & MediaBackendSignal.CurrentSessionChanged) != 0)
+        {
+            reason |= MediaRefreshReason.CurrentSessionChanged;
+        }
+
+        return reason;
+    }
+
+    private async Task<bool> WaitForRefreshAdmissionAsync(
+        TimeSpan delay,
+        MediaRefreshMode mode,
+        CancellationToken cancellationToken)
+    {
+        using var delayCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        lock (this._refreshAdmissionLock)
+        {
+            var updatedAdmission = this._refreshRegulator.GetAdmission(
+                this._timeProvider.GetTimestamp(),
+                this._pendingRefreshReasons);
+            if (updatedAdmission.Delay < delay)
+            {
+                delay = updatedAdmission.Delay;
+                mode = updatedAdmission.Mode;
+            }
+
+            this._activeRefreshDelayCts = delayCts;
+            this._activeRefreshDelayMode = mode;
+        }
+
+        try
+        {
+            await Task.Delay(delay, delayCts.Token).ConfigureAwait(false);
+            return false;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return true;
+        }
+        finally
+        {
+            lock (this._refreshAdmissionLock)
+            {
+                if (ReferenceEquals(this._activeRefreshDelayCts, delayCts))
+                {
+                    this._activeRefreshDelayCts = null;
+                    this._activeRefreshDelayMode = null;
+                }
+            }
+        }
+    }
+
+    private void RequestRefresh(MediaRefreshReason reason)
+    {
+        if (reason == MediaRefreshReason.None)
+        {
+            return;
+        }
+
+        CancellationTokenSource? delayToCancel = null;
+        lock (this._refreshAdmissionLock)
+        {
+            this._pendingRefreshReasons |= reason;
+            if (this._pendingRefreshRequestCount < int.MaxValue)
+            {
+                this._pendingRefreshRequestCount++;
+            }
+
+            var timestamp = this._timeProvider.GetTimestamp();
+            this._refreshRegulator.RegisterRequest(timestamp);
+            var updatedAdmission = this._refreshRegulator.GetAdmission(
+                timestamp,
+                this._pendingRefreshReasons);
+            if (this._activeRefreshDelayMode == MediaRefreshMode.Sustained &&
+                updatedAdmission.Mode == MediaRefreshMode.Burst)
+            {
+                delayToCancel = this._activeRefreshDelayCts;
+            }
+        }
+
+        try
+        {
+            delayToCancel?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+
         this._refreshRequests.Writer.TryWrite(true);
     }
 
@@ -612,7 +803,7 @@ public sealed class MediaService : IMediaService
         }
 
         this._backend.InvalidateObservations(requests);
-        this.RequestRefresh();
+        this.RequestRefresh(MediaRefreshReason.CommandSettle);
     }
 
     private async Task ExpirePredictionAsync(
@@ -633,7 +824,7 @@ public sealed class MediaService : IMediaService
         if (this._stateStore.TryExpirePrediction(sessionId, operationId, out var snapshot))
         {
             this.PublishState(snapshot);
-            this.RequestRefresh();
+            this.RequestRefresh(MediaRefreshReason.PredictionExpired);
         }
     }
 
