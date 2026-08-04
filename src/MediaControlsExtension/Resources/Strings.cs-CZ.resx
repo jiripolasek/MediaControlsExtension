@@ -561,6 +561,27 @@ Zvláštní poděkování patří [Mikeovi Griesemu](https://github.com/zadjii-m
 
 Diagnostické protokoly mohou obsahovat názvy médií, názvy přehrávačů a technické podrobnosti o chybách. Před sdílením archiv zkontrolujte.</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>Povolit</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>Zakázat</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>Podrobné protokolování</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>Povoleno</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>Zakázáno</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>Povolit objemné záznamy úrovní Debug a Trace v denních souborech protokolu pouze pro toto spuštění; po restartu se tato volba vypne.</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>Denní soubory protokolu obsahují objemné záznamy úrovní Debug a Trace, dokud tuto volbu nevypnete nebo se rozšíření nerestartuje.</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>Uložit diagnostické protokoly na plochu</value>
   </data>

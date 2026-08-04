@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Media.Tests.Infrastructure;
 
@@ -13,6 +14,71 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 [TestClass]
 public sealed class MediaServiceConcurrencyTests
 {
+    [TestMethod]
+    public async Task TopologySignalInterruptsAQueuedSustainedRefresh()
+    {
+        var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
+        var refreshPolicy = new MediaRefreshPolicy(
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(30),
+            1,
+            1);
+        await using var service = new MediaService(
+            backend,
+            refreshPolicy: refreshPolicy);
+        await service.StartAsync();
+        await WaitUntilSnapshotReadsSettleAsync(backend);
+        var baselineReadCount = backend.SnapshotReadCount;
+        backend.BlockSnapshotReads();
+
+        backend.Signal(MediaBackendSignal.ObservationsChanged);
+        await Task.Delay(TimeSpan.FromMilliseconds(100));
+        Assert.AreEqual(baselineReadCount, backend.SnapshotReadCount);
+
+        backend.Signal(MediaBackendSignal.SessionsChanged);
+        await backend.SnapshotReadStarted.WaitAsync(TimeSpan.FromMilliseconds(500));
+        Assert.AreEqual(baselineReadCount + 1, backend.SnapshotReadCount);
+        backend.ReleaseSnapshotReads();
+    }
+
+    [TestMethod]
+    public async Task SustainedNotificationsProduceOneRateLimitedTrailingRefresh()
+    {
+        var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
+        var refreshPolicy = new MediaRefreshPolicy(
+            TimeSpan.Zero,
+            TimeSpan.FromMilliseconds(150),
+            TimeSpan.FromSeconds(30),
+            1,
+            0);
+        await using var service = new MediaService(
+            backend,
+            refreshPolicy: refreshPolicy);
+        await service.StartAsync();
+        await WaitUntilSnapshotReadsSettleAsync(backend);
+        var baselineReadCount = backend.SnapshotReadCount;
+        backend.BlockSnapshotReads();
+
+        backend.Signal(MediaBackendSignal.ObservationsChanged);
+        await backend.SnapshotReadStarted.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.AreEqual(baselineReadCount + 1, backend.SnapshotReadCount);
+
+        for (var index = 0; index < 100; index++)
+        {
+            backend.Signal(MediaBackendSignal.ObservationsChanged);
+        }
+
+        await Task.Delay(TimeSpan.FromMilliseconds(25));
+        backend.ReleaseSnapshotReads();
+        await Task.Delay(TimeSpan.FromMilliseconds(75));
+        Assert.AreEqual(baselineReadCount + 1, backend.SnapshotReadCount);
+
+        await WaitUntilAsync(() => backend.SnapshotReadCount == baselineReadCount + 2);
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        Assert.AreEqual(baselineReadCount + 2, backend.SnapshotReadCount);
+    }
+
     [TestMethod]
     public async Task CanceledReadinessWaitCompletesDequeuedCommand()
     {
@@ -593,16 +659,22 @@ public sealed class MediaServiceConcurrencyTests
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var previousCount = backend.SnapshotReadCount;
+        var stableSince = Stopwatch.GetTimestamp();
         while (true)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(25), timeout.Token);
             var currentCount = backend.SnapshotReadCount;
-            if (currentCount == previousCount)
+            if (currentCount != previousCount)
+            {
+                previousCount = currentCount;
+                stableSince = Stopwatch.GetTimestamp();
+                continue;
+            }
+
+            if (Stopwatch.GetElapsedTime(stableSince) >= TimeSpan.FromMilliseconds(300))
             {
                 return;
             }
-
-            previousCount = currentCount;
         }
     }
 

@@ -55,6 +55,8 @@ internal static class Icons
     public static IconInfo PreviousApp { get; } = new IconInfo("\uEA52");
 
     public static IconInfo ReportProblem { get; } = new(SegoeFluentIconGlyphs.Bug);
+    public static IconInfo DetailedLoggingEnabled { get; } = new(SegoeFluentIconGlyphs.CheckboxComposite);
+    public static IconInfo DetailedLoggingDisabled { get; } = new(SegoeFluentIconGlyphs.Checkbox);
     public static IconInfo Save { get; } = new(SegoeFluentIconGlyphs.Save);
     public static IconInfo OpenInNewWindow { get; } = new(SegoeFluentIconGlyphs.OpenInNewWindow);
 }
@@ -73,6 +75,8 @@ internal static class SegoeFluentIconGlyphs
     public const string VolumeDown = VolumeLow;
 
     public const string Bug = "\uEBE8";
+    public const string Checkbox = "\uE739";
+    public const string CheckboxComposite = "\uE73A";
     public const string Save = "\uE74E";
     public const string OpenInNewWindow = "\uE8A7";
 }

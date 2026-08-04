@@ -10,9 +10,13 @@ namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 internal readonly record struct MediaBackendSessionId(long Value);
 
+[Flags]
 internal enum MediaBackendSignal
 {
-    StateChanged,
+    None = 0,
+    ObservationsChanged = 1 << 0,
+    SessionsChanged = 1 << 1,
+    CurrentSessionChanged = 1 << 2,
 }
 
 internal enum MediaBackendCommandStatus

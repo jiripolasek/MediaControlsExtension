@@ -561,6 +561,27 @@ Agradecimiento especial a [Mike Griese](https://github.com/zadjii-msft)</value>
 
 Los registros de diagnóstico pueden contener títulos multimedia, nombres de reproductores y detalles técnicos de errores. Revise el archivo antes de compartirlo.</value>
   </data>
+  <data name="ReportProblem_DetailedLogging_Enable_Title" xml:space="preserve">
+    <value>Activar</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disable_Title" xml:space="preserve">
+    <value>Desactivar</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Title" xml:space="preserve">
+    <value>Registro detallado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Label" xml:space="preserve">
+    <value>Activado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Label" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Disabled_Subtitle" xml:space="preserve">
+    <value>Activa las entradas Debug y Trace de gran volumen en los archivos de registro diarios solo durante esta ejecución; la opción se restablece al reiniciar.</value>
+  </data>
+  <data name="ReportProblem_DetailedLogging_Enabled_Subtitle" xml:space="preserve">
+    <value>Los archivos de registro diarios incluyen entradas Debug y Trace de gran volumen hasta que desactive la opción o se reinicie la extensión.</value>
+  </data>
   <data name="ReportProblem_SaveLogs_Title" xml:space="preserve">
     <value>Guardar registros de diagnóstico en el escritorio</value>
   </data>

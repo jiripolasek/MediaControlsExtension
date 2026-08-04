@@ -117,4 +117,81 @@ internal static partial class MediaLog
         string applicationId,
         string observationPart,
         Exception exception);
+
+    [LoggerMessage(EventId = 20, Level = LogLevel.Debug, Message = "Media refresh #{RefreshId} is starting in {Mode} mode after coalescing {RequestCount} request(s) ({Reasons}); burst credits: {BurstCredits}, topology credits: {TopologyBurstCredits}.")]
+    public static partial void RefreshStarting(
+        ILogger logger,
+        long refreshId,
+        MediaRefreshMode mode,
+        int requestCount,
+        MediaRefreshReason reasons,
+        int burstCredits,
+        int topologyBurstCredits);
+
+    [LoggerMessage(EventId = 21, Level = LogLevel.Debug, Message = "Media refresh #{RefreshId} completed in {Elapsed}; sessions: {SessionCount}, current session: {CurrentSessionId}, status: {Status}.")]
+    public static partial void RefreshCompleted(
+        ILogger logger,
+        long refreshId,
+        TimeSpan elapsed,
+        int sessionCount,
+        long? currentSessionId,
+        MediaServiceStatus status);
+
+    [LoggerMessage(EventId = 22, Level = LogLevel.Trace, Message = "GSMTC delivered {PlaybackSignals} playback, {TimelineSignals} timeline, {MediaSignals} media, {SessionsSignals} sessions, and {CurrentSignals} current-session notification(s) before this snapshot.")]
+    public static partial void NativeSignalsDrained(
+        ILogger logger,
+        long playbackSignals,
+        long timelineSignals,
+        long mediaSignals,
+        long sessionsSignals,
+        long currentSignals);
+
+    [LoggerMessage(EventId = 23, Level = LogLevel.Trace, Message = "GSMTC native call #{CallId} {Operation} is starting for session {SessionId}/{BindingGeneration} ({ApplicationId}).")]
+    public static partial void NativeCallStarting(
+        ILogger logger,
+        long callId,
+        string operation,
+        long sessionId,
+        long bindingGeneration,
+        string applicationId);
+
+    [LoggerMessage(EventId = 24, Level = LogLevel.Trace, Message = "GSMTC native call #{CallId} {Operation} completed in {Elapsed} for session {SessionId}/{BindingGeneration} ({ApplicationId}).")]
+    public static partial void NativeCallCompleted(
+        ILogger logger,
+        long callId,
+        string operation,
+        TimeSpan elapsed,
+        long sessionId,
+        long bindingGeneration,
+        string applicationId);
+
+    [LoggerMessage(EventId = 25, Level = LogLevel.Debug, Message = "GSMTC session reconciliation completed: {SessionCount} session(s), current {CurrentSessionId}, added {AddedCount}, retained {RetainedCount}, rebound {ReboundCount}, removed {RemovedCount}.")]
+    public static partial void SessionReconciliationCompleted(
+        ILogger logger,
+        int sessionCount,
+        long? currentSessionId,
+        int addedCount,
+        int retainedCount,
+        int reboundCount,
+        int removedCount);
+
+    [LoggerMessage(EventId = 26, Level = LogLevel.Debug, Message = "GSMTC current-session reconciliation used {Path}; current session: {CurrentSessionId}, known sessions: {KnownSessionCount}.")]
+    public static partial void CurrentSessionReconciled(
+        ILogger logger,
+        string path,
+        long? currentSessionId,
+        int knownSessionCount);
+
+    [LoggerMessage(EventId = 27, Level = LogLevel.Trace, Message = "GSMTC manager call #{CallId} {Operation} is starting.")]
+    public static partial void ManagerCallStarting(
+        ILogger logger,
+        long callId,
+        string operation);
+
+    [LoggerMessage(EventId = 28, Level = LogLevel.Trace, Message = "GSMTC manager call #{CallId} {Operation} completed in {Elapsed}.")]
+    public static partial void ManagerCallCompleted(
+        ILogger logger,
+        long callId,
+        string operation,
+        TimeSpan elapsed);
 }
