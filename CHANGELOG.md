@@ -6,7 +6,7 @@ All notable changes to Media Controls for Command Palette are documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 -->
 
-## [0.20.0] - Unreleased
+## [0.20.0] - 2026-08-04
 
 ### Added
 
@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **System volume dock band** - see and adjust the system volume directly from the flyout.
 - **Configurable first dock item behavior** - choose whether it brings the app to front, opens the main page, or opens the metadata info page.
 - **"Report a problem" page** for filing issues from inside the extension.
+- **Adaptive session expiration grace period** - keeps media controls available while supported apps briefly tear down and recreate their sessions, such as browsers when skipping YouTube tracks. ([#40](https://github.com/jiripolasek/MediaControlsExtension/issues/40))
 - Separators in context menus for better grouping.
 
 ### Changed
