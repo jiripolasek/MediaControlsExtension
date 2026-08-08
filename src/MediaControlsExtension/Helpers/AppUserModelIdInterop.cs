@@ -4,7 +4,6 @@
 // 
 // ------------------------------------------------------------
 
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using JPSoftworks.MediaControlsExtension.Interop;
 using Microsoft.Win32.SafeHandles;
@@ -32,7 +31,7 @@ internal static partial class AppUserModelIdInterop
 
     private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
     private const uint SYNCHRONIZE = 0x00100000;
-    private const int APPMODEL_ERROR_NO_APPLICATION = 15703;
+    private const int ERROR_SUCCESS = 0;
 
     /// <summary>
     /// Gets the AppUserModelId for a process by process ID, or null if not set or not accessible.
@@ -52,12 +51,14 @@ internal static partial class AppUserModelIdInterop
 
         int length = 2048;
         var sb = new char[length];
-        int hr = GetApplicationUserModelId(hProcess.DangerousGetHandle(), ref length, sb);
-        return hr switch
+        int result = GetApplicationUserModelId(hProcess.DangerousGetHandle(), ref length, sb);
+        if (result != ERROR_SUCCESS)
         {
-            0 => new string(sb, 0, length > 0 ? length - 1 : 0),
-            APPMODEL_ERROR_NO_APPLICATION => null,
-            _ => throw new Win32Exception(hr)
-        };
+            // A process may be protected or exit while windows are being enumerated.
+            // Failure to read one process identity must not abort the EnumWindows callback.
+            return null;
+        }
+
+        return new string(sb, 0, length > 0 ? length - 1 : 0);
     }
 }
