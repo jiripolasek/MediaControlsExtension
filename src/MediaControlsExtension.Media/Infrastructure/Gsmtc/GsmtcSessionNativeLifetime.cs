@@ -26,7 +26,7 @@ internal sealed class GsmtcSessionNativeLifetime
     private int _activeUseCount;
     private TaskCompletionSource? _activeUsesDrained;
     private NativeObjectRoots _retainedObjects;
-    private Task? _retirementTask;
+    private Task<bool>? _retirementTask;
     private bool _isRetiring;
 
     internal int ActiveUseCount
@@ -153,12 +153,12 @@ internal sealed class GsmtcSessionNativeLifetime
         }
     }
 
-    public Task RetireAsync(Func<Task> retireNativeStateAsync)
+    public Task<bool> RetireAsync(Func<Task<bool>> retireNativeStateAsync)
     {
         ArgumentNullException.ThrowIfNull(retireNativeStateAsync);
 
         Task drainedTask;
-        TaskCompletionSource retirementCompletion;
+        TaskCompletionSource<bool> retirementCompletion;
         lock (this._stateLock)
         {
             if (this._retirementTask is not null)
@@ -184,20 +184,22 @@ internal sealed class GsmtcSessionNativeLifetime
 
     private async Task CompleteRetirementAsync(
         Task drainedTask,
-        Func<Task> retireNativeStateAsync,
-        TaskCompletionSource retirementCompletion)
+        Func<Task<bool>> retireNativeStateAsync,
+        TaskCompletionSource<bool> retirementCompletion)
     {
         Exception? retirementException = null;
+        var retiredNativeState = false;
         try
         {
             await drainedTask.ConfigureAwait(false);
-            await retireNativeStateAsync().ConfigureAwait(false);
+            retiredNativeState = await retireNativeStateAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             retirementException = ex;
         }
-        finally
+
+        if (retiredNativeState)
         {
             lock (this._stateLock)
             {
@@ -207,7 +209,7 @@ internal sealed class GsmtcSessionNativeLifetime
 
         if (retirementException is null)
         {
-            retirementCompletion.TrySetResult();
+            retirementCompletion.TrySetResult(retiredNativeState);
         }
         else
         {

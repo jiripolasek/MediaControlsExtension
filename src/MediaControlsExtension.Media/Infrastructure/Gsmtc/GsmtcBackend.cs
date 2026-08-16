@@ -1430,7 +1430,7 @@ internal sealed class GsmtcBackend : IMediaBackend
             return this._nativeLifetime.TryEnter();
         }
 
-        public Task RetireAsync()
+        public Task<bool> RetireAsync()
         {
             return this._nativeLifetime.RetireAsync(this.UnhookAfterNativeUsesAsync);
         }
@@ -1630,16 +1630,11 @@ internal sealed class GsmtcBackend : IMediaBackend
             this.Session.TimelinePropertiesChanged += this.SessionOnTimelinePropertiesChanged;
         }
 
-        private async Task UnhookAfterNativeUsesAsync()
+        private async Task<bool> UnhookAfterNativeUsesAsync()
         {
-            if (owner._controlGate.IsCircuitOpen)
-            {
-                return;
-            }
-
             try
             {
-                await owner._controlGate.RunAsync(
+                await owner._controlGate.RunCleanupAsync(
                     () =>
                     {
                         this.UnhookCore();
@@ -1647,6 +1642,7 @@ internal sealed class GsmtcBackend : IMediaBackend
                     },
                     $"RetireSession:{this.ApplicationId}",
                     CancellationToken.None).ConfigureAwait(false);
+                return true;
             }
             catch (Exception ex)
             {
@@ -1662,6 +1658,8 @@ internal sealed class GsmtcBackend : IMediaBackend
                     // Retirement must not fault a forgotten background task if
                     // the logging pipeline is already unavailable.
                 }
+
+                return false;
             }
         }
 

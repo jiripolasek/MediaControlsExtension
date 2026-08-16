@@ -119,7 +119,7 @@ public sealed class GsmtcSessionNativeLifetimeTests
         var retirement = lifetime.RetireAsync(() =>
         {
             nativeStateRetired.TrySetResult();
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         });
 
         Assert.IsTrue(lifetime.IsRetiring);
@@ -129,7 +129,7 @@ public sealed class GsmtcSessionNativeLifetimeTests
 
         activeUse.Dispose();
 
-        await retirement.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.IsTrue(await retirement.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.IsTrue(nativeStateRetired.Task.IsCompletedSuccessfully);
         Assert.AreEqual(0, lifetime.ActiveUseCount);
         Assert.IsNull(lifetime.RetainedPlaybackInfo);
@@ -168,7 +168,7 @@ public sealed class GsmtcSessionNativeLifetimeTests
         var retirement = lifetime.RetireAsync(() =>
         {
             nativeStateRetired.TrySetResult();
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         });
 
         await Assert.ThrowsAsync<GsmtcObservationBlockedException>(
@@ -178,7 +178,28 @@ public sealed class GsmtcSessionNativeLifetimeTests
 
         releaseOperation.TrySetResult();
 
-        await retirement.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.IsTrue(await retirement.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.IsTrue(nativeStateRetired.Task.IsCompletedSuccessfully);
+    }
+
+    [TestMethod]
+    public async Task FailedRetirementKeepsNativeObjectsQuarantined()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        var playbackInfo = new object();
+        var playbackControls = new object();
+        using (var nativeUse = lifetime.TryEnter()
+            ?? throw new AssertFailedException("The native use was rejected."))
+        {
+            nativeUse.CommitPlaybackObjects(playbackInfo, playbackControls);
+        }
+
+        var retired = await lifetime.RetireAsync(() => Task.FromResult(false));
+
+        Assert.IsFalse(retired);
+        Assert.IsTrue(lifetime.IsRetiring);
+        Assert.IsNull(lifetime.TryEnter());
+        Assert.AreSame(playbackInfo, lifetime.RetainedPlaybackInfo);
+        Assert.AreSame(playbackControls, lifetime.RetainedPlaybackControls);
     }
 }
