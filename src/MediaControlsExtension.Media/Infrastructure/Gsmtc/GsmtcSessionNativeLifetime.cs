@@ -15,6 +15,8 @@ internal sealed class GsmtcSessionNativeLifetime
     private readonly record struct NativeObjectRoots(
         object? PlaybackInfo,
         object? PlaybackControls,
+        object? CommandPlaybackInfo,
+        object? CommandPlaybackControls,
         object? TimelineProperties,
         object? MediaProperties,
         object? Thumbnail,
@@ -78,6 +80,28 @@ internal sealed class GsmtcSessionNativeLifetime
             lock (this._stateLock)
             {
                 return this._retainedObjects.TimelineProperties;
+            }
+        }
+    }
+
+    internal object? RetainedCommandPlaybackInfo
+    {
+        get
+        {
+            lock (this._stateLock)
+            {
+                return this._retainedObjects.CommandPlaybackInfo;
+            }
+        }
+    }
+
+    internal object? RetainedCommandPlaybackControls
+    {
+        get
+        {
+            lock (this._stateLock)
+            {
+                return this._retainedObjects.CommandPlaybackControls;
             }
         }
     }
@@ -216,6 +240,20 @@ internal sealed class GsmtcSessionNativeLifetime
         }
     }
 
+    private void CommitCommandPlaybackObjects(
+        object? playbackInfo,
+        object? playbackControls)
+    {
+        lock (this._stateLock)
+        {
+            this._retainedObjects = this._retainedObjects with
+            {
+                CommandPlaybackInfo = playbackInfo,
+                CommandPlaybackControls = playbackControls,
+            };
+        }
+    }
+
     private void CommitMediaObjects(
         object? mediaProperties,
         object? thumbnail,
@@ -271,6 +309,15 @@ internal sealed class GsmtcSessionNativeLifetime
             var currentOwner = Volatile.Read(ref this._owner)
                 ?? throw new ObjectDisposedException(nameof(NativeUse));
             currentOwner.CommitTimelineObjects(timelineProperties);
+        }
+
+        public void CommitCommandPlaybackObjects(
+            object? playbackInfo,
+            object? playbackControls)
+        {
+            var currentOwner = Volatile.Read(ref this._owner)
+                ?? throw new ObjectDisposedException(nameof(NativeUse));
+            currentOwner.CommitCommandPlaybackObjects(playbackInfo, playbackControls);
         }
 
         public void CommitMediaObjects(

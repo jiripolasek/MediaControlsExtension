@@ -72,6 +72,41 @@ public sealed class GsmtcSessionNativeLifetimeTests
     }
 
     [TestMethod]
+    public void CommandPlaybackObjectsDoNotReplaceObservationPlaybackObjects()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        using var nativeUse = lifetime.TryEnter()
+            ?? throw new AssertFailedException("The native use was rejected.");
+        var observationPlaybackInfo = new object();
+        var observationPlaybackControls = new object();
+        var commandPlaybackInfo = new object();
+        var commandPlaybackControls = new object();
+
+        nativeUse.CommitPlaybackObjects(
+            observationPlaybackInfo,
+            observationPlaybackControls);
+        nativeUse.CommitCommandPlaybackObjects(
+            commandPlaybackInfo,
+            commandPlaybackControls);
+
+        Assert.AreSame(observationPlaybackInfo, lifetime.RetainedPlaybackInfo);
+        Assert.AreSame(observationPlaybackControls, lifetime.RetainedPlaybackControls);
+        Assert.AreSame(commandPlaybackInfo, lifetime.RetainedCommandPlaybackInfo);
+        Assert.AreSame(commandPlaybackControls, lifetime.RetainedCommandPlaybackControls);
+
+        var replacementObservationPlaybackInfo = new object();
+        var replacementObservationPlaybackControls = new object();
+        nativeUse.CommitPlaybackObjects(
+            replacementObservationPlaybackInfo,
+            replacementObservationPlaybackControls);
+
+        Assert.AreSame(replacementObservationPlaybackInfo, lifetime.RetainedPlaybackInfo);
+        Assert.AreSame(replacementObservationPlaybackControls, lifetime.RetainedPlaybackControls);
+        Assert.AreSame(commandPlaybackInfo, lifetime.RetainedCommandPlaybackInfo);
+        Assert.AreSame(commandPlaybackControls, lifetime.RetainedCommandPlaybackControls);
+    }
+
+    [TestMethod]
     public async Task RetirementRejectsNewUsesAndWaitsForTheActiveUse()
     {
         var lifetime = new GsmtcSessionNativeLifetime();
@@ -99,6 +134,8 @@ public sealed class GsmtcSessionNativeLifetimeTests
         Assert.AreEqual(0, lifetime.ActiveUseCount);
         Assert.IsNull(lifetime.RetainedPlaybackInfo);
         Assert.IsNull(lifetime.RetainedPlaybackControls);
+        Assert.IsNull(lifetime.RetainedCommandPlaybackInfo);
+        Assert.IsNull(lifetime.RetainedCommandPlaybackControls);
     }
 
     [TestMethod]

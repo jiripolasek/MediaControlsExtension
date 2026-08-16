@@ -336,7 +336,10 @@ internal sealed class GsmtcBackend : IMediaBackend
                         }
                     }
 
-                    return await ExecuteOperationAsync(target.Session, command.Operation).ConfigureAwait(false);
+                    return await ExecuteOperationAsync(
+                        target.Session,
+                        command.Operation,
+                        targetUse).ConfigureAwait(false);
                 },
                 command.Operation.ToString(),
                 cancellationToken).ConfigureAwait(false);
@@ -840,7 +843,8 @@ internal sealed class GsmtcBackend : IMediaBackend
 
     private static async Task<bool> ExecuteOperationAsync(
         GlobalSystemMediaTransportControlsSession session,
-        MediaOperation operation)
+        MediaOperation operation,
+        GsmtcSessionNativeLifetime.NativeUse nativeUse)
     {
         return operation switch
         {
@@ -849,34 +853,46 @@ internal sealed class GsmtcBackend : IMediaBackend
             MediaOperation.Stop => await session.TryStopAsync(),
             MediaOperation.SkipNext => await session.TrySkipNextAsync(),
             MediaOperation.SkipPrevious => await session.TrySkipPreviousAsync(),
-            MediaOperation.ToggleShuffle => await ToggleShuffleAsync(session),
-            MediaOperation.ToggleRepeat => await ToggleRepeatAsync(session),
+            MediaOperation.ToggleShuffle => await ToggleShuffleAsync(session, nativeUse),
+            MediaOperation.ToggleRepeat => await ToggleRepeatAsync(session, nativeUse),
             _ => throw new NotSupportedException($"Media operation {operation} is not a primitive GSMTC operation."),
         };
     }
 
     private static async Task<bool> ToggleShuffleAsync(
-        GlobalSystemMediaTransportControlsSession session)
+        GlobalSystemMediaTransportControlsSession session,
+        GsmtcSessionNativeLifetime.NativeUse nativeUse)
     {
         var playbackInfo = session.GetPlaybackInfo();
-        if (playbackInfo?.Controls.IsShuffleEnabled != true)
+        var playbackControls = playbackInfo?.Controls;
+        var isShuffleEnabled = playbackControls?.IsShuffleEnabled == true;
+        var isShuffleActive = playbackInfo?.IsShuffleActive ?? false;
+        nativeUse.CommitCommandPlaybackObjects(playbackInfo, playbackControls);
+        if (!isShuffleEnabled)
         {
             return false;
         }
 
-        return await session.TryChangeShuffleActiveAsync(!(playbackInfo.IsShuffleActive ?? false));
+        return await session.TryChangeShuffleActiveAsync(!isShuffleActive);
     }
 
     private static async Task<bool> ToggleRepeatAsync(
-        GlobalSystemMediaTransportControlsSession session)
+        GlobalSystemMediaTransportControlsSession session,
+        GsmtcSessionNativeLifetime.NativeUse nativeUse)
     {
         var playbackInfo = session.GetPlaybackInfo();
-        if (playbackInfo?.Controls.IsRepeatEnabled != true)
+        var playbackControls = playbackInfo?.Controls;
+        var isRepeatEnabled = playbackControls?.IsRepeatEnabled == true;
+        var autoRepeatMode = isRepeatEnabled
+            ? playbackInfo?.AutoRepeatMode
+            : null;
+        nativeUse.CommitCommandPlaybackObjects(playbackInfo, playbackControls);
+        if (!isRepeatEnabled)
         {
             return false;
         }
 
-        var nextMode = playbackInfo.AutoRepeatMode switch
+        var nextMode = autoRepeatMode switch
         {
             MediaPlaybackAutoRepeatMode.None => MediaPlaybackAutoRepeatMode.Track,
             MediaPlaybackAutoRepeatMode.Track => MediaPlaybackAutoRepeatMode.List,
