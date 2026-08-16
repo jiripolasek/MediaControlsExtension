@@ -34,6 +34,7 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
     private int _blockSnapshotReads;
     private int _blockStart;
     private int _disposeCount;
+    private int _failObservationInvalidations;
     private int _snapshotReadCount;
 
     public MediaBackendCommandResult CommandResult { get; set; } = new(
@@ -97,6 +98,11 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         this._releaseSnapshotReads.TrySetResult();
     }
 
+    public void FailObservationInvalidations()
+    {
+        Volatile.Write(ref this._failObservationInvalidations, 1);
+    }
+
     public void Signal(MediaBackendSignal signal)
     {
         this._signals.Writer.TryWrite(signal);
@@ -156,6 +162,11 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         lock (this._stateLock)
         {
             this._observationInvalidations.Add(requests);
+        }
+
+        if (Volatile.Read(ref this._failObservationInvalidations) != 0)
+        {
+            throw new InvalidOperationException("Injected observation invalidation failure.");
         }
     }
 

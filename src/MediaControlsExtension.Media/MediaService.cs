@@ -696,10 +696,29 @@ public sealed class MediaService : IMediaService
     private Timer CreateCommandSettleRefreshTimer()
     {
         return new(
-            static state => ((MediaService)state!).RequestCommandSettleRefreshIfActive(),
+            static state => ((MediaService)state!).RunCommandSettleRefreshTimerCallback(),
             this,
             Timeout.InfiniteTimeSpan,
             Timeout.InfiniteTimeSpan);
+    }
+
+    private void RunCommandSettleRefreshTimerCallback()
+    {
+        try
+        {
+            this.RequestCommandSettleRefreshIfActive();
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                MediaLog.CommandSettleRefreshFailed(this._logger, ex);
+            }
+            catch
+            {
+                // A logging failure must not escape the timer callback either.
+            }
+        }
     }
 
     private static bool IsNavigationCommand(MediaOperation operation)

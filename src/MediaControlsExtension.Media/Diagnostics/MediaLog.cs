@@ -211,4 +211,9 @@ internal static partial class MediaLog
     public static partial void SessionRetentionExpired(
         ILogger logger,
         string applicationId);
+
+    [LoggerMessage(EventId = 32, Level = LogLevel.Error, Message = "The command-settle refresh callback failed.")]
+    public static partial void CommandSettleRefreshFailed(
+        ILogger logger,
+        Exception exception);
 }
