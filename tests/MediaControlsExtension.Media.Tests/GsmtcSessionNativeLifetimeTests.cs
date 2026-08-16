@@ -139,6 +139,69 @@ public sealed class GsmtcSessionNativeLifetimeTests
     }
 
     [TestMethod]
+    public async Task DrainedRetirementUsesTheCurrentControlTurn()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        var playbackInfo = new object();
+        using (var nativeUse = lifetime.TryEnter()
+            ?? throw new AssertFailedException("The native use was rejected."))
+        {
+            nativeUse.CommitPlaybackObjects(playbackInfo, new object());
+        }
+
+        var deferredCleanupCalled = false;
+        var currentTurnCleanupCalled = false;
+        var retirement = lifetime.RetireInCurrentTurn(
+            () =>
+            {
+                currentTurnCleanupCalled = true;
+                return true;
+            },
+            () =>
+            {
+                deferredCleanupCalled = true;
+                return Task.FromResult(true);
+            });
+
+        Assert.IsTrue(retirement.IsCompletedSuccessfully);
+        Assert.IsTrue(await retirement);
+        Assert.IsTrue(currentTurnCleanupCalled);
+        Assert.IsFalse(deferredCleanupCalled);
+        Assert.IsNull(lifetime.RetainedPlaybackInfo);
+    }
+
+    [TestMethod]
+    public async Task ActiveRetirementDefersCleanupUntilTheNativeUseDrains()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        var activeUse = lifetime.TryEnter()
+            ?? throw new AssertFailedException("The native use was rejected.");
+        var deferredCleanupCalled = false;
+        var currentTurnCleanupCalled = false;
+        var retirement = lifetime.RetireInCurrentTurn(
+            () =>
+            {
+                currentTurnCleanupCalled = true;
+                return true;
+            },
+            () =>
+            {
+                deferredCleanupCalled = true;
+                return Task.FromResult(true);
+            });
+
+        Assert.IsFalse(retirement.IsCompleted);
+        Assert.IsFalse(currentTurnCleanupCalled);
+        Assert.IsFalse(deferredCleanupCalled);
+
+        activeUse.Dispose();
+
+        Assert.IsTrue(await retirement.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.IsTrue(deferredCleanupCalled);
+        Assert.IsFalse(currentTurnCleanupCalled);
+    }
+
+    [TestMethod]
     public async Task TimedOutObservationKeepsRetirementWaitingForItsActualCompletion()
     {
         var lifetime = new GsmtcSessionNativeLifetime();

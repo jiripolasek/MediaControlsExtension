@@ -155,10 +155,28 @@ internal sealed class GsmtcSessionNativeLifetime
 
     public Task<bool> RetireAsync(Func<Task<bool>> retireNativeStateAsync)
     {
-        ArgumentNullException.ThrowIfNull(retireNativeStateAsync);
+        return this.BeginRetirement(retireNativeStateAsync, null);
+    }
+
+    public Task<bool> RetireInCurrentTurn(
+        Func<bool> retireNativeStateInCurrentTurn,
+        Func<Task<bool>> retireNativeStateAfterActiveUsesAsync)
+    {
+        ArgumentNullException.ThrowIfNull(retireNativeStateInCurrentTurn);
+        return this.BeginRetirement(
+            retireNativeStateAfterActiveUsesAsync,
+            retireNativeStateInCurrentTurn);
+    }
+
+    private Task<bool> BeginRetirement(
+        Func<Task<bool>> retireNativeStateAfterActiveUsesAsync,
+        Func<bool>? retireNativeStateInCurrentTurn)
+    {
+        ArgumentNullException.ThrowIfNull(retireNativeStateAfterActiveUsesAsync);
 
         Task drainedTask;
         TaskCompletionSource<bool> retirementCompletion;
+        bool retireInCurrentTurn;
         lock (this._stateLock)
         {
             if (this._retirementTask is not null)
@@ -167,6 +185,9 @@ internal sealed class GsmtcSessionNativeLifetime
             }
 
             this._isRetiring = true;
+            retireInCurrentTurn =
+                this._activeUseCount == 0 &&
+                retireNativeStateInCurrentTurn is not null;
             drainedTask = this._activeUseCount == 0
                 ? Task.CompletedTask
                 : (this._activeUsesDrained = new(
@@ -175,11 +196,42 @@ internal sealed class GsmtcSessionNativeLifetime
             this._retirementTask = retirementCompletion.Task;
         }
 
-        _ = this.CompleteRetirementAsync(
-            drainedTask,
-            retireNativeStateAsync,
-            retirementCompletion);
+        if (retireInCurrentTurn)
+        {
+            this.CompleteRetirementInCurrentTurn(
+                retireNativeStateInCurrentTurn!,
+                retirementCompletion);
+        }
+        else
+        {
+            _ = this.CompleteRetirementAsync(
+                drainedTask,
+                retireNativeStateAfterActiveUsesAsync,
+                retirementCompletion);
+        }
+
         return retirementCompletion.Task;
+    }
+
+    private void CompleteRetirementInCurrentTurn(
+        Func<bool> retireNativeState,
+        TaskCompletionSource<bool> retirementCompletion)
+    {
+        Exception? retirementException = null;
+        var retiredNativeState = false;
+        try
+        {
+            retiredNativeState = retireNativeState();
+        }
+        catch (Exception ex)
+        {
+            retirementException = ex;
+        }
+
+        this.CompleteRetirement(
+            retiredNativeState,
+            retirementException,
+            retirementCompletion);
     }
 
     private async Task CompleteRetirementAsync(
@@ -199,6 +251,17 @@ internal sealed class GsmtcSessionNativeLifetime
             retirementException = ex;
         }
 
+        this.CompleteRetirement(
+            retiredNativeState,
+            retirementException,
+            retirementCompletion);
+    }
+
+    private void CompleteRetirement(
+        bool retiredNativeState,
+        Exception? retirementException,
+        TaskCompletionSource<bool> retirementCompletion)
+    {
         if (retiredNativeState)
         {
             lock (this._stateLock)

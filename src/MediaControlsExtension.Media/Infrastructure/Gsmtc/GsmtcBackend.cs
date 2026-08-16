@@ -1134,7 +1134,7 @@ internal sealed class GsmtcBackend : IMediaBackend
                                 observed.Session);
                             binding.SeedSnapshot(existing.LastSnapshot);
                             binding.Hook();
-                            _ = existing.RetireAsync();
+                            _ = existing.RetireInCurrentControlTurn();
 
                             var evidence = wasRecent
                                 ? SessionRecreationEvidence.Weak
@@ -1174,7 +1174,7 @@ internal sealed class GsmtcBackend : IMediaBackend
                         var retention = missing.BeginMissingRetention(
                             now,
                             now + gracePeriod);
-                        _ = missing.RetireAsync();
+                        _ = missing.RetireInCurrentControlTurn();
                         retentionsToSchedule.Add((missing, retention));
                         MediaLog.SessionRetentionStarted(
                             this._logger,
@@ -1483,6 +1483,13 @@ internal sealed class GsmtcBackend : IMediaBackend
             return this._nativeLifetime.RetireAsync(this.UnhookAfterNativeUsesAsync);
         }
 
+        public Task<bool> RetireInCurrentControlTurn()
+        {
+            return this._nativeLifetime.RetireInCurrentTurn(
+                this.TryUnhookCore,
+                this.UnhookAfterNativeUsesAsync);
+        }
+
         public bool IsMissing
         {
             get
@@ -1682,32 +1689,45 @@ internal sealed class GsmtcBackend : IMediaBackend
         {
             try
             {
-                await owner._controlGate.RunCleanupAsync(
-                    () =>
-                    {
-                        this.UnhookCore();
-                        return Task.FromResult(true);
-                    },
+                return await owner._controlGate.RunCleanupAsync(
+                    () => Task.FromResult(this.TryUnhookCore()),
                     $"RetireSession:{this.ApplicationId}",
                     CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                this.LogRetirementFailure(ex);
+                return false;
+            }
+        }
+
+        private bool TryUnhookCore()
+        {
+            try
+            {
+                this.UnhookCore();
                 return true;
             }
             catch (Exception ex)
             {
-                try
-                {
-                    MediaLog.SessionRetirementFailed(
-                        owner._logger,
-                        this.ApplicationId,
-                        ex);
-                }
-                catch
-                {
-                    // Retirement must not fault a forgotten background task if
-                    // the logging pipeline is already unavailable.
-                }
-
+                this.LogRetirementFailure(ex);
                 return false;
+            }
+        }
+
+        private void LogRetirementFailure(Exception exception)
+        {
+            try
+            {
+                MediaLog.SessionRetirementFailed(
+                    owner._logger,
+                    this.ApplicationId,
+                    exception);
+            }
+            catch
+            {
+                // Retirement must not fault a forgotten background task if
+                // the logging pipeline is already unavailable.
             }
         }
 
