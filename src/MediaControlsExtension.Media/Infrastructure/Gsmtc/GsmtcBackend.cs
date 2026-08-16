@@ -24,6 +24,7 @@ namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
 internal sealed class GsmtcBackend : IMediaBackend
 {
     private const ulong MaxArtworkBytes = 32 * 1024 * 1024;
+    private static readonly TimeSpan DisposalCleanupTimeout = TimeSpan.FromSeconds(5);
 
     [Flags]
     private enum ManagerChanges
@@ -443,37 +444,84 @@ internal sealed class GsmtcBackend : IMediaBackend
         {
             manager = this._manager;
             this._manager = null;
-            bindings = [.. this._bindings.Values];
+            bindings = this._bindings.Values
+                .Concat(this._recentlyRemovedBindings.Select(static recent => recent.Binding))
+                .Distinct<SessionBinding>(ReferenceEqualityComparer.Instance)
+                .ToArray();
             this._bindings.Clear();
             this._recentlyRemovedBindings.Clear();
             this._currentSessionId = null;
         }
 
-        if (manager is not null && !this._controlGate.IsCircuitOpen)
+        var cleanupTasks = new List<Task<bool>>(
+            bindings.Length + (manager is null ? 0 : 1));
+        if (manager is not null)
         {
-            try
-            {
-                await this._controlGate.RunAsync(
-                    () =>
-                    {
-                        manager.SessionsChanged -= this.ManagerOnSessionsChanged;
-                        manager.CurrentSessionChanged -= this.ManagerOnCurrentSessionChanged;
-                        return Task.FromResult(true);
-                    },
-                    "DisposeSessionManager",
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-            catch
-            {
-            }
+            cleanupTasks.Add(this.UnhookSessionManagerAsync(manager));
         }
 
         foreach (var binding in bindings)
         {
-            _ = binding.RetireAsync();
+            cleanupTasks.Add(binding.RetireAsync());
+        }
+
+        if (cleanupTasks.Count != 0)
+        {
+            var cleanupTask = Task.WhenAll(cleanupTasks);
+            try
+            {
+                _ = await cleanupTask.WaitAsync(DisposalCleanupTimeout).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                MediaLog.BackendCleanupTimedOut(
+                    this._logger,
+                    DisposalCleanupTimeout,
+                    cleanupTasks.Count(static task => !task.IsCompleted),
+                    cleanupTasks.Count);
+                _ = ObserveCleanupCompletionAsync(cleanupTask);
+            }
+            catch (Exception ex)
+            {
+                MediaLog.BackendCleanupFailed(this._logger, ex);
+            }
         }
 
         this._disposeCts.Dispose();
+    }
+
+    private async Task<bool> UnhookSessionManagerAsync(
+        GlobalSystemMediaTransportControlsSessionManager manager)
+    {
+        try
+        {
+            await this._controlGate.RunCleanupAsync(
+                () =>
+                {
+                    manager.SessionsChanged -= this.ManagerOnSessionsChanged;
+                    manager.CurrentSessionChanged -= this.ManagerOnCurrentSessionChanged;
+                    return Task.FromResult(true);
+                },
+                "DisposeSessionManager",
+                CancellationToken.None).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            MediaLog.SessionManagerRetirementFailed(this._logger, ex);
+            return false;
+        }
+    }
+
+    private static async Task ObserveCleanupCompletionAsync(Task cleanupTask)
+    {
+        try
+        {
+            await cleanupTask.ConfigureAwait(false);
+        }
+        catch
+        {
+        }
     }
 
     private static SessionObservationChanges ChangesForOperation(MediaOperation operation)
