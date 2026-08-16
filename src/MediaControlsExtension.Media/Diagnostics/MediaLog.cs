@@ -216,4 +216,10 @@ internal static partial class MediaLog
     public static partial void CommandSettleRefreshFailed(
         ILogger logger,
         Exception exception);
+
+    [LoggerMessage(EventId = 33, Level = LogLevel.Warning, Message = "Failed to retire GSMTC session {ApplicationId} after its native calls drained.")]
+    public static partial void SessionRetirementFailed(
+        ILogger logger,
+        string applicationId,
+        Exception exception);
 }
