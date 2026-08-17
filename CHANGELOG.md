@@ -6,6 +6,15 @@ All notable changes to Media Controls for Command Palette are documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 -->
 
+## [0.22.0] - 2026-08-17
+
+This is a servicing update for the 0.20 release.
+
+### Fixed
+
+- **Media session stability** - hardened GSMTC object lifetimes, command execution, cleanup, and failed-session retirement to avoid crashes originating inside Windows media APIs. ([#49](https://github.com/jiripolasek/MediaControlsExtension/pull/49))
+- **Media app discovery stability** - failed cross-process application identity lookups no longer escape through unmanaged window-enumeration callbacks. ([#46](https://github.com/jiripolasek/MediaControlsExtension/pull/46))
+
 ## [0.20.0] - 2026-08-04
 
 ### Added
