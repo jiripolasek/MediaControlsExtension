@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Media.Tests.Infrastructure;
+using Microsoft.Extensions.Logging;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 
@@ -630,6 +631,27 @@ public sealed class MediaServiceConcurrencyTests
     }
 
     [TestMethod]
+    public async Task CommandSettleTimerContainsBackendAndLoggingFailures()
+    {
+        var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
+        var logger = new ThrowingCommandSettleLogger();
+        await using var service = new MediaService(backend, logger);
+        await service.StartAsync();
+        await WaitUntilSnapshotReadsSettleAsync(backend);
+        backend.FailObservationInvalidations();
+
+        var submission = service.TrySubmit(new(
+            MediaCommandTarget.CurrentSession,
+            MediaOperation.SkipNext));
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, submission.Status);
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await submission.Completion!).Status);
+
+        await logger.CommandSettleFailureReported.WaitAsync(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromMilliseconds(100));
+        Assert.AreEqual(MediaServiceStatus.Ready, service.Status);
+    }
+
+    [TestMethod]
     public async Task SuccessfulPlayReconcilesOnlyTargetAndPreviouslyPlayingSessions()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(
@@ -745,6 +767,33 @@ public sealed class MediaServiceConcurrencyTests
         public void Advance(TimeSpan elapsed)
         {
             Interlocked.Add(ref this._timestamp, elapsed.Ticks);
+        }
+    }
+
+    private sealed class ThrowingCommandSettleLogger : ILogger<MediaService>
+    {
+        private readonly TaskCompletionSource _commandSettleFailureReported = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task CommandSettleFailureReported => this._commandSettleFailureReported.Task;
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (eventId.Id == 32)
+            {
+                this._commandSettleFailureReported.TrySetResult();
+                throw new InvalidOperationException("Injected command-settle logging failure.");
+            }
         }
     }
 }

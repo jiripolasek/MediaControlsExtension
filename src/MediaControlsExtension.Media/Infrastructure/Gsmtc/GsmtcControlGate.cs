@@ -44,6 +44,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
             operation,
             operationName,
             interactive: false,
+            allowOpenCircuit: false,
             cancellationToken);
     }
 
@@ -56,6 +57,20 @@ internal sealed class GsmtcControlGate(ILogger logger)
             operation,
             operationName,
             interactive: true,
+            allowOpenCircuit: false,
+            cancellationToken);
+    }
+
+    public Task<T> RunCleanupAsync<T>(
+        Func<Task<T>> operation,
+        string operationName,
+        CancellationToken cancellationToken)
+    {
+        return this.RunCoreAsync(
+            operation,
+            operationName,
+            interactive: false,
+            allowOpenCircuit: true,
             cancellationToken);
     }
 
@@ -63,22 +78,32 @@ internal sealed class GsmtcControlGate(ILogger logger)
         Func<Task<T>> operation,
         string operationName,
         bool interactive,
+        bool allowOpenCircuit,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operation);
-        this.ThrowIfCircuitOpen();
+        if (!allowOpenCircuit)
+        {
+            this.ThrowIfCircuitOpen();
+        }
 
-        using var waitCts = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            this._circuitOpenedCts.Token);
+        using var waitCts = allowOpenCircuit
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                this._circuitOpenedCts.Token);
+        var waitToken = waitCts?.Token ?? cancellationToken;
         bool entered;
         try
         {
             entered = interactive
-                ? await this._gate.WaitAsync(CommandQueueTimeout, waitCts.Token).ConfigureAwait(false)
-                : await WaitWithoutTimeoutAsync(this._gate, waitCts.Token).ConfigureAwait(false);
+                ? await this._gate.WaitAsync(CommandQueueTimeout, waitToken).ConfigureAwait(false)
+                : await WaitWithoutTimeoutAsync(this._gate, waitToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (this.IsCircuitOpen && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (!allowOpenCircuit &&
+                  this.IsCircuitOpen &&
+                  !cancellationToken.IsCancellationRequested)
         {
             throw new GsmtcControlCircuitOpenException("previous operation", OperationTimeout);
         }
@@ -88,7 +113,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
             throw new GsmtcControlBusyException(operationName, CommandQueueTimeout);
         }
 
-        if (this.IsCircuitOpen)
+        if (!allowOpenCircuit && this.IsCircuitOpen)
         {
             this._gate.Release();
             throw new GsmtcControlCircuitOpenException(operationName, OperationTimeout);

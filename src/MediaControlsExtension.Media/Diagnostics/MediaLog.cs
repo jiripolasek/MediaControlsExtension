@@ -211,4 +211,32 @@ internal static partial class MediaLog
     public static partial void SessionRetentionExpired(
         ILogger logger,
         string applicationId);
+
+    [LoggerMessage(EventId = 32, Level = LogLevel.Error, Message = "The command-settle refresh callback failed.")]
+    public static partial void CommandSettleRefreshFailed(
+        ILogger logger,
+        Exception exception);
+
+    [LoggerMessage(EventId = 33, Level = LogLevel.Warning, Message = "Failed to retire GSMTC session {ApplicationId} after its native calls drained.")]
+    public static partial void SessionRetirementFailed(
+        ILogger logger,
+        string applicationId,
+        Exception exception);
+
+    [LoggerMessage(EventId = 34, Level = LogLevel.Warning, Message = "Timed out after {Timeout} while waiting for {PendingCount} of {CleanupCount} GSMTC cleanup operations during backend disposal.")]
+    public static partial void BackendCleanupTimedOut(
+        ILogger logger,
+        TimeSpan timeout,
+        int pendingCount,
+        int cleanupCount);
+
+    [LoggerMessage(EventId = 35, Level = LogLevel.Warning, Message = "Failed to remove GSMTC session-manager event handlers during backend disposal.")]
+    public static partial void SessionManagerRetirementFailed(
+        ILogger logger,
+        Exception exception);
+
+    [LoggerMessage(EventId = 36, Level = LogLevel.Warning, Message = "GSMTC backend cleanup failed during disposal.")]
+    public static partial void BackendCleanupFailed(
+        ILogger logger,
+        Exception exception);
 }

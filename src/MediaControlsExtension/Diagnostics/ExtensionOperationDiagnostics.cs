@@ -22,7 +22,7 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
     private static readonly ConcurrentDictionary<long, ExtensionOperationDiagnostics> ActiveOperations = new();
     private static readonly Lock WatchdogLock = new();
     private static readonly Timer WatchdogTimer = new(
-        static _ => WatchActiveOperations(),
+        static _ => RunWatchdogTimerCallback(),
         null,
         Timeout.InfiniteTimeSpan,
         Timeout.InfiniteTimeSpan);
@@ -155,6 +155,19 @@ internal sealed partial class ExtensionOperationDiagnostics : IDisposable
                 Stopwatch.GetElapsedTime(this._stageStartedTimestamp),
                 this._stageThreadId,
                 Volatile.Read(ref this._callerTimedOut) != 0);
+        }
+    }
+
+    private static void RunWatchdogTimerCallback()
+    {
+        try
+        {
+            WatchActiveOperations();
+        }
+        catch
+        {
+            // Diagnostics must never terminate the extension. Do not try to log
+            // here because the logging pipeline may be what failed.
         }
     }
 
