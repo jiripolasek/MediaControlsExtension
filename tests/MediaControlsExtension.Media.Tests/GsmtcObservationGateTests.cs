@@ -4,7 +4,7 @@
 //
 // ------------------------------------------------------------
 
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;

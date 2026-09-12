@@ -68,7 +68,6 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
                 ? null
                 : new(
                     target.Id,
-                    target.MediaProperties.Application.ApplicationId,
                     presentation.Intent);
             this.Name = showName ? presentation.CommandName : string.Empty;
             this.UpdateIcon(presentation.CommandIcon);
@@ -112,7 +111,7 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         }
 
         diagnostics?.SetStage(
-            $"submitting playback toggle for {target.Value.ApplicationId}");
+            $"submitting playback toggle for session {target.Value.SessionId.Value}");
         var submission = this._mediaService.TrySubmit(new(
             MediaCommandTarget.ForSession(target.Value.SessionId),
             MediaOperation.TogglePlayback));
@@ -136,6 +135,15 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
             PlaybackIntent.Stop => $"⏹️ {Strings.Command_Stop}",
             _ => $"⏸️ {Strings.Toast_Paused}",
         };
+        if (submission.Completion is { IsCompletedSuccessfully: true } completed)
+        {
+            message = MediaCommandFeedback.AppendPauseWarning(message, completed.Result);
+        }
+        else
+        {
+            this._resultFactory.ObservePauseFailures(submission);
+        }
+
         diagnostics?.SetStage("creating optimistic command result");
         return Task.FromResult(this._resultFactory.Create(message));
     }
@@ -148,6 +156,5 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
 
     private readonly record struct PlaybackTarget(
         MediaSessionId SessionId,
-        string ApplicationId,
         PlaybackIntent Intent);
 }

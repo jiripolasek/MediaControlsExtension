@@ -60,6 +60,24 @@ internal static class MediaMetadataFormatting
             : trackNumber.Value.ToString(CultureInfo.CurrentCulture);
     }
 
+    public static IEnumerable<MediaSourceDetail> GetSourceDetails(MediaSourceSnapshot source)
+    {
+        if (source.Provider is { } provider)
+        {
+            yield return new(
+                Strings.ResourceManager.GetString("Details_Provider", Strings.Culture) ?? "Provider",
+                provider.DisplayName);
+        }
+
+        foreach (var detail in source.Details)
+        {
+            if (!string.IsNullOrWhiteSpace(detail.Value))
+            {
+                yield return detail;
+            }
+        }
+    }
+
     public static string ValueOrNotAvailable(string? value)
         => string.IsNullOrWhiteSpace(value) ? Strings.Details_NotAvailable! : value;
 }

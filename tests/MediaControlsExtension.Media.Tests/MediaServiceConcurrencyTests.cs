@@ -309,7 +309,7 @@ public sealed class MediaServiceConcurrencyTests
         {
             Revision = 2,
             Sessions = [initialSnapshot.Sessions[0] with { IsAvailable = false }],
-            CurrentSessionId = null,
+            CurrentSessionHints = [],
         });
 
         var unavailableArgs = await becameUnavailable.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -415,7 +415,7 @@ public sealed class MediaServiceConcurrencyTests
     }
 
     [TestMethod]
-    public async Task CommandMailboxAllowsOneActiveAndOnePendingCommand()
+    public async Task SessionAllowsOneActiveAndOnePendingCommand()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
         backend.BlockCommands();
@@ -665,7 +665,7 @@ public sealed class MediaServiceConcurrencyTests
         await WaitUntilSnapshotReadsSettleAsync(backend);
 
         var submission = service.TrySubmit(new(
-            MediaCommandTarget.CurrentSession,
+            MediaCommandTarget.ForSession(new(1)),
             MediaOperation.Play));
         Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, submission.Status);
         Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await submission.Completion!).Status);

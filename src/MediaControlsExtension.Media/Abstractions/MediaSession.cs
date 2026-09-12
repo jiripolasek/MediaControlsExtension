@@ -148,7 +148,7 @@ public sealed class MediaSession
         MediaPropertiesSnapshot left,
         MediaPropertiesSnapshot right)
     {
-        return left.Application == right.Application
+        return left.Source == right.Source
             && string.Equals(left.Title, right.Title, StringComparison.Ordinal)
             && string.Equals(left.Artist, right.Artist, StringComparison.Ordinal)
             && string.Equals(left.AlbumTitle, right.AlbumTitle, StringComparison.Ordinal)

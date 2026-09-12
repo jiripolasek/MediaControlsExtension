@@ -4,6 +4,8 @@
 //
 // ------------------------------------------------------------
 
+using System.Collections.Immutable;
+
 namespace JPSoftworks.MediaControlsExtension.Media;
 
 public enum MediaOperation
@@ -18,6 +20,7 @@ public enum MediaOperation
     ToggleRepeat,
     SwitchNextSession,
     SwitchPreviousSession,
+    ActivateSource,
 }
 
 public enum MediaCommandTargetKind
@@ -67,6 +70,17 @@ public sealed record MediaCommandOutcome(
     MediaOperationId OperationId,
     MediaCommandOutcomeStatus Status,
     MediaSessionId? SessionId,
+    string? DiagnosticMessage)
+{
+    /// <summary>Secondary pause outcomes; Status and DiagnosticMessage describe only the primary command.</summary>
+    public ImmutableArray<MediaPauseOutcome> PauseOutcomes { get; init; } = [];
+}
+
+/// <summary>Reports a secondary pause without resolving its captured identity against current sessions.</summary>
+public sealed record MediaPauseOutcome(
+    MediaSessionId SessionId,
+    long BindingGeneration,
+    MediaCommandOutcomeStatus Status,
     string? DiagnosticMessage);
 
 public sealed record MediaCommandSubmission(

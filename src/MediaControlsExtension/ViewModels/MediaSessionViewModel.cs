@@ -9,23 +9,20 @@ using Windows.Media;
 namespace JPSoftworks.MediaControlsExtension.ViewModels;
 
 /// <summary>
-/// Adds CmdPal-specific application and artwork presentation to a live media session.
+/// Adds CmdPal-specific source and artwork presentation to a live media session.
 /// Media state and command behavior remain owned by <see cref="MediaSession"/>.
 /// </summary>
 internal sealed partial class MediaSessionViewModel : IDisposable
 {
     private readonly IMediaService _mediaService;
     private readonly ILogger _logger;
-    private readonly Lock _applicationLock = new();
+    private readonly MediaSourcePresentation _sourcePresentation;
     private readonly Lock _artworkLock = new();
 
     private CancellationTokenSource? _artworkCancellation;
     private MediaArtworkKey? _artworkKey;
     private bool _artworkLoadCompleted;
     private bool _artworkRequested;
-    private string? _applicationId;
-    private long _applicationResolution;
-    private Task _applicationResolutionTask = Task.CompletedTask;
     private bool _disposed;
 
     public MediaSessionViewModel(
@@ -37,9 +34,17 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         this.Session = session ?? throw new ArgumentNullException(nameof(session));
         ArgumentNullException.ThrowIfNull(loggerFactory);
         this._logger = loggerFactory.CreateLogger<MediaSessionViewModel>();
-        this.UpdateApplication(session.MediaProperties.Application);
+        this._sourcePresentation = new(
+            static applicationId =>
+            {
+                var appInfo = AppInfoResolver.Resolve(applicationId);
+                return Task.FromResult(new MediaApplicationPresentation(appInfo.DisplayName, appInfo.IconPath));
+            },
+            ex => ExtensionLog.UnexpectedError(this._logger, ex));
+        this._sourcePresentation.Changed += this.SourcePresentationOnChanged;
         this._artworkKey = session.MediaProperties.Artwork;
         session.Changed += this.SessionOnChanged;
+        _ = this._sourcePresentation.UpdateAsync(session.MediaProperties.Source);
     }
 
     public event EventHandler? Changed;
@@ -54,11 +59,11 @@ internal sealed partial class MediaSessionViewModel : IDisposable
 
     public MediaPlaybackInfoSnapshot PlaybackInfo => this.Session.PlaybackInfo;
 
-    public string ApplicationName { get; private set; } = string.Empty;
+    public MediaSourcePresentationSnapshot SourcePresentation => this._sourcePresentation.State;
 
-    public string? ApplicationIconPath { get; private set; }
+    public string SourceName => this.SourcePresentation.DisplayName;
 
-    public IAppInfo? AppInfo { get; private set; }
+    public string? SourceIconPath => this.SourcePresentation.IconPath;
 
     public ThumbnailInfo? Artwork { get; private set; }
 
@@ -70,27 +75,8 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         _ => MediaPlaybackType.Unknown,
     };
 
-    public async ValueTask<string> GetApplicationNameAsync(
-        CancellationToken cancellationToken = default)
-    {
-        while (true)
-        {
-            Task resolutionTask;
-            lock (this._applicationLock)
-            {
-                resolutionTask = this._applicationResolutionTask;
-            }
-
-            await resolutionTask.WaitAsync(cancellationToken).ConfigureAwait(false);
-            lock (this._applicationLock)
-            {
-                if (ReferenceEquals(resolutionTask, this._applicationResolutionTask))
-                {
-                    return this.ApplicationName;
-                }
-            }
-        }
-    }
+    public ValueTask<string> GetSourceNameAsync(CancellationToken cancellationToken = default) =>
+        this._sourcePresentation.GetDisplayNameAsync(cancellationToken);
 
     public void RequestArtwork()
     {
@@ -120,6 +106,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
             this.Artwork = null;
         }
 
+        this._sourcePresentation.Dispose();
         this.Session.Changed -= this.SessionOnChanged;
         this.Changed = null;
     }
@@ -131,7 +118,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         if ((args.Changes & (MediaSessionChanges.MediaProperties | MediaSessionChanges.Rebound)) != 0)
         {
             var properties = this.Session.MediaProperties;
-            this.UpdateApplication(properties.Application);
+            _ = this._sourcePresentation.UpdateAsync(properties.Source);
             lock (this._artworkLock)
             {
                 if (this._artworkKey != properties.Artwork)
@@ -152,65 +139,10 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         this.RaiseChanged();
     }
 
-    private void UpdateApplication(MediaApplicationSnapshot application)
+    private void SourcePresentationOnChanged(object? sender, EventArgs args)
     {
-        lock (this._applicationLock)
-        {
-            if (string.Equals(
-                this._applicationId,
-                application.ApplicationId,
-                StringComparison.Ordinal))
-            {
-                this.ApplyApplicationPresentation(application, this.AppInfo);
-                return;
-            }
-
-            this._applicationId = application.ApplicationId;
-            this.AppInfo = null;
-            this.ApplyApplicationPresentation(application, null);
-
-            var resolution = Interlocked.Increment(ref this._applicationResolution);
-            this._applicationResolutionTask = Task.Run(
-                () => this.ResolveApplicationInfo(application, resolution));
-        }
-    }
-
-    private void ResolveApplicationInfo(
-        MediaApplicationSnapshot application,
-        long resolution)
-    {
-        try
-        {
-            var appInfo = ResolveAppInfo(application.ApplicationId);
-            lock (this._applicationLock)
-            {
-                if (Volatile.Read(ref this._disposed) ||
-                    resolution != Volatile.Read(ref this._applicationResolution))
-                {
-                    return;
-                }
-
-                this.AppInfo = appInfo;
-                var currentApplication = this.Session.MediaProperties.Application;
-                this.ApplyApplicationPresentation(currentApplication, appInfo);
-            }
-
-            this.RaiseChanged();
-        }
-        catch (Exception ex)
-        {
-            ExtensionLog.UnexpectedError(this._logger, ex);
-        }
-    }
-
-    private void ApplyApplicationPresentation(
-        MediaApplicationSnapshot application,
-        IAppInfo? appInfo)
-    {
-        this.ApplicationName = string.IsNullOrWhiteSpace(appInfo?.DisplayName)
-            ? application.DisplayName
-            : appInfo.DisplayName;
-        this.ApplicationIconPath = appInfo?.IconPath ?? application.IconPath;
+        _ = this._sourcePresentation.UpdateAsync(this.Session.MediaProperties.Source);
+        this.RaiseChanged();
     }
 
     private void StartArtworkLoadUnderLock()
@@ -324,24 +256,5 @@ internal sealed partial class MediaSessionViewModel : IDisposable
                 $"MediaSessionViewModel[{this.Session.Id.Value}].Changed",
                 this._logger);
         }
-    }
-
-    private static IAppInfo ResolveAppInfo(string applicationId)
-    {
-        if (string.IsNullOrWhiteSpace(applicationId))
-        {
-            return EmptyAppInfo.Instance;
-        }
-
-        var appInfo = ModernAppHelper.Get(applicationId);
-        if (appInfo?.DisplayInfo is not null)
-        {
-            return new ModernAppInfo(
-                appInfo,
-                PackageIconHelper.GetBestIconPath(applicationId));
-        }
-
-        return (IAppInfo?)DesktopAppHelper.GetExecutable(applicationId)
-            ?? EmptyAppInfo.Instance;
     }
 }

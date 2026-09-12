@@ -55,16 +55,11 @@ public enum MediaCapabilities
     SkipPrevious = 1 << 4,
     ToggleShuffle = 1 << 5,
     ToggleRepeat = 1 << 6,
+    ActivateSource = 1 << 7,
 }
 
-public sealed record MediaApplicationSnapshot(
-    string ApplicationId,
-    string DisplayName,
-    string? ExecutablePath,
-    string? IconPath);
-
 public sealed record MediaPropertiesSnapshot(
-    MediaApplicationSnapshot Application,
+    MediaSourceSnapshot Source,
     string Title,
     string Artist,
     string AlbumTitle,
@@ -76,8 +71,8 @@ public sealed record MediaPropertiesSnapshot(
     MediaContentType ContentType,
     MediaArtworkKey? Artwork)
 {
-    public static MediaPropertiesSnapshot Empty(MediaApplicationSnapshot application) => new(
-        application,
+    public static MediaPropertiesSnapshot Empty(MediaSourceSnapshot source) => new(
+        source,
         string.Empty,
         string.Empty,
         string.Empty,
@@ -144,6 +139,7 @@ internal enum MediaServiceChanges
     Availability = 1 << 1,
     Sessions = 1 << 2,
     CurrentSession = 1 << 3,
+    Backends = 1 << 4,
 }
 
 internal sealed record MediaServiceState(
@@ -153,6 +149,8 @@ internal sealed record MediaServiceState(
     ImmutableArray<MediaSession> Sessions,
     MediaSession? CurrentSession)
 {
+    public ImmutableArray<MediaBackendState> Backends { get; init; } = [];
+
     public static MediaServiceState Initial { get; } = new(
         0,
         MediaServiceStatus.Stopped,
@@ -176,6 +174,8 @@ internal sealed record MediaServiceSnapshot(
     MediaSessionId? CurrentSessionId,
     MediaControlAvailability Availability)
 {
+    public ImmutableArray<MediaBackendState> Backends { get; init; } = [];
+
     public static MediaServiceSnapshot Initial { get; } = new(
         0,
         MediaServiceStatus.Stopped,

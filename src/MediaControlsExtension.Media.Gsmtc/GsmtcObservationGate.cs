@@ -5,10 +5,10 @@
 // ------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
-using JPSoftworks.MediaControlsExtension.Media.Diagnostics;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using Microsoft.Extensions.Logging;
 
-namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 /// <summary>
 /// Isolates GSMTC observations from the control lane. At most one native
@@ -122,7 +122,7 @@ internal sealed class GsmtcObservationGate(ILogger logger)
 
         this._blockingOperationId = operationId;
         Volatile.Write(ref this._blocked, 1);
-        MediaLog.ObservationsPaused(
+        GsmtcLog.ObservationsPaused(
             this._logger,
             operationId,
             operationName,
@@ -172,7 +172,7 @@ internal sealed class GsmtcObservationGate(ILogger logger)
                 new CancellationTokenSource());
             Interlocked.Exchange(ref this._blockingOperationId, 0);
             Volatile.Write(ref this._blocked, 0);
-            MediaLog.ObservationsResumed(this._logger, operationId, operationName);
+            GsmtcLog.ObservationsResumed(this._logger, operationId, operationName);
         }
     }
 
@@ -190,7 +190,7 @@ internal sealed class GsmtcObservationGate(ILogger logger)
         }
         else
         {
-            MediaLog.NativeOperationSlow(
+            GsmtcLog.NativeOperationSlow(
                 this._logger,
                 "observation",
                 operationId,

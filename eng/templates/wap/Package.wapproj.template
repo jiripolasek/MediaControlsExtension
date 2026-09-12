@@ -100,6 +100,26 @@
       Condition="'%(ProjectReferenceWithPublishProps.TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </Target>
 
+  <!-- The SDK's PRI config check does not track changes to the package payload. -->
+  <Target Name="RefreshCmdPalBundleFileMap" BeforeTargets="_CreateMainPackageFileMap" Condition="'$(_FilteredPackageLayoutFilePath)' != ''">
+    <GenerateMainPriConfigurationFile
+      FilteredPackageLayoutFilePath="$(_FilteredPackageLayoutFilePath)"
+      PackageLayoutFiles="@(_PackageLayoutFileTarget)"
+      ExcludedPackageLayoutFilePath="$(_ExcludedPackageLayoutFilePath)" />
+    <ItemGroup>
+      <_AppxBundleMainPackageMapInputs Include="$(_FilteredPackageLayoutFilePath);$(_ExcludedPackageLayoutFilePath)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="RefreshCmdPalUploadBundleFileMap" BeforeTargets="_CreateUploadMainPackageFileMap" Condition="'$(BuildAppxUploadPackageForUap)' == 'true' and '$(_FilteredUploadPackageLayoutFilePath)' != ''">
+    <GenerateMainPriConfigurationFile
+      FilteredPackageLayoutFilePath="$(_FilteredUploadPackageLayoutFilePath)"
+      PackageLayoutFiles="@(_UploadPackageLayoutFileTarget)"
+      ExcludedPackageLayoutFilePath="$(_ExcludedUploadPackageLayoutFilePath)" />
+    <ItemGroup>
+      <_AppxUploadBundleMainPackageMapInputs Include="$(_FilteredUploadPackageLayoutFilePath);$(_ExcludedUploadPackageLayoutFilePath)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="ValidateCmdPalWapConfiguration" BeforeTargets="PrepareForBuild">
     <Error
       Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' == ''"

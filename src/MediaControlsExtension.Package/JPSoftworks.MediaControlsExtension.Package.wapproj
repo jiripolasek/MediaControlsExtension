@@ -50,6 +50,20 @@
     <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">false</PublishTrimmed>
     <RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <AppxBundle>Always</AppxBundle>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AppxBundle>Always</AppxBundle>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AppxBundle>Always</AppxBundle>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <AppxBundle>Always</AppxBundle>
   </PropertyGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -74,17 +88,33 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="$(CmdPalWindowsSdkBuildToolsVersion)" PrivateAssets="all" Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' != ''" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
-
   <Target Name="RestoreCmdPalWapPublishAssets" BeforeTargets="_BuildDependentProjects" DependsOnTargets="_WapProjGetProjectClosure" Condition="'$(_IsGeneratingAppxPackage)' == 'true'">
     <MSBuild Projects="@(ProjectReferenceWithPublishProps)" Targets="Restore" BuildInParallel="$(BuildInParallel)" Properties="%(ProjectReferenceWithPublishProps.SetConfiguration);%(ProjectReferenceWithPublishProps.SetPlatform)" Condition="'%(ProjectReferenceWithPublishProps.TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </Target>
-
+  <!-- The SDK's PRI config check does not track changes to the package payload. -->
+  <Target Name="RefreshCmdPalBundleFileMap" BeforeTargets="_CreateMainPackageFileMap" Condition="'$(_FilteredPackageLayoutFilePath)' != ''">
+    <GenerateMainPriConfigurationFile
+      FilteredPackageLayoutFilePath="$(_FilteredPackageLayoutFilePath)"
+      PackageLayoutFiles="@(_PackageLayoutFileTarget)"
+      ExcludedPackageLayoutFilePath="$(_ExcludedPackageLayoutFilePath)" />
+    <ItemGroup>
+      <_AppxBundleMainPackageMapInputs Include="$(_FilteredPackageLayoutFilePath);$(_ExcludedPackageLayoutFilePath)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="RefreshCmdPalUploadBundleFileMap" BeforeTargets="_CreateUploadMainPackageFileMap" Condition="'$(BuildAppxUploadPackageForUap)' == 'true' and '$(_FilteredUploadPackageLayoutFilePath)' != ''">
+    <GenerateMainPriConfigurationFile
+      FilteredPackageLayoutFilePath="$(_FilteredUploadPackageLayoutFilePath)"
+      PackageLayoutFiles="@(_UploadPackageLayoutFileTarget)"
+      ExcludedPackageLayoutFilePath="$(_ExcludedUploadPackageLayoutFilePath)" />
+    <ItemGroup>
+      <_AppxUploadBundleMainPackageMapInputs Include="$(_FilteredUploadPackageLayoutFilePath);$(_ExcludedUploadPackageLayoutFilePath)" />
+    </ItemGroup>
+  </Target>
   <Target Name="ValidateCmdPalWapConfiguration" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(ManagePackageVersionsCentrally)' != 'true' and '$(CmdPalWindowsSdkBuildToolsVersion)' == ''" Text="Set CmdPalWindowsSdkBuildToolsVersion or centrally manage Microsoft.Windows.SDK.BuildTools." />
     <Error Condition="'$(PublishAot)' == 'true' and '$(CmdPalSupportsNativeAot)' != 'true'" Text="Native AOT was requested, but CmdPalSupportsNativeAot is not true." />
     <Error Condition="'$(PublishSingleFile)' == 'true'" Text="PublishSingleFile is not supported for this packaged WAP output." />
   </Target>
-
   <!-- Native AOT uses the Windows-provided UCRT and has no VCLibs imports. -->
   <Target Name="RemoveUnusedVCLibsFromCurrentProjectManifest" BeforeTargets="_GenerateCurrentProjectAppxManifest">
     <ItemGroup>
@@ -92,7 +122,6 @@
       <FrameworkSdkPackage Remove="@(FrameworkSdkPackage)" Condition="'%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.UWPDesktop' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug.UWPDesktop'" />
     </ItemGroup>
   </Target>
-
   <Target Name="RemoveUnusedVCLibsFromDesktopBridgeManifest" BeforeTargets="_GenerateDesktopBridgeAppxManifest" DependsOnTargets="_ResolveVCLibDependencies">
     <ItemGroup>
       <FrameworkSdkReference Remove="@(FrameworkSdkReference)" Condition="'%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs' or '%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs.Desktop'" />

@@ -162,12 +162,14 @@ internal sealed partial class CurrentSessionNavigationCommandItem : CommandItem,
 
     private static string GetKnownPlayerName(MediaSessionViewModel viewModel)
     {
-        var playerName = viewModel.ApplicationName;
+        var presentation = viewModel.SourcePresentation;
+        var playerName = presentation.DisplayName;
         return string.IsNullOrWhiteSpace(playerName) ||
-               string.Equals(
-                   playerName,
-                   viewModel.MediaProperties.Application.ApplicationId,
-                   StringComparison.OrdinalIgnoreCase)
+               (string.IsNullOrWhiteSpace(presentation.Source.DisplayName) &&
+                string.Equals(
+                    playerName,
+                    presentation.Source.NativeApplication?.ApplicationId,
+                    StringComparison.OrdinalIgnoreCase))
             ? string.Empty
             : playerName;
     }

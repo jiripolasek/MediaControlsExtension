@@ -21,9 +21,9 @@ internal static class MediaSessionIcons
             return new(viewModel.Artwork);
         }
 
-        if (!string.IsNullOrWhiteSpace(viewModel.ApplicationIconPath))
+        if (!string.IsNullOrWhiteSpace(viewModel.SourceIconPath))
         {
-            return new(viewModel.ApplicationIconPath);
+            return new(viewModel.SourceIconPath);
         }
 
         return new(GetPlaceholderIcon(viewModel.PlaybackType));

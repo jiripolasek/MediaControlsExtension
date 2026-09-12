@@ -6,10 +6,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using JPSoftworks.MediaControlsExtension.Media.Diagnostics;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using Microsoft.Extensions.Logging;
 
-namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 /// <summary>
 /// Serializes GSMTC control and lifecycle access. A timed-out native call keeps
@@ -109,7 +109,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
         }
         if (!entered)
         {
-            MediaLog.CommandLaneBusy(this._logger, operationName, CommandQueueTimeout);
+            GsmtcLog.CommandLaneBusy(this._logger, operationName, CommandQueueTimeout);
             throw new GsmtcControlBusyException(operationName, CommandQueueTimeout);
         }
 
@@ -146,7 +146,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
         if (Interlocked.CompareExchange(ref this._circuitOpen, 1, 0) == 0)
         {
             this._circuitOpenedCts.Cancel();
-            MediaLog.ControlCircuitOpened(
+            GsmtcLog.ControlCircuitOpened(
                 this._logger,
                 operationId,
                 operationName,
@@ -209,7 +209,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
         }
         else
         {
-            MediaLog.NativeOperationSlow(
+            GsmtcLog.NativeOperationSlow(
                 this._logger,
                 "control operation",
                 operationId,

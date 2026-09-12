@@ -53,6 +53,7 @@ internal sealed class MediaDetails
                     Strings.Details_Length!,
                     MediaMetadataFormatting.FormatTrackLength(this._state.TrackLength)),
                 Detail(Strings.Details_Player!, this._state.Player),
+                .. MediaMetadataFormatting.GetSourceDetails(this._state.Source).Select(static detail => Detail(detail.Label, detail.Value)),
                 new DetailsElement
                 {
                     Key = Strings.Details_Commands!,
@@ -119,6 +120,7 @@ internal sealed class MediaDetails
         string Artist,
         TimeSpan? TrackLength,
         string Player,
+        MediaSourceSnapshot Source,
         bool CanSkipPrevious,
         bool CanSkipNext,
         string? ArtworkHash)
@@ -132,13 +134,15 @@ internal sealed class MediaDetails
         {
             var properties = viewModel.MediaProperties;
             var playback = viewModel.PlaybackInfo;
+            var presentation = viewModel.SourcePresentation;
             return new(
                 viewModel.Session.Id,
                 properties.Title,
                 properties.AlbumTitle,
                 properties.Artist,
                 viewModel.TimelineProperties.Duration,
-                viewModel.ApplicationName,
+                presentation.DisplayName,
+                presentation.Source,
                 playback.Capabilities.HasFlag(MediaCapabilities.SkipPrevious),
                 playback.Capabilities.HasFlag(MediaCapabilities.SkipNext),
                 artworkHash);

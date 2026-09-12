@@ -6,6 +6,5 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-		<PackageReference Include="Microsoft.Windows.CsWinRT" />
 	</ItemGroup>
 </Project>

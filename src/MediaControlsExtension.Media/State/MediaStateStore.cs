@@ -15,6 +15,7 @@ internal sealed class MediaStateStore
     private readonly Dictionary<MediaSessionId, PendingPlaybackState> _pendingPlayback = [];
     private MediaServiceOptions _options = MediaServiceOptions.Default;
     private MediaServiceSnapshot _current = MediaServiceSnapshot.Initial;
+    private MediaSessionId? _selectedSessionId;
 
     public MediaServiceSnapshot Current
     {
@@ -103,10 +104,7 @@ internal sealed class MediaStateStore
                         ResolvePrimaryOperation(effectiveState, backendSession.Capabilities))));
             }
 
-            MediaSessionId? currentSessionId = backendSnapshot.CurrentSessionId is { } currentBackendId &&
-                                               liveSessionIds.Contains(new(currentBackendId.Value))
-                ? new MediaSessionId(currentBackendId.Value)
-                : null;
+            var currentSessionId = this.SelectCurrentSessionUnderLock(backendSnapshot, liveSessionIds);
             var status = backendSnapshot.Availability == MediaControlAvailability.Available
                 ? MediaServiceStatus.Ready
                 : MediaServiceStatus.Degraded;
@@ -115,7 +113,10 @@ internal sealed class MediaStateStore
                 status,
                 sessions.MoveToImmutable(),
                 currentSessionId,
-                backendSnapshot.Availability));
+                backendSnapshot.Availability)
+            {
+                Backends = backendSnapshot.Backends,
+            });
         }
     }
 
@@ -162,13 +163,13 @@ internal sealed class MediaStateStore
             var operation = command.Operation;
             if (operation is MediaOperation.SwitchNextSession or MediaOperation.SwitchPreviousSession)
             {
-                if (this._current.Sessions.Length <= 1)
+                var offset = operation == MediaOperation.SwitchNextSession ? 1 : -1;
+                targetIndex = FindOtherPlayableSessionIndex(this._current.Sessions, targetIndex, offset);
+                if (targetIndex < 0)
                 {
                     return MediaCommandSubmissionStatus.Unsupported;
                 }
 
-                var offset = operation == MediaOperation.SwitchNextSession ? 1 : -1;
-                targetIndex = (targetIndex + this._current.Sessions.Length + offset) % this._current.Sessions.Length;
                 operation = MediaOperation.Play;
             }
 
@@ -190,8 +191,9 @@ internal sealed class MediaStateStore
 
             var sessionsToPause = this._options.PauseOtherSessionsOnPlay && operation == MediaOperation.Play
                 ? this._current.Sessions
-                    .Where(session => session.Id != target.Id)
-                    .Select(static session => new MediaBackendSessionId(session.Id.Value))
+                    .Where(session => session.Id != target.Id && session.IsAvailable &&
+                        session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.Pause))
+                    .Select(static session => new MediaBackendSessionTarget(new(session.Id.Value), session.BindingGeneration))
                     .ToImmutableArray()
                 : [];
             var sessionsPlayingBeforeCommand = operation == MediaOperation.Play
@@ -213,7 +215,7 @@ internal sealed class MediaStateStore
         }
     }
 
-    public MediaServiceSnapshot ApplyPrediction(
+    public MediaServiceSnapshot ApplyAcceptedCommand(
         ResolvedMediaCommand command,
         MediaOperationId operationId)
     {
@@ -238,6 +240,16 @@ internal sealed class MediaStateStore
             }
 
             var session = this._current.Sessions[index];
+            if (!session.IsAvailable || session.BindingGeneration != command.BindingGeneration)
+            {
+                return this._current;
+            }
+
+            if (command.ResolvedOperation == MediaOperation.Play)
+            {
+                this._selectedSessionId = session.Id;
+            }
+
             this._pendingPlayback[command.SessionId] = new(
                 operationId,
                 command.BindingGeneration,
@@ -253,7 +265,12 @@ internal sealed class MediaStateStore
                         session.PlaybackInfo.Capabilities),
                 },
             };
-            return this.ReplaceSessionUnderLock(index, updatedSession);
+            return this.SetCurrentUnderLock(this._current with
+            {
+                Revision = this._current.Revision + 1,
+                Sessions = this._current.Sessions.SetItem(index, updatedSession),
+                CurrentSessionId = this._selectedSessionId ?? this._current.CurrentSessionId,
+            });
         }
     }
 
@@ -332,6 +349,59 @@ internal sealed class MediaStateStore
         }
     }
 
+    private MediaSessionId? SelectCurrentSessionUnderLock(
+        MediaBackendSnapshot snapshot,
+        HashSet<MediaSessionId> liveSessionIds)
+    {
+        if (this._selectedSessionId is { } selectedId && liveSessionIds.Contains(selectedId))
+        {
+            return selectedId;
+        }
+
+        this._selectedSessionId = null;
+        var hints = snapshot.CurrentSessionHints.ToHashSet();
+        MediaSessionId? candidateId = null;
+        var candidatePriority = -1;
+        foreach (var session in snapshot.Sessions)
+        {
+            if (!session.IsAvailable)
+            {
+                continue;
+            }
+
+            var sessionId = new MediaSessionId(session.Id.Value);
+            // Playing state outranks hints; equal candidates keep the current session.
+            var priority = (session.PlaybackState == MediaPlaybackState.Playing ? 2 : 0) +
+                (hints.Contains(session.Id) ? 1 : 0);
+            if (priority > candidatePriority ||
+                (priority == candidatePriority && sessionId == this._current.CurrentSessionId))
+            {
+                candidateId = sessionId;
+                candidatePriority = priority;
+            }
+        }
+
+        return candidateId;
+    }
+
+    private static int FindOtherPlayableSessionIndex(
+        ImmutableArray<MediaSessionSnapshot> sessions,
+        int startIndex,
+        int offset)
+    {
+        var index = startIndex;
+        for (var count = 1; count < sessions.Length; count++)
+        {
+            index = (index + sessions.Length + offset) % sessions.Length;
+            if (sessions[index].IsAvailable && sessions[index].PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.Play))
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
     private static int FindSessionIndex(
         ImmutableArray<MediaSessionSnapshot> sessions,
         MediaSessionId sessionId)
@@ -358,6 +428,7 @@ internal sealed class MediaStateStore
             MediaOperation.SkipPrevious => MediaCapabilities.SkipPrevious,
             MediaOperation.ToggleShuffle => MediaCapabilities.ToggleShuffle,
             MediaOperation.ToggleRepeat => MediaCapabilities.ToggleRepeat,
+            MediaOperation.ActivateSource => MediaCapabilities.ActivateSource,
             _ => MediaCapabilities.None,
         };
         return requiredCapability != MediaCapabilities.None &&
@@ -413,5 +484,5 @@ internal readonly record struct ResolvedMediaCommand(
     MediaSessionId SessionId,
     MediaBackendSessionId BackendSessionId,
     long BindingGeneration,
-    ImmutableArray<MediaBackendSessionId> SessionsToPause,
+    ImmutableArray<MediaBackendSessionTarget> SessionsToPause,
     ImmutableArray<MediaBackendSessionId> SessionsPlayingBeforeCommand);

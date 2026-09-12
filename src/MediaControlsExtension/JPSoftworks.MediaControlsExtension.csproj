@@ -46,6 +46,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+		<ProjectReference Include="..\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>

@@ -4,7 +4,7 @@
 //
 // ------------------------------------------------------------
 
-namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 internal static class GsmtcErrors
 {

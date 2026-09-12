@@ -19,7 +19,7 @@ internal readonly record struct MediaMetadataSnapshot(
     int? AlbumTrackCount,
     TimeSpan? TrackLength,
     string Player,
-    string ApplicationId,
+    MediaSourceSnapshot Source,
     MediaPlaybackType PlaybackType,
     bool IsPlaying,
     bool CanSkipPrevious,
@@ -33,6 +33,7 @@ internal readonly record struct MediaMetadataSnapshot(
 
         var properties = viewModel.MediaProperties;
         var playback = viewModel.PlaybackInfo;
+        var presentation = viewModel.SourcePresentation;
         return new(
             properties.Title,
             properties.AlbumTitle,
@@ -43,8 +44,8 @@ internal readonly record struct MediaMetadataSnapshot(
             properties.TrackNumber > 0 ? properties.TrackNumber : null,
             properties.AlbumTrackCount > 0 ? properties.AlbumTrackCount : null,
             viewModel.TimelineProperties.Duration,
-            viewModel.ApplicationName,
-            properties.Application.ApplicationId,
+            presentation.DisplayName,
+            presentation.Source,
             viewModel.PlaybackType,
             playback.EffectiveState == MediaPlaybackState.Playing,
             playback.Capabilities.HasFlag(MediaCapabilities.SkipPrevious),

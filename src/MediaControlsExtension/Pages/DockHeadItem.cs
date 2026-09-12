@@ -56,10 +56,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             this.UpdateCurrentSession,
             loggerFactory.CreateLogger<DockHeadItem>());
 
-        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(
-            this._mediaService,
-            this._viewModels,
-            loggerFactory);
+        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(this._mediaService);
         this._mediaContextCommands = [
 
             new Separator(),
@@ -193,7 +190,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                     (string?[])
                     [
                         properties.Artist,
-                        viewModel.ApplicationName,
+                        viewModel.SourceName,
                     ]);
 
                 if (this._settingsManager.ShowThumbnails)

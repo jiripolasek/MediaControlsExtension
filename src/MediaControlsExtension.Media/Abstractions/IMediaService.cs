@@ -16,6 +16,11 @@ public interface IMediaService : IDisposable, IAsyncDisposable
 
     event EventHandler? StatusChanged;
 
+    /// <summary>Signals a new provider-state snapshot; handlers read Backends for the latest state.</summary>
+    event EventHandler? BackendsChanged;
+
+    ImmutableArray<MediaBackendState> Backends { get; }
+
     ImmutableArray<MediaSession> Sessions { get; }
 
     MediaSession? CurrentSession { get; }

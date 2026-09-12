@@ -14,6 +14,10 @@
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Project Path="src/MediaControlsExtension.Media.Gsmtc/JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj">
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
   <Project Path="src/MediaControlsExtension/JPSoftworks.MediaControlsExtension.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
@@ -24,6 +28,10 @@
     <Deploy />
   </Project>
   <Project Path="tests/MediaControlsExtension.Media.Tests/JPSoftworks.MediaControlsExtension.Media.Tests.csproj">
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="tests/MediaControlsExtension.Presentation.Tests/JPSoftworks.MediaControlsExtension.Presentation.Tests.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
   </Project>

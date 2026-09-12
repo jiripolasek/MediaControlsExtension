@@ -9,8 +9,23 @@ using System.Runtime.InteropServices;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed partial class MediaCommandResultFactory(ISettingsManager settingsManager)
+internal sealed partial class MediaCommandResultFactory(ISettingsManager settingsManager, ILoggerFactory loggerFactory) : IDisposable
 {
+    private readonly MediaPauseFailureNotifier _pauseFailureNotifier = new(
+        () => settingsManager.ShowToastMessages,
+        static message => new ToastStatusMessage(new StatusMessage { Message = message, State = MessageState.Warning }).Show(),
+        loggerFactory.CreateLogger<MediaPauseFailureNotifier>());
+
+    public void ObservePauseFailures(MediaCommandSubmission submission)
+    {
+        if (submission.Completion is { } completion)
+        {
+            _ = this._pauseFailureNotifier.ObserveAsync(completion);
+        }
+    }
+
+    public void Dispose() => this._pauseFailureNotifier.Dispose();
+
     public ICommandResult Create(string? message)
     {
         var isShiftDown = KeyModifierHelper.IsShiftPressed();

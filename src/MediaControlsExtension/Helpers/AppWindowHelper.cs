@@ -15,13 +15,15 @@ internal static class AppWindowHelper
     /// Attempts to bring the window with the specified AppUserModelID to the front.
     /// Returns true if successful; false if no matching window was found.
     /// </summary>
-    public static bool TryBringToFront(
+    public static async Task<bool> TryBringToFrontAsync(
         IAppInfo app,
         string mediaTitle,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(logger);
+        cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
@@ -42,6 +44,7 @@ internal static class AppWindowHelper
 
                     // 1) app can be a PWA app, then we have to find the PWA window manually by matching titles,
                     //    because LaunchAsync() will start a new instance of the PWA app instead switching to the existing one
+                    cancellationToken.ThrowIfCancellationRequested();
                     foreach (var appEntry in appEntries)
                     {
                         if (appEntry.IsPwa(package) && !string.IsNullOrWhiteSpace(appEntry.DisplayInfo?.DisplayName))
@@ -54,15 +57,15 @@ internal static class AppWindowHelper
                         }
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (DesktopWindowManager.SwitchToDesktopAppWindowUsingAppId(app.AppId, mediaTitle))
                     {
                         return true;
                     }
 
                     // 2) start packaged app and hope it will switch to the existing instance
-                    _ = appEntries[0]?.LaunchAsync();
-
-                    return true;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return appEntries[0] is { } entry && await entry.LaunchAsync();
 
                 case DesktopAppInfo desktopAppInfo:
                     var pwaWasFound = PwaWindowManager.SwitchToPwaWindow(desktopAppInfo.DisplayName, mediaTitle);
@@ -71,14 +74,20 @@ internal static class AppWindowHelper
                         return true;
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (DesktopWindowManager.SwitchToDesktopAppWindowUsingAppId(app.AppId, mediaTitle))
                     {
                         return true;
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     return !string.IsNullOrWhiteSpace(desktopAppInfo.Path)
                         && DesktopWindowManager.SwitchToDesktopAppWindow(desktopAppInfo.Path, mediaTitle);
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

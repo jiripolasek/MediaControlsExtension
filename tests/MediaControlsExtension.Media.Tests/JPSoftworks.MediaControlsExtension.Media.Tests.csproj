@@ -12,5 +12,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSourcePresentation.cs" Link="Presentation\MediaSourcePresentation.cs" />
 	</ItemGroup>
 </Project>
