@@ -29,16 +29,16 @@ internal abstract class PlayOtherSessionMop : MediaSessionOp
             ? mediaService.Sessions
                 .FirstOrDefault(candidate => candidate.Id == sessionId)
             : null;
-        var applicationName = session is null
+        var sourceName = session is null
             ? null
             : await this._viewModels
                 .GetOrCreate(session)
-                .GetApplicationNameAsync(cancellationToken)
+                .GetSourceNameAsync(cancellationToken)
                 .ConfigureAwait(false);
-        applicationName = string.IsNullOrWhiteSpace(applicationName)
+        sourceName = string.IsNullOrWhiteSpace(sourceName)
             ? "next session"
-            : applicationName;
-        return $"🔄️ {string.Format(CultureInfo.CurrentCulture, s_switchedToFormat, applicationName, Strings.Toast_Playing)}";
+            : sourceName;
+        return $"\U0001F504\uFE0F {string.Format(CultureInfo.CurrentCulture, s_switchedToFormat, sourceName, Strings.Toast_Playing)}";
     }
 
     protected override string GetFailureMessage(object status) => $"🚫 {Strings.Toast_NoOtherSessions}";

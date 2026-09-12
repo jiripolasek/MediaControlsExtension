@@ -404,6 +404,16 @@ self-contained setting, and redirected project extensions path as the following
 publish. A normal solution restore alone does not necessarily create this
 redirected assets file.
 
+### MakeAppx lists missing managed DLLs after a Native AOT publish
+
+The bundle file map can retain DLLs from a previous managed publish even after
+the package layout changes. The SDK's PRI configuration target does not include
+the payload list in its incremental inputs. The WAP refreshes the filtered and
+excluded payload lists before generating both sideload and upload bundle maps,
+and includes those lists in the map's incremental inputs. Keep these targets
+when updating the packaging project so changing publish modes does not require
+a clean build.
+
 ### Extension is installed but not discovered
 
 Check the app-extension name, supported interfaces, provider CLSID, COM class

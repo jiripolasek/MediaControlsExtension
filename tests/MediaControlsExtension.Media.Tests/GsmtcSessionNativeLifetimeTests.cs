@@ -4,7 +4,7 @@
 //
 // ------------------------------------------------------------
 
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;
@@ -264,5 +264,36 @@ public sealed class GsmtcSessionNativeLifetimeTests
         Assert.IsNull(lifetime.TryEnter());
         Assert.AreSame(playbackInfo, lifetime.RetainedPlaybackInfo);
         Assert.AreSame(playbackControls, lifetime.RetainedPlaybackControls);
+    }
+
+    [TestMethod]
+    public async Task FailedNativeRetirementFailsBackendDisposal()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        var retirement = lifetime.RetireAsync(() => Task.FromResult(false));
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => GsmtcBackend.WaitForCleanupAsync(
+            [Task.FromResult(true), retirement], TimeSpan.FromSeconds(5), NullLogger.Instance));
+        Assert.IsTrue(lifetime.IsRetiring);
+        Assert.IsNull(lifetime.TryEnter());
+    }
+
+    [TestMethod]
+    public async Task DisposalTimeoutPreservesNativeRootsUntilTheActiveUseReturns()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        using var activeUse = lifetime.TryEnter()
+            ?? throw new AssertFailedException("The native use was rejected.");
+        var playbackInfo = new object();
+        activeUse.CommitPlaybackObjects(playbackInfo, new object());
+        var retirement = lifetime.RetireAsync(() => Task.FromResult(true));
+
+        await Assert.ThrowsExactlyAsync<TimeoutException>(() => GsmtcBackend.WaitForCleanupAsync(
+            [retirement], TimeSpan.FromMilliseconds(100), NullLogger.Instance));
+        Assert.IsFalse(retirement.IsCompleted);
+        Assert.AreSame(playbackInfo, lifetime.RetainedPlaybackInfo);
+
+        activeUse.Dispose();
+        Assert.IsTrue(await retirement.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.IsNull(lifetime.RetainedPlaybackInfo);
     }
 }

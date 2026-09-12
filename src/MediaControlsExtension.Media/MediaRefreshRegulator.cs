@@ -16,6 +16,7 @@ internal enum MediaRefreshReason
     CommandCompleted = 1 << 3,
     CommandSettle = 1 << 4,
     PredictionExpired = 1 << 5,
+    BackendsChanged = 1 << 6,
 }
 
 internal enum MediaRefreshMode
@@ -84,7 +85,8 @@ internal sealed class MediaRefreshRegulator
 {
     private const MediaRefreshReason TopologyReasons =
         MediaRefreshReason.SessionsChanged |
-        MediaRefreshReason.CurrentSessionChanged;
+        MediaRefreshReason.CurrentSessionChanged |
+        MediaRefreshReason.BackendsChanged;
 
     private readonly MediaRefreshPolicy _policy;
     private readonly TimeProvider _timeProvider;

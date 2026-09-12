@@ -5,12 +5,15 @@
 // ------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Immutable;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
 internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 {
     private const string DefaultNamespace = "jpsoftworks.mediacontrols";
+    private readonly Dictionary<string, ToggleSetting> _mediaBackends = new(StringComparer.Ordinal);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showThumbnailsOption = new(
@@ -203,14 +206,32 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
     public string DockIconThemeId =>
         IconThemeCatalog.ResolveSelection(this._dockIconTheme.Value);
 
-    public SettingsManager()
+    public ImmutableArray<string> EnabledMediaBackendIds =>
+        [.. this._mediaBackends.Where(static pair => pair.Value.Value).Select(static pair => pair.Key)];
+
+    public SettingsManager(MediaBackendRegistry backendRegistry)
     {
+        ArgumentNullException.ThrowIfNull(backendRegistry);
         this.FilePath = SettingsJsonPath();
 
         this.Settings.Add(new SettingsGroupHeader(
-            Namespaced("Layout.PalettePage"),
-            Strings.Settings_Group_PalettePage!,
+            Namespaced("Layout.MediaBackends"),
+            Resource("Settings_Group_MediaBackends"),
             showSeparator: false));
+        foreach (var registration in backendRegistry.Registrations)
+        {
+            var setting = new ToggleSetting(
+                Namespaced($"MediaBackends.{registration.Id}.Enabled"),
+                registration.DisplayName,
+                registration.Description,
+                registration.EnabledByDefault);
+            this._mediaBackends.Add(registration.Id, setting);
+            this.Settings.Add(setting);
+        }
+
+        this.Settings.Add(new SettingsGroupHeader(
+            Namespaced("Layout.PalettePage"),
+            Strings.Settings_Group_PalettePage!));
         this.Settings.Add(this._commandPaletteIconTheme);
         this.Settings.Add(this._showCurrentMediaAtTopLevel);
         this.Settings.Add(this._showDetailsOption);

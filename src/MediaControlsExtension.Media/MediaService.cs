@@ -9,13 +9,14 @@ using System.Diagnostics;
 using System.Threading.Channels;
 using JPSoftworks.MediaControlsExtension.Media.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension.Media;
 
+/// <summary>Publishes stable sessions and schedules commands against one owned backend.</summary>
+/// <inheritdoc cref="IMediaService" path="/remarks" />
 public sealed class MediaService : IMediaService
 {
     private static readonly TimeSpan NavigationCommandInterval = TimeSpan.FromMilliseconds(200);
@@ -25,7 +26,7 @@ public sealed class MediaService : IMediaService
 
     private readonly IMediaBackend _backend;
     private readonly Lock _commandAdmissionLock = new();
-    private readonly Channel<CommandWork> _commandQueue;
+    private readonly MediaCommandScheduler _commandScheduler;
     private readonly Lock _commandSettleRefreshLock = new();
     private readonly Dictionary<MediaBackendSessionId, MediaBackendObservationChanges>
         _commandSettleRefreshRequests = [];
@@ -43,7 +44,6 @@ public sealed class MediaService : IMediaService
     private readonly MediaStateStore _stateStore = new();
     private readonly TaskCompletionSource _startCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TimeProvider _timeProvider;
-    private readonly Task _commandPumpTask;
     private readonly TimeSpan _playbackPredictionLifetime;
 
     private Task? _backendSignalPumpTask;
@@ -58,19 +58,21 @@ public sealed class MediaService : IMediaService
     private int _startState;
     private int _disposeState;
 
-    public MediaService(ILoggerFactory? loggerFactory = null)
+    /// <summary>Creates a service with default options and no logging.</summary>
+    /// <param name="backend">Fresh backend whose startup and asynchronous disposal become the service's responsibility.</param>
+    /// <exception cref="ArgumentNullException">The backend is null.</exception>
+    public MediaService(IMediaBackend backend)
+        : this(backend, NullLoggerFactory.Instance)
     {
-        loggerFactory ??= NullLoggerFactory.Instance;
-        this._logger = loggerFactory.CreateLogger<MediaService>();
-        this._backend = new GsmtcBackend(loggerFactory.CreateLogger<GsmtcBackend>());
-        this._commandQueue = CreateCommandQueue();
-        this._refreshRequests = CreateRefreshQueue();
-        this._timeProvider = TimeProvider.System;
-        this._refreshRegulator = new(this._timeProvider, MediaRefreshPolicy.Default);
-        this._playbackPredictionLifetime = PlaybackPredictionLifetime;
-        this._commandSettleRefreshTimer = this.CreateCommandSettleRefreshTimer();
-        this._notificationHub = new(this.RaiseChanged, this._logger);
-        this._commandPumpTask = Task.Run(this.ProcessCommandsAsync);
+    }
+
+    /// <summary>Creates a service with default options and the supplied logging factory.</summary>
+    /// <param name="backend">Fresh backend whose startup and asynchronous disposal become the service's responsibility.</param>
+    /// <param name="loggerFactory">Non-null logging factory; ownership remains with the caller.</param>
+    /// <exception cref="ArgumentNullException">The backend or logging factory is null.</exception>
+    public MediaService(IMediaBackend backend, ILoggerFactory loggerFactory)
+        : this(backend, (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<MediaService>())
+    {
     }
 
     internal MediaService(
@@ -82,7 +84,7 @@ public sealed class MediaService : IMediaService
     {
         this._backend = backend ?? throw new ArgumentNullException(nameof(backend));
         this._logger = logger ?? NullLogger<MediaService>.Instance;
-        this._commandQueue = CreateCommandQueue();
+        this._commandScheduler = new(this.ExecuteCommandAsync, this._disposeCts.Token);
         this._refreshRequests = CreateRefreshQueue();
         this._timeProvider = timeProvider ?? TimeProvider.System;
         this._refreshRegulator = new(
@@ -100,23 +102,36 @@ public sealed class MediaService : IMediaService
 
         this._commandSettleRefreshTimer = this.CreateCommandSettleRefreshTimer();
         this._notificationHub = new(this.RaiseChanged, this._logger);
-        this._commandPumpTask = Task.Run(this.ProcessCommandsAsync);
     }
 
+    /// <inheritdoc />
     public event EventHandler? SessionsChanged;
 
+    /// <inheritdoc />
     public event EventHandler? CurrentSessionChanged;
 
+    /// <inheritdoc />
     public event EventHandler? StatusChanged;
 
+    /// <inheritdoc />
+    public event EventHandler? BackendsChanged;
+
+    /// <inheritdoc />
+    public ImmutableArray<MediaBackendState> Backends => this._sessionCatalog.State.Backends;
+
+    /// <inheritdoc />
     public ImmutableArray<MediaSession> Sessions => this._sessionCatalog.State.Sessions;
 
+    /// <inheritdoc />
     public MediaSession? CurrentSession => this._sessionCatalog.State.CurrentSession;
 
+    /// <inheritdoc />
     public MediaServiceStatus Status => this._sessionCatalog.State.Status;
 
+    /// <inheritdoc />
     public MediaControlAvailability Availability => this._sessionCatalog.State.Availability;
 
+    /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         var startsService = false;
@@ -204,6 +219,7 @@ public sealed class MediaService : IMediaService
         }
     }
 
+    /// <inheritdoc />
     public MediaCommandSubmission TrySubmit(MediaCommand command)
     {
         if (Volatile.Read(ref this._disposeState) != 0)
@@ -216,7 +232,7 @@ public sealed class MediaService : IMediaService
         MediaServiceSnapshot? predictedSnapshot = null;
         CommandWork? work = null;
         var wasThrottled = false;
-        var mailboxWasFull = false;
+        var admissionLimitReached = false;
         var rejectionStatus = MediaCommandSubmissionStatus.Accepted;
         lock (this._commandAdmissionLock)
         {
@@ -247,10 +263,10 @@ public sealed class MediaService : IMediaService
                 {
                     operationId = new(Interlocked.Increment(ref this._nextOperationId));
                     work = new(operationId, resolvedCommand);
-                    if (!this._commandQueue.Writer.TryWrite(work))
+                    if (!this._commandScheduler.TrySchedule(work))
                     {
                         work = null;
-                        mailboxWasFull = true;
+                        admissionLimitReached = true;
                     }
 
                     if (work is not null)
@@ -266,7 +282,7 @@ public sealed class MediaService : IMediaService
                                 admissionTimestamp;
                         }
 
-                        predictedSnapshot = this._stateStore.ApplyPrediction(
+                        predictedSnapshot = this._stateStore.ApplyAcceptedCommand(
                             resolvedCommand,
                             operationId);
                     }
@@ -289,9 +305,9 @@ public sealed class MediaService : IMediaService
                     resolvedCommand.ResolvedOperation,
                     resolvedCommand.SessionId.Value);
             }
-            else if (mailboxWasFull)
+            else if (admissionLimitReached)
             {
-                MediaLog.CommandMailboxFull(this._logger, resolvedCommand.ResolvedOperation);
+                MediaLog.CommandAdmissionLimitReached(this._logger, resolvedCommand.ResolvedOperation);
             }
 
             return Rejected(
@@ -302,7 +318,10 @@ public sealed class MediaService : IMediaService
         ArgumentNullException.ThrowIfNull(predictedSnapshot);
         this.PublishState(predictedSnapshot);
         work.AllowExecution();
-        _ = this.ExpirePredictionAsync(resolvedCommand.SessionId, operationId);
+        if (IsPlaybackInputCommand(resolvedCommand.ResolvedOperation))
+        {
+            _ = this.ExpirePredictionAsync(resolvedCommand.SessionId, operationId);
+        }
 
         MediaLog.CommandAccepted(
             this._logger,
@@ -316,6 +335,7 @@ public sealed class MediaService : IMediaService
             work.Completion);
     }
 
+    /// <inheritdoc />
     public ValueTask<MediaArtworkContent?> GetArtworkAsync(
         MediaArtworkKey key,
         CancellationToken cancellationToken = default)
@@ -323,30 +343,23 @@ public sealed class MediaService : IMediaService
         return this._backend.GetArtworkAsync(key, cancellationToken);
     }
 
+    /// <inheritdoc />
     public void UpdateOptions(MediaServiceOptions options)
     {
         this._stateStore.UpdateOptions(options);
     }
 
+    /// <summary>Starts shutdown and returns immediately; use DisposeAsync to await backend cleanup and notification delivery.</summary>
     public void Dispose()
     {
         _ = this.EnsureDisposeStarted();
     }
 
+    /// <summary>Starts or joins shutdown, waiting for commands, monitoring, backend disposal, and pending notifications.</summary>
+    /// <returns>Completion of the shared shutdown task.</returns>
     public async ValueTask DisposeAsync()
     {
         await this.EnsureDisposeStarted().ConfigureAwait(false);
-    }
-
-    private static Channel<CommandWork> CreateCommandQueue()
-    {
-        return Channel.CreateBounded<CommandWork>(new BoundedChannelOptions(1)
-        {
-            SingleReader = true,
-            SingleWriter = false,
-            FullMode = BoundedChannelFullMode.Wait,
-            AllowSynchronousContinuations = false,
-        });
     }
 
     private static Channel<bool> CreateRefreshQueue()
@@ -365,29 +378,6 @@ public sealed class MediaService : IMediaService
         long revision)
     {
         return new(status, default, revision, null);
-    }
-
-    private async Task ProcessCommandsAsync()
-    {
-        var cancellationToken = this._disposeCts.Token;
-        try
-        {
-            await foreach (var work in this._commandQueue.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
-            {
-                await work.WaitUntilReadyAsync(cancellationToken).ConfigureAwait(false);
-                await this.ExecuteCommandAsync(work, cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        finally
-        {
-            while (this._commandQueue.Reader.TryRead(out var pendingWork))
-            {
-                pendingWork.Cancel();
-            }
-        }
     }
 
     private async Task ExecuteCommandAsync(CommandWork work, CancellationToken cancellationToken)
@@ -414,14 +404,7 @@ public sealed class MediaService : IMediaService
             result = new(MediaBackendCommandStatus.Failed, ex.Message);
         }
 
-        var outcomeStatus = result.Status switch
-        {
-            MediaBackendCommandStatus.Completed => MediaCommandOutcomeStatus.Completed,
-            MediaBackendCommandStatus.Unavailable => MediaCommandOutcomeStatus.Unavailable,
-            MediaBackendCommandStatus.Unsupported => MediaCommandOutcomeStatus.Unsupported,
-            MediaBackendCommandStatus.SessionGone => MediaCommandOutcomeStatus.SessionGone,
-            _ => MediaCommandOutcomeStatus.Failed,
-        };
+        var outcomeStatus = MapOutcomeStatus(result.Status);
         var succeeded = outcomeStatus == MediaCommandOutcomeStatus.Completed;
         var updatedSnapshot = this._stateStore.CompleteCommand(
             command,
@@ -432,7 +415,14 @@ public sealed class MediaService : IMediaService
             work.OperationId,
             outcomeStatus,
             command.SessionId,
-            result.DiagnosticMessage));
+            result.DiagnosticMessage)
+        {
+            PauseOutcomes = [.. result.PauseResults.Select(static pause => new MediaPauseOutcome(
+                new(pause.Target.SessionId.Value),
+                pause.Target.BindingGeneration,
+                MapOutcomeStatus(pause.Status),
+                pause.DiagnosticMessage))],
+        });
 
         if (!succeeded)
         {
@@ -448,8 +438,20 @@ public sealed class MediaService : IMediaService
             this.ScheduleCommandSettleRefresh(command);
         }
 
-        this.RequestRefresh(MediaRefreshReason.CommandCompleted);
+        if (command.ResolvedOperation != MediaOperation.ActivateSource)
+        {
+            this.RequestRefresh(MediaRefreshReason.CommandCompleted);
+        }
     }
+
+    private static MediaCommandOutcomeStatus MapOutcomeStatus(MediaBackendCommandStatus status) => status switch
+    {
+        MediaBackendCommandStatus.Completed => MediaCommandOutcomeStatus.Completed,
+        MediaBackendCommandStatus.Unavailable => MediaCommandOutcomeStatus.Unavailable,
+        MediaBackendCommandStatus.Unsupported => MediaCommandOutcomeStatus.Unsupported,
+        MediaBackendCommandStatus.SessionGone => MediaCommandOutcomeStatus.SessionGone,
+        _ => MediaCommandOutcomeStatus.Failed,
+    };
 
     private async Task ProcessBackendSignalsAsync(CancellationToken cancellationToken)
     {
@@ -606,6 +608,11 @@ public sealed class MediaService : IMediaService
         if ((signal & MediaBackendSignal.CurrentSessionChanged) != 0)
         {
             reason |= MediaRefreshReason.CurrentSessionChanged;
+        }
+
+        if ((signal & MediaBackendSignal.BackendsChanged) != 0)
+        {
+            reason |= MediaRefreshReason.BackendsChanged;
         }
 
         return reason;
@@ -868,7 +875,7 @@ public sealed class MediaService : IMediaService
             MediaControlAvailability.Unavailable);
         this.PublishStateCore(stoppedSnapshot);
         this._disposeCts.Cancel();
-        this._commandQueue.Writer.TryComplete();
+        var commandsDrained = this._commandScheduler.CompleteAsync();
         this._refreshRequests.Writer.TryComplete();
         await this._commandSettleRefreshTimer.DisposeAsync().ConfigureAwait(false);
 
@@ -877,7 +884,7 @@ public sealed class MediaService : IMediaService
             await AwaitCompletionAsync(this._startCompletion.Task).ConfigureAwait(false);
         }
 
-        await AwaitPumpAsync(this._commandPumpTask).ConfigureAwait(false);
+        await commandsDrained.ConfigureAwait(false);
         if (this._backendSignalPumpTask is not null)
         {
             await AwaitPumpAsync(this._backendSignalPumpTask).ConfigureAwait(false);
@@ -929,6 +936,11 @@ public sealed class MediaService : IMediaService
         if (changes.HasFlag(MediaServiceChanges.CurrentSession))
         {
             this.RaiseEvent(this.CurrentSessionChanged, reportException);
+        }
+
+        if ((changes & MediaServiceChanges.Backends) != 0)
+        {
+            this.RaiseEvent(this.BackendsChanged, reportException);
         }
 
         if ((changes & (MediaServiceChanges.Status | MediaServiceChanges.Availability)) != 0)

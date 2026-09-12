@@ -4,7 +4,7 @@
 //
 // ------------------------------------------------------------
 
-namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 /// <summary>
 /// Keeps a GSMTC session's native state rooted while calls are active and

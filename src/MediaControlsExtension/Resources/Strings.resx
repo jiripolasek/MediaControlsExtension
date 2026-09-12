@@ -183,6 +183,9 @@
   <data name="Details_PlaybackStatus" xml:space="preserve">
     <value>Playback status</value>
   </data>
+  <data name="Details_Provider" xml:space="preserve">
+    <value>Provider</value>
+  </data>
   <data name="Details_Player" xml:space="preserve">
     <value>Player</value>
     <comment>Software application that owns the media session, not a person or game participant.</comment>
@@ -443,6 +446,12 @@
   <data name="Toast_NotCurrentSession" xml:space="preserve">
     <value>Not the current session</value>
   </data>
+  <data name="Toast_PauseOtherFailed" xml:space="preserve">
+    <value>Could not pause another player.</value>
+  </data>
+  <data name="Toast_PauseOthersFailed" xml:space="preserve">
+    <value>Could not pause {0} other players.</value>
+  </data>
   <data name="Toast_NoOtherSessions" xml:space="preserve">
     <value>No other sessions to switch to</value>
   </data>
@@ -631,5 +640,86 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
     <value>GitHub Issues couldn't be opened. Try again or open the repository from Settings.</value>
+  </data>
+  <data name="Settings_Group_MediaBackends" xml:space="preserve">
+    <value>Media sources</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
+    <value>Windows media sessions</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
+    <value>Discover and control players that share media sessions with Windows. Changes apply immediately.</value>
+  </data>
+  <data name="MediaSources_Title" xml:space="preserve">
+    <value>Media sources</value>
+  </data>
+  <data name="MediaSources_Search" xml:space="preserve">
+    <value>Search media sources</value>
+  </data>
+  <data name="MediaSources_Empty" xml:space="preserve">
+    <value>No matching media sources</value>
+  </data>
+  <data name="MediaSources_Manage" xml:space="preserve">
+    <value>Enable or disable media sources in Settings.</value>
+  </data>
+  <data name="MediaSources_OpenSettings" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="MediaSources_Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="MediaSources_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="MediaSources_Enablement" xml:space="preserve">
+    <value>User setting</value>
+  </data>
+  <data name="MediaSources_Lifecycle" xml:space="preserve">
+    <value>Provider status</value>
+  </data>
+  <data name="MediaSources_Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="MediaSources_AvailableSessions" xml:space="preserve">
+    <value>Available sessions</value>
+  </data>
+  <data name="MediaSources_ProviderMessage" xml:space="preserve">
+    <value>Provider message</value>
+  </data>
+  <data name="MediaSources_ConnectionMessage" xml:space="preserve">
+    <value>Connection message</value>
+  </data>
+  <data name="MediaSources_OneSession" xml:space="preserve">
+    <value>{0} session</value>
+  </data>
+  <data name="MediaSources_SessionCount" xml:space="preserve">
+    <value>{0} sessions</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Stopping" xml:space="preserve">
+    <value>Stopping</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Faulted" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="MediaSources_Connection_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="MediaSources_Connection_Connecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="MediaSources_Connection_Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
+    <value>Disconnected</value>
   </data>
 </root>

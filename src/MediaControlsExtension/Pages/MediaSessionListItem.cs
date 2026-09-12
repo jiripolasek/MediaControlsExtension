@@ -119,9 +119,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             loggerFactory);
         this._switchToApplicationCommand = new(
             mediaService,
-            viewModels,
-            viewModel.Session.Id,
-            loggerFactory);
+            viewModel.Session.Id);
         this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(
             mediaService,
             viewModel.Session,
@@ -229,15 +227,15 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     {
         var subtitleBuilder = new StringBuilder();
         subtitleBuilder.AppendWhenNotEmpty(" • ", viewModel.MediaProperties.Artist);
-        subtitleBuilder.AppendWhenNotEmpty(" • ", viewModel.ApplicationName);
+        subtitleBuilder.AppendWhenNotEmpty(" \u2022 ", viewModel.SourceName);
 
 #if DEBUG
         subtitleBuilder.AppendWhenNotEmpty(
             " • ",
-            viewModel.MediaProperties.Application.ApplicationId);
+            viewModel.MediaProperties.Source.NativeApplication?.ApplicationId);
         subtitleBuilder.AppendWhenNotEmpty(
             " • ",
-            Path.GetFileName(viewModel.ApplicationIconPath));
+            Path.GetFileName(viewModel.SourceIconPath));
 #endif
 
         return subtitleBuilder.ToString();
@@ -281,8 +279,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         var presentation = new TagPresentation(
             viewModel.PlaybackInfo.EffectiveState == MediaPlaybackState.Playing,
             showApplicationTag,
-            showApplicationTag ? viewModel.ApplicationName : string.Empty,
-            showApplicationTag ? viewModel.ApplicationIconPath : null,
+            showApplicationTag ? viewModel.SourceName : string.Empty,
+            showApplicationTag ? viewModel.SourceIconPath : null,
             showApplicationTag ? viewModel.PlaybackType : MediaPlaybackType.Unknown);
         if (this._tagPresentation == presentation)
         {
@@ -305,9 +303,9 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         {
             tags.Add(new Tag
             {
-                Text = presentation.ApplicationName,
+                Text = presentation.SourceName,
                 Icon = MediaSessionIcons.GetFallbackIcon(
-                    presentation.ApplicationIconPath,
+                    presentation.SourceIconPath,
                     presentation.PlaybackType),
             });
         }
@@ -318,8 +316,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     private readonly record struct TagPresentation(
         bool IsPlaying,
         bool ShowApplicationTag,
-        string ApplicationName,
-        string? ApplicationIconPath,
+        string SourceName,
+        string? SourceIconPath,
         MediaPlaybackType PlaybackType);
 
     private void UpdateNavigationCommandIcons()

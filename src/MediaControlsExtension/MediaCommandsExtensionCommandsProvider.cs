@@ -6,6 +6,7 @@
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension;
 
@@ -14,14 +15,16 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly MediaCommandResultFactory _resultFactory;
     private readonly ILogger _logger;
     private readonly MediaService _mediaService;
+    private readonly CompositeMediaBackend _mediaBackend;
     private readonly MediaSessionViewModelCache _mediaSessionViewModels;
     private readonly MediaMetadataPageCache _metadataPages;
     private readonly SystemVolumeService _systemVolumeService;
-    private readonly SettingsManager _settingsManager = new();
+    private readonly SettingsManager _settingsManager;
     private readonly IconService _iconService;
     private readonly CommandItem _mediaControlsPageItem;
     private readonly CommandItem _nowPlayingItem;
     private readonly MediaControlsExtensionPage _mediaControlsExtensionPage;
+    private readonly MediaSourcesPage _mediaSourcesPage;
     private readonly MediaControlsExtensionPage _mediaControlsBand;
     private readonly CommandItem _mediaControlsBandItem;
     private readonly VolumeDockBand _volumeDockBand;
@@ -41,7 +44,10 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         this._logger = loggerFactory.CreateLogger<MediaControlsExtensionCommandsProvider>();
-        this._mediaService = new MediaService(loggerFactory);
+        var backendRegistry = MediaBackendCatalog.CreateRegistry();
+        this._settingsManager = new(backendRegistry);
+        this._mediaBackend = new(backendRegistry, this._settingsManager.EnabledMediaBackendIds, loggerFactory);
+        this._mediaService = new MediaService(this._mediaBackend, loggerFactory);
         this._mediaSessionViewModels = new(this._mediaService, loggerFactory);
         this._systemVolumeService = new(loggerFactory);
         this._iconService = new IconService(this._settingsManager, loggerFactory);
@@ -52,7 +58,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
         this._iconService.IconsChanged += this.IconServiceOnIconsChanged;
-        this._resultFactory = new(this._settingsManager);
+        this._resultFactory = new(this._settingsManager, loggerFactory);
         this._metadataPages = new(
             this._mediaService,
             this._mediaSessionViewModels,
@@ -70,6 +76,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._resultFactory,
             this._iconService,
             loggerFactory);
+        this._mediaSourcesPage = new(this._mediaService, this.Settings.SettingsPage!, loggerFactory);
         var reportProblemPage = new ReportProblemPage(
             new DiagnosticLogArchiveService(ExtensionHostIdentity.GetLogDirectoryPath()),
             loggerFactory);
@@ -79,6 +86,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             MoreCommands =
             [
                 new CommandContextItem(this.Settings.SettingsPage!),
+                new CommandContextItem(this._mediaSourcesPage),
                 new CommandContextItem(reportProblemPage),
             ]
         };
@@ -201,10 +209,44 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
+        this.UpdateEnabledMediaBackends();
         this.UpdateMediaServiceOptions();
         this.UpdateTopLevelCommands();
         this.UpdateDockBands();
         this.RaiseItemsChanged();
+    }
+
+    private void UpdateEnabledMediaBackends()
+    {
+        if (Volatile.Read(ref this._disposeState) != 0)
+        {
+            return;
+        }
+
+        var enabled = this._settingsManager.EnabledMediaBackendIds;
+        foreach (var backend in this._mediaBackend.Backends)
+        {
+            var isEnabled = enabled.Contains(backend.Id);
+            if (backend.IsEnabled != isEnabled)
+            {
+                _ = this.UpdateMediaBackendAsync(backend.Id, isEnabled);
+            }
+        }
+    }
+
+    private async Task UpdateMediaBackendAsync(string id, bool enabled)
+    {
+        try
+        {
+            await this._mediaBackend.SetEnabledAsync(id, enabled).ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException) when (Volatile.Read(ref this._disposeState) != 0)
+        {
+        }
+        catch (Exception ex)
+        {
+            ExtensionLog.UnexpectedError(this._logger, ex);
+        }
     }
 
     private void IconServiceOnIconsChanged(object? sender, EventArgs args)
@@ -301,6 +343,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 item.Dispose();
             }
 
+            this._resultFactory.Dispose();
+            this._mediaSourcesPage.Dispose();
             this._mediaControlsExtensionPage.Dispose();
             this._mediaControlsBand.Dispose();
             this._volumeDockBand.Dispose();

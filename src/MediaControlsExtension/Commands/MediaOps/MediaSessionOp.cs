@@ -38,10 +38,11 @@ internal abstract class MediaSessionOp
         var outcome = await submission.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
         if (outcome.Status == MediaCommandOutcomeStatus.Completed)
         {
-            return await this.GetSuccessMessageAsync(
+            var message = await this.GetSuccessMessageAsync(
                 mediaService,
                 outcome,
                 cancellationToken).ConfigureAwait(false);
+            return MediaCommandFeedback.AppendPauseWarning(message, outcome);
         }
 
         return RequiresRestart(mediaService)

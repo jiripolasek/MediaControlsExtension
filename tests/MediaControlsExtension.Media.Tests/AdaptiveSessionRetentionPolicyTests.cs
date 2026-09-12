@@ -4,7 +4,7 @@
 //
 // ------------------------------------------------------------
 
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure.Gsmtc;
+using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 

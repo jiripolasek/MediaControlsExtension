@@ -94,6 +94,16 @@ internal sealed class MediaSessionCatalog
                 serviceChanges |= MediaServiceChanges.CurrentSession;
             }
 
+            var backends = snapshot.Status == MediaServiceStatus.Stopped ? [] : snapshot.Backends;
+            if (!BackendsEqual(previousState.Backends, backends))
+            {
+                serviceChanges |= MediaServiceChanges.Backends;
+            }
+            else
+            {
+                backends = previousState.Backends;
+            }
+
             if (serviceChanges != MediaServiceChanges.None)
             {
                 Volatile.Write(
@@ -103,11 +113,32 @@ internal sealed class MediaSessionCatalog
                         snapshot.Status,
                         snapshot.Availability,
                         publishedSessions,
-                        currentSession));
+                        currentSession)
+                    {
+                        Backends = backends,
+                    });
             }
 
             return new(sessionNotifications.ToImmutable(), serviceChanges);
         }
+    }
+
+    private static bool BackendsEqual(ImmutableArray<MediaBackendState> left, ImmutableArray<MediaBackendState> right)
+    {
+        if (left.Length != right.Length)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < left.Length; index++)
+        {
+            if (!left[index].HasSameContent(right[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool SessionsEqual(

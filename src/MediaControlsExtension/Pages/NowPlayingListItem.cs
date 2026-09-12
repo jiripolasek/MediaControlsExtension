@@ -114,7 +114,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             this.UpdateCurrentSession,
             loggerFactory.CreateLogger<NowPlayingListItem>());
 
-        this._switchToApplicationCommand = new(this._mediaService, this._viewModels, loggerFactory);
+        this._switchToApplicationCommand = new(this._mediaService);
         this.Command = this._playPauseCommand = new(
             this._mediaService,
             resultFactory,
@@ -261,7 +261,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                         [
                             properties.Title,
                             properties.Artist,
-                            viewModel.ApplicationName,
+                            viewModel.SourceName,
                         ]);
 
                 this.UpdateIcon(playbackAction.CommandIcon);

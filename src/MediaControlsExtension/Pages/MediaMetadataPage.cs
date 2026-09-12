@@ -132,9 +132,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
                 loggerFactory),
             new BringAssociatedAppToFrontCommand(
                 mediaService,
-                viewModels,
-                session.Id,
-                loggerFactory),
+                session.Id),
             loggerFactory);
     }
 
@@ -397,11 +395,20 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             {
                 ["hasMedia"] = false,
                 ["showNoMedia"] = true,
+                ["hasSourceDetails"] = false,
+                ["sourceFacts"] = new JsonArray(),
+                ["hasNativeApplication"] = false,
                 ["noMedia"] = Strings.Metadata_NoMedia!
             }.ToJsonString();
         }
 
         var hasArtwork = !string.IsNullOrWhiteSpace(artworkDataUri);
+        var sourceFacts = new JsonArray();
+        foreach (var detail in MediaMetadataFormatting.GetSourceDetails(metadata.Source))
+        {
+            sourceFacts.Add((JsonNode)new JsonObject { ["title"] = detail.Label, ["value"] = detail.Value });
+        }
+
         return new JsonObject
         {
             ["hasMedia"] = true,
@@ -428,9 +435,12 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             ["trackNumber"] = MediaMetadataFormatting.FormatTrackNumber(metadata.TrackNumber, metadata.AlbumTrackCount),
             ["lengthLabel"] = Strings.Details_Length!,
             ["length"] = MediaMetadataFormatting.FormatTrackLength(metadata.TrackLength),
+            ["sourceFacts"] = sourceFacts,
+            ["hasSourceDetails"] = sourceFacts.Count > 0,
+            ["hasNativeApplication"] = metadata.Source.NativeApplication is not null,
             ["technicalSection"] = Strings.Metadata_TechnicalSection!,
             ["applicationIdLabel"] = Strings.Details_ApplicationId!,
-            ["applicationId"] = MediaMetadataFormatting.ValueOrNotAvailable(metadata.ApplicationId)
+            ["applicationId"] = MediaMetadataFormatting.ValueOrNotAvailable(metadata.Source.NativeApplication?.ApplicationId)
         }.ToJsonString();
     }
 
@@ -529,8 +539,14 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
                             ]
                         },
                         {
+                            "type": "FactSet",
+                            "isVisible": "${hasSourceDetails}",
+                            "facts": "${sourceFacts}"
+                        },
+                        {
                             "type": "TextBlock",
                             "text": "${technicalSection}",
+                            "isVisible": "${hasNativeApplication}",
                             "size": "medium",
                             "weight": "bolder",
                             "style": "heading",
@@ -540,6 +556,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
                         },
                         {
                             "type": "FactSet",
+                            "isVisible": "${hasNativeApplication}",
                             "facts": [
                                 { "title": "${applicationIdLabel}", "value": "${applicationId}" }
                             ]
