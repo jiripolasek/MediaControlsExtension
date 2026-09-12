@@ -2,6 +2,7 @@
 	<PropertyGroup>
 		<RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
 		<IsAotCompatible>true</IsAotCompatible>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>

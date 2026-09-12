@@ -17,10 +17,8 @@ using Windows.Storage.Streams;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
-/// <summary>
-/// Owns every native GSMTC object. No native manager or session reference
-/// crosses the media-project boundary.
-/// </summary>
+/// <summary>Discovers and controls Windows GSMTC sessions while keeping native objects inside this provider.</summary>
+/// <remarks>Use a composite to obtain provider status, cross-provider pause outcomes, and operation timeouts.</remarks>
 public sealed class GsmtcBackend : IMediaSourcePolicyBackend
 {
     private const ulong MaxArtworkBytes = 32 * 1024 * 1024;
@@ -105,6 +103,9 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
     private int _disposeState;
     private int _startState;
 
+    /// <summary>Creates an unstarted GSMTC provider.</summary>
+    /// <param name="logger">Non-null caller-owned diagnostic logger.</param>
+    /// <param name="sourceActivator">Caller-owned activation adapter; null omits the ActivateSource capability.</param>
     public GsmtcBackend(ILogger<GsmtcBackend> logger, IGsmtcSourceActivator? sourceActivator = null)
     {
         this._logger = logger;
@@ -120,6 +121,11 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         });
     }
 
+    /// <inheritdoc />
+    /// <exception cref="ArgumentNullException">The policy is null.</exception>
+    /// <exception cref="ArgumentException">The revision decreases or changes exclusions without increasing.</exception>
+    /// <exception cref="ObjectDisposedException">The provider is disposed.</exception>
+    /// <remarks>Retired bindings reject new native uses; cleanup has a bounded wait and unfinished work stays tracked.</remarks>
     public async Task ApplySourcePolicyAsync(MediaBackendSourcePolicy policy, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(policy);
@@ -168,6 +174,9 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         cancellationToken.ThrowIfCancellationRequested();
     }
 
+    /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">Startup was already attempted on this instance.</exception>
+    /// <exception cref="ObjectDisposedException">The provider is disposed.</exception>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref this._disposeState) != 0, this);
@@ -199,6 +208,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
             MediaBackendSignal.CurrentSessionChanged);
     }
 
+    /// <inheritdoc />
     public async IAsyncEnumerable<MediaBackendSignal> WatchAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -214,6 +224,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>A successful read reports Connected even without sessions or when the control circuit is open.</remarks>
     public async Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref this._disposeState) != 0, this);
@@ -322,6 +334,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         };
     }
 
+    /// <inheritdoc />
     public void InvalidateObservations(
         ImmutableArray<MediaBackendObservationRequest> requests)
     {
@@ -342,6 +355,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Direct secondary pauses do not populate PauseResults; use the composite for per-pause outcomes.</remarks>
     public async Task<MediaBackendCommandResult> ExecuteAsync(
         MediaBackendCommand command,
         CancellationToken cancellationToken)
@@ -467,6 +482,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Empty images and images larger than 32 MiB return null; successful content includes a hexadecimal SHA-256 hash.</remarks>
     public async ValueTask<MediaArtworkContent?> GetArtworkAsync(
         MediaArtworkKey key,
         CancellationToken cancellationToken)
@@ -511,6 +528,9 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
     }
 
+    /// <summary>Stops monitoring, retires native bindings, and attempts bounded native subscription cleanup.</summary>
+    /// <returns>Completion of the cleanup attempt; native cleanup may continue after its five-second wait limit.</returns>
+    /// <remarks>The owner must drain public calls first. Subsequent calls return immediately, without joining ongoing cleanup.</remarks>
     public async ValueTask DisposeAsync()
     {
         if (Interlocked.Exchange(ref this._disposeState, 1) != 0)

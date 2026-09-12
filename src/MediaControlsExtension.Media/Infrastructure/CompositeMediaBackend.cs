@@ -13,6 +13,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 /// <summary>Combines independently managed providers behind one stable backend.</summary>
+/// <remarks>
+/// Owns created providers but not the logging factory. Session IDs are unique for this composite lifetime;
+/// re-enabling a provider gives its sessions fresh IDs. State access and selection changes are thread-safe.
+/// </remarks>
 public sealed class CompositeMediaBackend : IMediaBackend
 {
     private readonly Lock _stateLock = new();
@@ -31,6 +35,15 @@ public sealed class CompositeMediaBackend : IMediaBackend
     private long _nextSourcePolicyRevision;
     private int _pendingSignals;
 
+    /// <summary>Captures registrations and initial enablement without creating provider instances.</summary>
+    /// <param name="registry">Configured registry; later registrations do not affect this composite.</param>
+    /// <param name="enabledBackendIds">Exact enabled IDs; null uses registration defaults, while an empty list disables all.</param>
+    /// <param name="loggerFactory">Caller-owned logging factory, or null to disable logging.</param>
+    /// <param name="operationTimeout">Per-call command and artwork timeout; null uses ten seconds.</param>
+    /// <exception cref="ArgumentNullException">The registry is null.</exception>
+    /// <exception cref="ArgumentException">An enabled ID or source-claim target is not registered.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The timeout is not positive or exceeds 4,294,967,294 milliseconds.</exception>
+    /// <exception cref="InvalidOperationException">Multiple enabled providers claim the same backend and application.</exception>
     public CompositeMediaBackend(
         MediaBackendRegistry registry,
         IEnumerable<string>? enabledBackendIds = null,
@@ -68,6 +81,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         this.UpdateSourcePoliciesUnderLock();
     }
 
+    /// <summary>Gets current states for all registrations in registry order, including disabled or faulted providers.</summary>
     public ImmutableArray<MediaBackendState> Backends
     {
         get
@@ -80,6 +94,11 @@ public sealed class CompositeMediaBackend : IMediaBackend
     }
 
     /// <summary>Starts discovery independently for each enabled provider.</summary>
+    /// <param name="cancellationToken">Checked before scheduling; later cancellation does not stop provider startup.</param>
+    /// <returns>A completed task once startup is scheduled; initial provider snapshots arrive through monitoring.</returns>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <exception cref="ObjectDisposedException">The composite is disposed.</exception>
+    /// <remarks>Repeated calls are harmless. Provider failures are reported through Backends.</remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -101,7 +120,19 @@ public sealed class CompositeMediaBackend : IMediaBackend
         return Task.CompletedTask;
     }
 
-    /// <summary>Applies the latest selection; cancellation only stops waiting for the transition.</summary>
+    /// <summary>Updates desired enablement and waits for the affected lifecycle and source-policy transitions.</summary>
+    /// <param name="backendId">Case-sensitive registration ID.</param>
+    /// <param name="enabled">Desired selection; enabling a faulted provider also requests a retry.</param>
+    /// <param name="cancellationToken">Checked before acceptance; afterward, cancellation only stops this caller's wait.</param>
+    /// <returns>Completion of affected transitions; inspect Backends for provider failures.</returns>
+    /// <exception cref="ArgumentException">The ID is not registered.</exception>
+    /// <exception cref="InvalidOperationException">Enabling would create conflicting source claims.</exception>
+    /// <exception cref="OperationCanceledException">The request or its wait was canceled.</exception>
+    /// <exception cref="ObjectDisposedException">The composite is disposed.</exception>
+    /// <remarks>
+    /// Before startup this only updates selection. Disabling immediately withdraws sessions, then drains and disposes the instance.
+    /// Concurrent requests converge on the latest selection. Disposal failure blocks replacement until this composite is replaced.
+    /// </remarks>
     public Task SetEnabledAsync(string backendId, bool enabled, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -165,6 +196,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         return transition.WaitAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async IAsyncEnumerable<MediaBackendSignal> WatchAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await foreach (var _ in this._signals.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
@@ -177,6 +209,8 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Returns cached state immediately and schedules dirty provider reads; it does not wait for fresh observations.</remarks>
     public Task<MediaBackendSnapshot> ReadSnapshotAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -214,6 +248,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
     }
 
+    /// <inheritdoc />
     public void InvalidateObservations(ImmutableArray<MediaBackendObservationRequest> requests)
     {
         foreach (var request in requests)
@@ -241,6 +276,12 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// For Play, pauses distinct secondary bindings first, excluding the primary; failures do not suppress the primary operation.
+    /// Each distinct secondary target receives a result, including missing or unsupported targets, if the pause phase completes.
+    /// Pauses are sequential per provider and parallel across providers. Timeouts return Unavailable while underlying work drains.
+    /// </remarks>
     public async Task<MediaBackendCommandResult> ExecuteAsync(MediaBackendCommand command, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -278,6 +319,8 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Returns null on provider failure, timeout, or a key becoming obsolete before completion.</remarks>
     public async ValueTask<MediaArtworkContent?> GetArtworkAsync(MediaArtworkKey key, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -315,6 +358,9 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
     }
 
+    /// <summary>Withdraws all providers, cancels and drains their work, then disposes them and completes monitoring.</summary>
+    /// <returns>The shared disposal task; provider cleanup failures are retained in Backends and logged.</returns>
+    /// <remarks>A provider operation that ignores cancellation can delay completion until that operation returns.</remarks>
     public ValueTask DisposeAsync()
     {
         lock (this._stateLock)

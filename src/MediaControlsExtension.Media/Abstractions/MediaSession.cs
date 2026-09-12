@@ -6,15 +6,22 @@
 
 namespace JPSoftworks.MediaControlsExtension.Media;
 
+/// <summary>Coalesced changes to a published session; read the session for its latest state.</summary>
+/// <param name="revision">Session revision observed when the notification is created.</param>
+/// <param name="changes">Combined change categories since the preceding notification batch.</param>
 public sealed class MediaSessionChangedEventArgs(
     long revision,
     MediaSessionChanges changes) : EventArgs
 {
+    /// <summary>Gets the session revision at notification creation, which may already be superseded when handled.</summary>
     public long Revision { get; } = revision;
 
+    /// <summary>Gets the combined change categories; intermediate values are not retained.</summary>
     public MediaSessionChanges Changes { get; } = changes;
 }
 
+/// <summary>A stable service-owned session object exposing immutable snapshots of its latest state.</summary>
+/// <remarks>Individual getters are thread-safe; separate reads may span revisions. Removal marks held references unavailable.</remarks>
 public sealed class MediaSession
 {
     private MediaSessionState _state;
@@ -32,20 +39,27 @@ public sealed class MediaSession
             snapshot.PlaybackInfo);
     }
 
+    /// <summary>Signals coalesced changes on the service's background pump after state publication.</summary>
     public event EventHandler<MediaSessionChangedEventArgs>? Changed;
 
+    /// <summary>Gets the logical session identity, unchanged when its backend binding is replaced.</summary>
     public MediaSessionId Id { get; }
 
     private MediaSessionState State => Volatile.Read(ref this._state);
 
+    /// <summary>Gets this object's increasing revision, starting at one; not the backend or command-admission revision.</summary>
     public long Revision => this.State.Revision;
 
+    /// <summary>Gets whether the published binding is usable; admission still validates capabilities and current state.</summary>
     public bool IsAvailable => this.State.IsAvailable;
 
+    /// <summary>Gets the latest metadata, source presentation, and artwork key.</summary>
     public MediaPropertiesSnapshot MediaProperties => this.State.MediaProperties;
 
+    /// <summary>Gets the latest observed timeline sample.</summary>
     public MediaTimelinePropertiesSnapshot TimelineProperties => this.State.TimelineProperties;
 
+    /// <summary>Gets observed playback, capabilities, and any temporary service prediction.</summary>
     public MediaPlaybackInfoSnapshot PlaybackInfo => this.State.PlaybackInfo;
 
     internal MediaSessionChanges Apply(MediaSessionSnapshot snapshot)

@@ -15,6 +15,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension.Media;
 
+/// <summary>Publishes stable sessions and schedules commands against one owned backend.</summary>
+/// <inheritdoc cref="IMediaService" path="/remarks" />
 public sealed class MediaService : IMediaService
 {
     private static readonly TimeSpan NavigationCommandInterval = TimeSpan.FromMilliseconds(200);
@@ -56,11 +58,18 @@ public sealed class MediaService : IMediaService
     private int _startState;
     private int _disposeState;
 
+    /// <summary>Creates a service with default options and no logging.</summary>
+    /// <param name="backend">Fresh backend whose startup and asynchronous disposal become the service's responsibility.</param>
+    /// <exception cref="ArgumentNullException">The backend is null.</exception>
     public MediaService(IMediaBackend backend)
         : this(backend, NullLoggerFactory.Instance)
     {
     }
 
+    /// <summary>Creates a service with default options and the supplied logging factory.</summary>
+    /// <param name="backend">Fresh backend whose startup and asynchronous disposal become the service's responsibility.</param>
+    /// <param name="loggerFactory">Non-null logging factory; ownership remains with the caller.</param>
+    /// <exception cref="ArgumentNullException">The backend or logging factory is null.</exception>
     public MediaService(IMediaBackend backend, ILoggerFactory loggerFactory)
         : this(backend, (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<MediaService>())
     {
@@ -95,24 +104,34 @@ public sealed class MediaService : IMediaService
         this._notificationHub = new(this.RaiseChanged, this._logger);
     }
 
+    /// <inheritdoc />
     public event EventHandler? SessionsChanged;
 
+    /// <inheritdoc />
     public event EventHandler? CurrentSessionChanged;
 
+    /// <inheritdoc />
     public event EventHandler? StatusChanged;
 
+    /// <inheritdoc />
     public event EventHandler? BackendsChanged;
 
+    /// <inheritdoc />
     public ImmutableArray<MediaBackendState> Backends => this._sessionCatalog.State.Backends;
 
+    /// <inheritdoc />
     public ImmutableArray<MediaSession> Sessions => this._sessionCatalog.State.Sessions;
 
+    /// <inheritdoc />
     public MediaSession? CurrentSession => this._sessionCatalog.State.CurrentSession;
 
+    /// <inheritdoc />
     public MediaServiceStatus Status => this._sessionCatalog.State.Status;
 
+    /// <inheritdoc />
     public MediaControlAvailability Availability => this._sessionCatalog.State.Availability;
 
+    /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         var startsService = false;
@@ -200,6 +219,7 @@ public sealed class MediaService : IMediaService
         }
     }
 
+    /// <inheritdoc />
     public MediaCommandSubmission TrySubmit(MediaCommand command)
     {
         if (Volatile.Read(ref this._disposeState) != 0)
@@ -315,6 +335,7 @@ public sealed class MediaService : IMediaService
             work.Completion);
     }
 
+    /// <inheritdoc />
     public ValueTask<MediaArtworkContent?> GetArtworkAsync(
         MediaArtworkKey key,
         CancellationToken cancellationToken = default)
@@ -322,16 +343,20 @@ public sealed class MediaService : IMediaService
         return this._backend.GetArtworkAsync(key, cancellationToken);
     }
 
+    /// <inheritdoc />
     public void UpdateOptions(MediaServiceOptions options)
     {
         this._stateStore.UpdateOptions(options);
     }
 
+    /// <summary>Starts shutdown and returns immediately; use DisposeAsync to await backend cleanup and notification delivery.</summary>
     public void Dispose()
     {
         _ = this.EnsureDisposeStarted();
     }
 
+    /// <summary>Starts or joins shutdown, waiting for commands, monitoring, backend disposal, and pending notifications.</summary>
+    /// <returns>Completion of the shared shutdown task.</returns>
     public async ValueTask DisposeAsync()
     {
         await this.EnsureDisposeStarted().ConfigureAwait(false);
