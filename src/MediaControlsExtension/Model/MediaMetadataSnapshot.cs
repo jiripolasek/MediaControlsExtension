@@ -44,7 +44,7 @@ internal readonly record struct MediaMetadataSnapshot(
             properties.TrackNumber > 0 ? properties.TrackNumber : null,
             properties.AlbumTrackCount > 0 ? properties.AlbumTrackCount : null,
             viewModel.TimelineProperties.Duration,
-            presentation.DisplayName,
+            viewModel.SourceName,
             presentation.Source,
             viewModel.PlaybackType,
             playback.EffectiveState == MediaPlaybackState.Playing,

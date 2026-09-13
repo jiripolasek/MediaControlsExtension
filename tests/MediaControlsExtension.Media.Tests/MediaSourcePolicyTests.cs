@@ -15,6 +15,95 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class MediaSourcePolicyTests
 {
     [TestMethod]
+    public async Task RapidClaimChangesFenceLateReadsAndSurviveCallerCancellation()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Companion"));
+        await using var composite = new CompositeMediaBackend(Registry(native, companion, companionEnabled: true));
+        await composite.SetSourceClaimsAsync("companion", []);
+        await composite.StartAsync(default);
+        var initial = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 4);
+        var original = initial.Sessions.Single(static session => session.MediaProperties.Title == "Browser");
+        native.BlockNextRead();
+        native.Inner.SetSnapshot(NativeSnapshot(2, "Stale"));
+        await WaitUntilAsync(() =>
+        {
+            _ = composite.ReadSnapshotAsync(default);
+            return native.ReadCaptured.Task.IsCompleted;
+        });
+        using var cancellation = new CancellationTokenSource();
+        var claiming = composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")], cancellation.Token);
+        try
+        {
+            cancellation.Cancel();
+            await Assert.ThrowsExactlyAsync<TaskCanceledException>(() => claiming);
+            var releasing = composite.SetSourceClaimsAsync("companion", []);
+            native.Inner.SetSnapshot(NativeSnapshot(3, "Fresh"));
+            native.ReleaseRead();
+            await releasing.WaitAsync(TimeSpan.FromSeconds(5));
+            var restored = await WaitForSnapshotAsync(composite,
+                static snapshot => snapshot.Sessions.Any(static session => session.MediaProperties.Title == "Fresh"));
+            Assert.IsFalse(restored.Sessions.Any(static session => session.MediaProperties.Title == "Stale"));
+            Assert.AreNotEqual(original.Id, restored.Sessions.Single(static session => session.MediaProperties.Title == "Fresh").Id);
+            Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+            Assert.AreEqual(0, companion.DisposeCount);
+        }
+        finally
+        {
+            native.ReleaseRead();
+        }
+    }
+
+    [TestMethod]
+    public async Task ConfiguredClaimsCanChangeWhileEnabledWithoutRecreatingProviders()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Companion"));
+        await using var composite = new CompositeMediaBackend(Registry(native, companion, companionEnabled: true));
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 2);
+        await composite.SetSourceClaimsAsync("companion", []);
+        var remote = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 4);
+        var restored = remote.Sessions.Single(static session => session.MediaProperties.Title == "Browser");
+        Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+        Assert.IsTrue(composite.Backends.Single(static backend => backend.Id == "companion").IsEnabled);
+
+        await composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")]);
+        var local = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 2);
+        Assert.IsFalse(local.Sessions.Any(session => session.Id == restored.Id));
+        Assert.AreEqual(MediaBackendCommandStatus.SessionGone,
+            (await composite.ExecuteAsync(new(restored.Id, restored.BindingGeneration, MediaOperation.Play, []), default)).Status);
+        Assert.AreEqual(0, companion.DisposeCount);
+        Assert.AreEqual(0, native.Inner.DisposeCount);
+        companion.SetSnapshot(new(2, [], [], MediaControlAvailability.Unavailable));
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 1);
+        Assert.IsTrue(native.Policy.ExcludedApplicationIds.Contains("browser.app"));
+    }
+
+    [TestMethod]
+    public async Task ClaimsChangedWhileDisabledApplyOnEnableAndConflictsAreAtomic()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Companion"));
+        var second = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Second"));
+        var registry = Registry(native, companion).Register(new("second", "Second", "Test", _ => second, true)
+        {
+            ReplacesSources = [new("native", "browser.app")],
+        });
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.SetSourceClaimsAsync("companion", []);
+        Assert.IsFalse(composite.Backends.Single(static backend => backend.Id == "companion").IsEnabled);
+        await composite.StartAsync(default);
+        await composite.SetEnabledAsync("companion", true);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
+        Assert.ThrowsExactly<InvalidOperationException>(() => composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")]));
+        Assert.ThrowsExactly<ArgumentException>(() => composite.SetSourceClaimsAsync("companion", [new("missing", "app")]));
+        await composite.SetEnabledAsync("second", false);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 4);
+        Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+    }
+
+    [TestMethod]
     public async Task EnableDisconnectDisableTransfersOnlyClaimedSources()
     {
         var native = new FakeSourcePolicyBackend(NativeSnapshot());

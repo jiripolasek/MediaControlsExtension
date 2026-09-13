@@ -84,7 +84,8 @@ internal sealed class MediaSessionCatalog
             }
 
             var publishedSessions = sessions.MoveToImmutable();
-            if (!SessionsEqual(previousState.Sessions, publishedSessions))
+            if (!SessionsEqual(previousState.Sessions, publishedSessions) ||
+                sessionNotifications.Any(static notification => notification.Changes.HasFlag(MediaSessionChanges.Origin)))
             {
                 serviceChanges |= MediaServiceChanges.Sessions;
             }

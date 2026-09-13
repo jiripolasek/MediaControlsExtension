@@ -24,8 +24,7 @@ public sealed class MediaSourcesPageTests
     public void PrefetchDoesNotSubscribeAndOpeningRefreshesTheExistingRows()
     {
         var service = new StatusService(State());
-        var settings = new ListPage { Name = "Settings" };
-        using var page = new MediaSourcesPage(service, settings, NullLoggerFactory.Instance);
+        using var page = Page(service);
         IListPage exposed = page;
         var row = Rows(exposed).Single();
         Assert.AreEqual(0, service.SubscriberCount);
@@ -226,23 +225,53 @@ public sealed class MediaSourcesPageTests
         Assert.AreSame(rows[0], Rows(page).Single());
         Assert.AreEqual(2, notifications);
         service.Publish();
-        Assert.AreEqual(1, page.GetItems().Length);
+        Assert.AreEqual(0, page.GetItems().Length);
     }
 
     [TestMethod]
-    public void SettingsActionsUseTheExistingSettingsCommand()
+    public void ConfigurationIsProviderSpecificAndAvailableWhileDisabled()
     {
-        var settings = new ListPage { Name = "Existing settings page" };
-        using var page = new MediaSourcesPage(new StatusService(State()), settings, NullLoggerFactory.Instance);
+        var configuration = new ListPage { Name = "Configure VLC" };
+        var service = new StatusService(State("vlc") with { IsEnabled = false }, State("gsmtc"));
+        var changes = new List<(string, bool)>();
+        using var page = new MediaSourcesPage(service, (id, enabled) => changes.Add((id, enabled)),
+            new Dictionary<string, ICommand> { ["vlc"] = configuration }, NullLoggerFactory.Instance);
         var items = page.GetItems();
-        var row = Rows(page).Single();
+        Assert.AreEqual(2, items.Length);
+        Assert.AreSame(configuration, items[0].Command);
+        Assert.IsEmpty(changes);
+        var toggle = (IInvokableCommand)((ICommandContextItem)items[0].MoreCommands[0]).Command;
+        Assert.AreEqual("Enable", ((ICommand)toggle).Name);
+        Assert.AreEqual(CommandResultKind.KeepOpen, toggle.Invoke(page).Kind);
+        CollectionAssert.AreEqual(new[] { ("vlc", true) }, changes);
+        Assert.AreEqual("Disable", ((ICommand)toggle).Name);
+        Assert.AreSame(configuration, ((ICommandContextItem)items[0].MoreCommands[1]).Command);
+        Assert.IsInstanceOfType<IInvokableCommand>(items[1].Command);
+        Assert.AreEqual("Disable", items[1].Command.Name);
+    }
 
-        Assert.AreSame(settings, items[^1].Command);
-        Assert.AreEqual("Open settings", items[^1].Title);
-        var context = (ICommandContextItem)row.MoreCommands.Single();
-        Assert.AreSame(settings, context.Command);
-        Assert.AreEqual("Open settings", ((ICommandItem)context).Title);
-        Assert.IsInstanceOfType<NoOpCommand>(row.Command);
+    [TestMethod]
+    public void EnablementChangesRefreshTheCommandOutsideThePageLock()
+    {
+        var service = new StatusService(State());
+        using var page = Page(service);
+        page.ItemsChanged += (_, _) => { };
+        var command = Rows(page).Single().Command!;
+        var reentrantRead = false;
+        command.PropChanged += (_, _) => reentrantRead = Task.Run(page.GetItems).Wait(TimeSpan.FromSeconds(3));
+        service.Publish(State() with { IsEnabled = false });
+        Assert.AreEqual("Enable", command.Name);
+        Assert.IsTrue(reentrantRead);
+    }
+
+    [TestMethod]
+    public void FailedEnablementWriteKeepsTheOriginalActionAndReportsFailure()
+    {
+        using var page = new MediaSourcesPage(new StatusService(State()), (_, _) => throw new IOException(),
+            new Dictionary<string, ICommand>(), NullLoggerFactory.Instance);
+        var command = (IInvokableCommand)Rows(page).Single().Command!;
+        Assert.AreEqual(CommandResultKind.ShowToast, command.Invoke(page).Kind);
+        Assert.AreEqual("Disable", ((ICommand)command).Name);
     }
 
     [TestMethod]
@@ -373,7 +402,8 @@ public sealed class MediaSourcesPageTests
         }
     }
 
-    private static MediaSourcesPage Page(StatusService service) => new(service, new ListPage(), NullLoggerFactory.Instance);
+    private static MediaSourcesPage Page(StatusService service) =>
+        new(service, (_, _) => { }, new Dictionary<string, ICommand>(), NullLoggerFactory.Instance);
     private static MediaSourceStatusItem[] Rows(IListPage page) => page.GetItems().OfType<MediaSourceStatusItem>().ToArray();
     private static string Fact(MediaSourceStatusItem row, string label) =>
         ((DetailsLink)row.Details!.Metadata.Single(fact => fact.Key == label).Data!).Text;

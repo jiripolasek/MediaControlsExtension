@@ -22,7 +22,8 @@ public sealed record MediaBackendRegistration(
     Func<ILoggerFactory, IMediaBackend> CreateBackend,
     bool EnabledByDefault = false)
 {
-    /// <summary>Gets exact source claims held while enabled, including while disconnected or faulted; defaults to empty.</summary>
+    /// <summary>Gets initial source claims held while enabled, including while disconnected or faulted; defaults to empty.</summary>
+    /// <remarks>The composite can replace these claims when the provider's configuration changes.</remarks>
     public ImmutableArray<MediaBackendSourceClaim> ReplacesSources { get; init; } = [];
 }
 
@@ -47,22 +48,7 @@ public sealed class MediaBackendRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(registration.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(registration.DisplayName);
         ArgumentNullException.ThrowIfNull(registration.CreateBackend);
-        if (registration.ReplacesSources.IsDefault)
-        {
-            throw new ArgumentException("Source claims must be an initialized array.", nameof(registration));
-        }
-
-        var claims = new HashSet<MediaBackendSourceClaim>();
-        foreach (var claim in registration.ReplacesSources)
-        {
-            ArgumentNullException.ThrowIfNull(claim);
-            ArgumentException.ThrowIfNullOrWhiteSpace(claim.BackendId);
-            ArgumentException.ThrowIfNullOrWhiteSpace(claim.ApplicationId);
-            if (claim.BackendId == registration.Id || !claims.Add(claim))
-            {
-                throw new ArgumentException("Source claims must be distinct and refer to another backend.", nameof(registration));
-            }
-        }
+        ValidateSourceClaims(registration.Id, registration.ReplacesSources);
 
         if (this._registrations.Any(existing => string.Equals(existing.Id, registration.Id, StringComparison.Ordinal)))
         {
@@ -71,5 +57,25 @@ public sealed class MediaBackendRegistry
 
         this._registrations.Add(registration);
         return this;
+    }
+
+    internal static void ValidateSourceClaims(string backendId, ImmutableArray<MediaBackendSourceClaim> sourceClaims)
+    {
+        if (sourceClaims.IsDefault)
+        {
+            throw new ArgumentException("Source claims must be an initialized array.", nameof(sourceClaims));
+        }
+
+        var claims = new HashSet<MediaBackendSourceClaim>();
+        foreach (var claim in sourceClaims)
+        {
+            ArgumentNullException.ThrowIfNull(claim);
+            ArgumentException.ThrowIfNullOrWhiteSpace(claim.BackendId);
+            ArgumentException.ThrowIfNullOrWhiteSpace(claim.ApplicationId);
+            if (claim.BackendId == backendId || !claims.Add(claim))
+            {
+                throw new ArgumentException("Source claims must be distinct and refer to another backend.", nameof(sourceClaims));
+            }
+        }
     }
 }

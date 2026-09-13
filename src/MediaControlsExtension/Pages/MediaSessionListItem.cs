@@ -37,6 +37,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     private int _disposed;
 
     internal MediaSessionId SessionId => this._sessionId;
+    internal bool TreatAsLocal => Volatile.Read(ref this._viewModel)?.Session.Origin.TreatAsLocal ?? true;
 
     public override IDetails? Details
     {
@@ -199,7 +200,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         var playback = viewModel.PlaybackInfo;
         var isPlaying = playback.EffectiveState == MediaPlaybackState.Playing;
 
-        this.Title = (isPlaying && !this._asBand ? "▶️ " : string.Empty) + properties.Title;
+        this.Title = (isPlaying && !this._asBand ? "\u25B6\uFE0F " : string.Empty) + properties.Title;
         this.Subtitle = BuildSubtitle(viewModel);
         this._command.UpdatePresentation(viewModel.Session);
         this.UpdateNavigationCommandIcons();
@@ -226,15 +227,15 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     private static string BuildSubtitle(MediaSessionViewModel viewModel)
     {
         var subtitleBuilder = new StringBuilder();
-        subtitleBuilder.AppendWhenNotEmpty(" • ", viewModel.MediaProperties.Artist);
+        subtitleBuilder.AppendWhenNotEmpty(" \u2022 ", viewModel.MediaProperties.Artist);
         subtitleBuilder.AppendWhenNotEmpty(" \u2022 ", viewModel.SourceName);
 
 #if DEBUG
         subtitleBuilder.AppendWhenNotEmpty(
-            " • ",
+            " \u2022 ",
             viewModel.MediaProperties.Source.NativeApplication?.ApplicationId);
         subtitleBuilder.AppendWhenNotEmpty(
-            " • ",
+            " \u2022 ",
             Path.GetFileName(viewModel.SourceIconPath));
 #endif
 

@@ -182,7 +182,10 @@ internal sealed record MediaSessionState(
     bool IsAvailable,
     MediaPropertiesSnapshot MediaProperties,
     MediaTimelinePropertiesSnapshot TimelineProperties,
-    MediaPlaybackInfoSnapshot PlaybackInfo);
+    MediaPlaybackInfoSnapshot PlaybackInfo)
+{
+    public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
+}
 
 /// <summary>Coalescible categories changed on an existing MediaSession.</summary>
 [Flags]
@@ -200,6 +203,8 @@ public enum MediaSessionChanges
     Availability = 1 << 3,
     /// <summary>The logical session retained its identity but received a replacement backend binding.</summary>
     Rebound = 1 << 4,
+    /// <summary>The connection identity or effective local/remote treatment changed.</summary>
+    Origin = 1 << 5,
 }
 
 [Flags]
@@ -236,7 +241,10 @@ internal sealed record MediaSessionSnapshot(
     bool IsAvailable,
     MediaPropertiesSnapshot MediaProperties,
     MediaTimelinePropertiesSnapshot TimelineProperties,
-    MediaPlaybackInfoSnapshot PlaybackInfo);
+    MediaPlaybackInfoSnapshot PlaybackInfo)
+{
+    public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
+}
 
 internal sealed record MediaServiceSnapshot(
     long Revision,

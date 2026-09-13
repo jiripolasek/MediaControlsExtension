@@ -101,7 +101,10 @@ internal sealed class MediaStateStore
                         effectiveState,
                         isOptimistic,
                         backendSession.Capabilities,
-                        ResolvePrimaryOperation(effectiveState, backendSession.Capabilities))));
+                        ResolvePrimaryOperation(effectiveState, backendSession.Capabilities)))
+                {
+                    Origin = backendSession.Origin,
+                });
             }
 
             var currentSessionId = this.SelectCurrentSessionUnderLock(backendSnapshot, liveSessionIds);
@@ -189,9 +192,11 @@ internal sealed class MediaStateStore
                 return MediaCommandSubmissionStatus.Unsupported;
             }
 
-            var sessionsToPause = this._options.PauseOtherSessionsOnPlay && operation == MediaOperation.Play
+            var sessionsToPause = this._options.PauseOtherSessionsOnPlay && operation == MediaOperation.Play &&
+                (target.Origin.TreatAsLocal || this._options.IncludeRemoteSessionsInPauseOthers)
                 ? this._current.Sessions
                     .Where(session => session.Id != target.Id && session.IsAvailable &&
+                        (session.Origin.TreatAsLocal || this._options.IncludeRemoteSessionsInPauseOthers) &&
                         session.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.Pause))
                     .Select(static session => new MediaBackendSessionTarget(new(session.Id.Value), session.BindingGeneration))
                     .ToImmutableArray()
@@ -364,7 +369,7 @@ internal sealed class MediaStateStore
         var candidatePriority = -1;
         foreach (var session in snapshot.Sessions)
         {
-            if (!session.IsAvailable)
+            if (!session.IsAvailable || !session.Origin.TreatAsLocal)
             {
                 continue;
             }
@@ -393,7 +398,8 @@ internal sealed class MediaStateStore
         for (var count = 1; count < sessions.Length; count++)
         {
             index = (index + sessions.Length + offset) % sessions.Length;
-            if (sessions[index].IsAvailable && sessions[index].PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.Play))
+            if (sessions[index].IsAvailable && sessions[index].Origin.TreatAsLocal &&
+                sessions[index].PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.Play))
             {
                 return index;
             }

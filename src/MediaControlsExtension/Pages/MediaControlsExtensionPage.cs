@@ -21,6 +21,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly Separator _playbackSectionSeparator = new(Strings.Page_Section_Playback!);
     private readonly Separator _systemVolumeSectionSeparator = new(Strings.Page_Section_SystemVolume!);
     private readonly Separator _mediaSessionsSectionSeparator = new(Strings.Page_Section_MediaSessions!);
+    private readonly Separator _remoteSessionsSectionSeparator = new(
+        Strings.ResourceManager.GetString("Page_Section_RemoteSessions", Strings.Culture)!);
 
     private bool _isInitialized;
     private bool _disposed;
@@ -346,11 +348,25 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
 
         var items = this.GetGlobalCommands();
         var sectionStart = items.Count;
-        items.AddRange(this._items);
+        List<MediaSessionListItem> remoteItems = [];
+        foreach (var item in this._items)
+        {
+            if (item.TreatAsLocal)
+            {
+                items.Add(item);
+            }
+            else
+            {
+                remoteItems.Add(item);
+            }
+        }
         InsertSectionSeparatorIfNotEmpty(
             items,
             sectionStart,
             this._mediaSessionsSectionSeparator);
+        sectionStart = items.Count;
+        items.AddRange(remoteItems);
+        InsertSectionSeparatorIfNotEmpty(items, sectionStart, this._remoteSessionsSectionSeparator);
         return [.. items];
     }
 

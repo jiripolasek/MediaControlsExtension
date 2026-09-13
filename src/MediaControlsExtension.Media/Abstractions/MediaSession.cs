@@ -36,7 +36,10 @@ public sealed class MediaSession
             snapshot.IsAvailable,
             snapshot.MediaProperties,
             snapshot.TimelineProperties,
-            snapshot.PlaybackInfo);
+            snapshot.PlaybackInfo)
+        {
+            Origin = snapshot.Origin,
+        };
     }
 
     /// <summary>Signals coalesced changes on the service's background pump after state publication.</summary>
@@ -61,6 +64,9 @@ public sealed class MediaSession
 
     /// <summary>Gets observed playback, capabilities, and any temporary service prediction.</summary>
     public MediaPlaybackInfoSnapshot PlaybackInfo => this.State.PlaybackInfo;
+
+    /// <summary>Gets the originating connection and effective local/remote playback behavior.</summary>
+    public MediaSessionOrigin Origin => this.State.Origin;
 
     internal MediaSessionChanges Apply(MediaSessionSnapshot snapshot)
     {
@@ -102,6 +108,11 @@ public sealed class MediaSession
             changes |= MediaSessionChanges.Rebound;
         }
 
+        if (snapshot.Origin != previous.Origin)
+        {
+            changes |= MediaSessionChanges.Origin;
+        }
+
         if (changes == MediaSessionChanges.None)
         {
             return changes;
@@ -114,7 +125,10 @@ public sealed class MediaSession
                 snapshot.IsAvailable,
                 mediaProperties,
                 timelineProperties,
-                playbackInfo));
+                playbackInfo)
+            {
+                Origin = snapshot.Origin,
+            });
         return changes;
     }
 
