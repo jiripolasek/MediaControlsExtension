@@ -175,7 +175,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 }
 
                 affected.Add(entry);
-                foreach (var claim in entry.Registration.ReplacesSources)
+                foreach (var claim in entry.SourceClaims)
                 {
                     affected.Add(this._providers.Single(provider => provider.Registration.Id == claim.BackendId));
                 }
@@ -191,6 +191,66 @@ public sealed class CompositeMediaBackend : IMediaBackend
         if (retired is not null)
         {
             _ = this.CancelRunAsync(retired);
+        }
+
+        return transition.WaitAsync(cancellationToken);
+    }
+
+    /// <summary>Replaces a provider's configured source claims without changing enablement or recreating it.</summary>
+    /// <param name="backendId">Case-sensitive registration ID.</param>
+    /// <param name="claims">Complete initialized claim list; targets must be other registered providers.</param>
+    /// <param name="cancellationToken">Checked before acceptance; afterward, cancellation only stops this caller's wait.</param>
+    /// <returns>Completion of affected source-policy transitions; inspect Backends for provider failures.</returns>
+    /// <exception cref="ArgumentException">An ID or claim is invalid, duplicated, or unregistered.</exception>
+    /// <exception cref="InvalidOperationException">Enabled providers would have conflicting claims.</exception>
+    /// <exception cref="ObjectDisposedException">The composite is disposed.</exception>
+    /// <remarks>
+    /// Claims persist while enabled, including on disconnect or failure. New exclusions immediately retire public routes.
+    /// Disabled providers retain configuration for their next enable. A configuration update also schedules a fresh observation.
+    /// </remarks>
+    public Task SetSourceClaimsAsync(string backendId, ImmutableArray<MediaBackendSourceClaim> claims,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        MediaBackendRegistry.ValidateSourceClaims(backendId, claims);
+        Task transition;
+        lock (this._stateLock)
+        {
+            ObjectDisposedException.ThrowIf(this._disposed, this);
+            var entry = this._providers.FirstOrDefault(entry => entry.Registration.Id == backendId)
+                ?? throw new ArgumentException($"Unknown media backend '{backendId}'.", nameof(backendId));
+            foreach (var claim in claims)
+            {
+                if (!this._providers.Any(provider => provider.Registration.Id == claim.BackendId))
+                {
+                    throw new ArgumentException("A source claim refers to an unregistered backend.", nameof(claims));
+                }
+            }
+
+            this.ValidateSourceOwnersUnderLock(entry, entry.Enabled, claims);
+            var previousClaims = entry.SourceClaims;
+            entry.SourceClaims = claims;
+            var affected = this.UpdateSourcePoliciesUnderLock();
+            if (entry.Run is { Retired: false } run)
+            {
+                run.Dirty = true;
+                this.Signal(MediaBackendSignal.ObservationsChanged);
+            }
+
+            if (this._started)
+            {
+                foreach (var provider in affected)
+                {
+                    this.QueueTransitionUnderLock(provider);
+                }
+            }
+
+            foreach (var claim in previousClaims.Concat(claims))
+            {
+                affected.Add(this._providers.Single(provider => provider.Registration.Id == claim.BackendId));
+            }
+
+            transition = Task.WhenAll(affected.Select(static provider => provider.Transition));
         }
 
         return transition.WaitAsync(cancellationToken);
@@ -478,7 +538,8 @@ public sealed class CompositeMediaBackend : IMediaBackend
         return entry.Transition;
     }
 
-    private void ValidateSourceOwnersUnderLock(ProviderEntry? changedEntry, bool enabled)
+    private void ValidateSourceOwnersUnderLock(ProviderEntry? changedEntry, bool enabled,
+        ImmutableArray<MediaBackendSourceClaim>? replacementClaims = null)
     {
         var owners = new HashSet<MediaBackendSourceClaim>();
         foreach (var entry in this._providers)
@@ -488,7 +549,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 continue;
             }
 
-            foreach (var claim in entry.Registration.ReplacesSources)
+            foreach (var claim in entry == changedEntry && replacementClaims is { } replacements ? replacements : entry.SourceClaims)
             {
                 if (!owners.Add(claim))
                 {
@@ -502,7 +563,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
     {
         var affected = new HashSet<ProviderEntry>();
         var claims = this._providers.Where(static entry => entry.Enabled)
-            .SelectMany(static entry => entry.Registration.ReplacesSources).ToArray();
+            .SelectMany(static entry => entry.SourceClaims).ToArray();
         foreach (var entry in this._providers)
         {
             var excluded = claims.Where(claim => claim.BackendId == entry.Registration.Id)
@@ -797,6 +858,16 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 foreach (var session in snapshot.Sessions)
                 {
                     ValidateSource(session.MediaProperties.Source);
+                    if (session.Origin is null || string.IsNullOrWhiteSpace(session.Origin.ConnectionId))
+                    {
+                        throw new InvalidOperationException("The provider returned an invalid session origin.");
+                    }
+                    if (run.Routes.TryGetValue(session.Id, out var previous) &&
+                        previous.Local.Origin.ConnectionId != session.Origin.ConnectionId &&
+                        previous.Local.BindingGeneration == session.BindingGeneration)
+                    {
+                        throw new InvalidOperationException("A replacement connection requires a new binding generation.");
+                    }
                 }
 
                 var excluded = run.Entry.SourcePolicy.ExcludedApplicationIds;
@@ -1243,6 +1314,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
     private sealed class ProviderEntry(MediaBackendRegistration registration, bool enabled)
     {
         public MediaBackendRegistration Registration { get; } = registration;
+        public ImmutableArray<MediaBackendSourceClaim> SourceClaims { get; set; } = registration.ReplacesSources;
         public MediaSourceProvider SourceProvider { get; } = new(registration.Id, registration.DisplayName);
         public bool Enabled { get; set; } = enabled;
         public MediaBackendLifecycleStatus Status { get; set; }

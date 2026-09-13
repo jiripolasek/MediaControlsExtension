@@ -5,15 +5,13 @@
 // ------------------------------------------------------------
 
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Immutable;
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
+internal sealed class SettingsManager : ISettingsManager
 {
     private const string DefaultNamespace = "jpsoftworks.mediacontrols";
-    private readonly Dictionary<string, ToggleSetting> _mediaBackends = new(StringComparer.Ordinal);
+    public Settings Settings { get; } = new();
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showThumbnailsOption = new(
@@ -88,6 +86,13 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         Strings.Settings_PauseOthersOnPlay_Title!,
         Strings.Settings_PauseOthersOnPlay_Subtitle!,
         true);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Persisted keys are independent of property names")]
+    private readonly ToggleSetting _includeRemoteSessionsInPauseOthers = new(
+        Namespaced("IncludeRemoteSessionsInPauseOthers"),
+        Strings.ResourceManager.GetString("Settings_IncludeRemoteSessionsInPauseOthers_Title", Strings.Culture)!,
+        Strings.ResourceManager.GetString("Settings_IncludeRemoteSessionsInPauseOthers_Subtitle", Strings.Culture)!,
+        false);
 
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showCurrentMediaAtTopLevel = new(
@@ -165,6 +170,8 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 
     public bool PauseOthersOnPlay => this._pauseOthersOnPlay.Value;
 
+    public bool IncludeRemoteSessionsInPauseOthers => this._includeRemoteSessionsInPauseOthers.Value;
+
     public bool ShowCurrentMediaAtTopLevel => _showCurrentMediaAtTopLevel.Value;
 
     public bool EnableVolumeControls => this._enableVolumeControls.Value;
@@ -206,28 +213,15 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
     public string DockIconThemeId =>
         IconThemeCatalog.ResolveSelection(this._dockIconTheme.Value);
 
-    public ImmutableArray<string> EnabledMediaBackendIds =>
-        [.. this._mediaBackends.Where(static pair => pair.Value.Value).Select(static pair => pair.Key)];
-
-    public SettingsManager(MediaBackendRegistry backendRegistry)
+    public SettingsManager(SettingsStore store)
     {
-        ArgumentNullException.ThrowIfNull(backendRegistry);
-        this.FilePath = SettingsJsonPath();
-
+        ArgumentNullException.ThrowIfNull(store);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.MediaBackends"),
             Resource("Settings_Group_MediaBackends"),
             showSeparator: false));
-        foreach (var registration in backendRegistry.Registrations)
-        {
-            var setting = new ToggleSetting(
-                Namespaced($"MediaBackends.{registration.Id}.Enabled"),
-                registration.DisplayName,
-                registration.Description,
-                registration.EnabledByDefault);
-            this._mediaBackends.Add(registration.Id, setting);
-            this.Settings.Add(setting);
-        }
+        this.Settings.Add(new TextBlockSetting(
+            Namespaced("Layout.MediaBackendsHelp"), Resource("Settings_MediaBackends_Help"), isSubtle: true));
 
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.PalettePage"),
@@ -249,6 +243,7 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
         this.Settings.Add(this._showThumbnailsOption);
         this.Settings.Add(this._keepOpen);
         this.Settings.Add(this._pauseOthersOnPlay);
+        this.Settings.Add(this._includeRemoteSessionsInPauseOthers);
         this.Settings.Add(this._showToastMessages);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.Commands"),
@@ -272,8 +267,8 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
 
 
 
-        this.LoadSettings();
-        this.Settings.SettingsChanged += (_, _) => this.SaveSettings();
+        store.Load(this.Settings);
+        this.Settings.SettingsChanged += (_, _) => store.Save(this.Settings);
     }
 
     private static string Namespaced(string propertyName)
@@ -325,12 +320,11 @@ internal sealed class SettingsManager : JsonSettingsManager, ISettingsManager
     private static string Resource(string name)
         => Strings.ResourceManager.GetString(name, Strings.Culture) ?? name;
 
-    private static string SettingsJsonPath()
+    internal static string SettingsJsonPath()
     {
         var directory = Utilities.BaseSettingsPath("Microsoft.CmdPal");
         Directory.CreateDirectory(directory);
 
-        // now, the state is just next to the exe
         return Path.Combine(directory, "settings.json");
     }
 }

@@ -157,7 +157,7 @@ internal sealed partial class CurrentSessionNavigationCommandItem : CommandItem,
 
         return string.IsNullOrEmpty(playerName)
             ? Strings.Details_NotAvailable!
-            : $"{playerName} • {Strings.Details_NotAvailable}";
+            : $"{playerName} \u2022 {Strings.Details_NotAvailable}";
     }
 
     private static string GetKnownPlayerName(MediaSessionViewModel viewModel)
@@ -171,7 +171,7 @@ internal sealed partial class CurrentSessionNavigationCommandItem : CommandItem,
                     presentation.Source.NativeApplication?.ApplicationId,
                     StringComparison.OrdinalIgnoreCase))
             ? string.Empty
-            : playerName;
+            : viewModel.SourceName;
     }
 
     public void Dispose()

@@ -14,9 +14,19 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+    <ProjectReference Include="..\..\src\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
     <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaSourcesPage.cs" Link="Pages\MediaSourcesPage.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaBackendConfigurationPage.cs" Link="Pages\MediaBackendConfigurationPage.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsStore.cs" Link="Helpers\SettingsStore.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaBackendSettings.cs" Link="Helpers\MediaBackendSettings.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaCommandFeedback.cs" Link="Helpers\MediaCommandFeedback.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaPauseFailureNotifier.cs" Link="Helpers\MediaPauseFailureNotifier.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcPasswordSetting.cs" Link="Helpers\VlcPasswordSetting.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcConnectionSettings.cs" Link="Helpers\VlcConnectionSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcSettings.cs" Link="Helpers\VlcSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsGroupHeader.cs" Link="Helpers\SettingsGroupHeader.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\TextBlockSetting.cs" Link="Helpers\TextBlockSetting.cs" />
+    <Using Include="Microsoft.CommandPalette.Extensions.Toolkit" />
     <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\MediaSessionOp.cs" Link="Commands\MediaSessionOp.cs" />
     <Using Include="JPSoftworks.MediaControlsExtension.Helpers" />
     <Using Include="JPSoftworks.MediaControlsExtension.Resources" />

@@ -82,12 +82,16 @@ public sealed record MediaBackendSessionSnapshot(
     MediaTimelinePropertiesSnapshot TimelineProperties,
     MediaPlaybackState PlaybackState,
     MediaCapabilities Capabilities,
-    bool IsAvailable = true);
+    bool IsAvailable = true)
+{
+    /// <summary>Gets the connection and effective behavior; a replacement target requires a new binding generation.</summary>
+    public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
+}
 
 /// <summary>A complete, ordered backend view; published objects and collection contents must remain unchanged.</summary>
 /// <param name="Revision">Nonnegative observation revision that never decreases or resets within this instance.</param>
 /// <param name="Sessions">Initialized array of non-null sessions with distinct local IDs; order determines presentation.</param>
-/// <param name="CurrentSessionHints">Initialized array of local selection candidates; missing or unavailable IDs are ignored.</param>
+/// <param name="CurrentSessionHints">Initialized array of backend-local selection candidates; unavailable or remote-treated sessions are ignored.</param>
 /// <param name="Availability">Backend control availability, independent of connection state and session count.</param>
 public sealed record MediaBackendSnapshot(
     long Revision,

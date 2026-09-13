@@ -27,9 +27,9 @@ public enum MediaOperation
     ToggleShuffle,
     /// <summary>Advances through the provider's repeat modes.</summary>
     ToggleRepeat,
-    /// <summary>Plays the next available, play-capable session in published order, wrapping at the end.</summary>
+    /// <summary>Plays the next available, play-capable session treated as local in published order, wrapping at the end.</summary>
     SwitchNextSession,
-    /// <summary>Plays the previous available, play-capable session in published order, wrapping at the start.</summary>
+    /// <summary>Plays the previous available, play-capable session treated as local in published order, wrapping at the start.</summary>
     SwitchPreviousSession,
     /// <summary>Activates the owning source without selecting a session or predicting playback.</summary>
     ActivateSource,

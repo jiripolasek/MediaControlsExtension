@@ -16,7 +16,7 @@ namespace JPSoftworks.MediaControlsExtension.Media;
 /// </remarks>
 public interface IMediaService : IDisposable, IAsyncDisposable
 {
-    /// <summary>Signals changed session membership or order; item changes use MediaSession.Changed.</summary>
+    /// <summary>Signals changed session membership, order, or origin grouping; item changes also use MediaSession.Changed.</summary>
     event EventHandler? SessionsChanged;
 
     /// <summary>Signals a different selected session, including selection becoming null.</summary>
@@ -34,9 +34,10 @@ public interface IMediaService : IDisposable, IAsyncDisposable
     /// <summary>Gets an ordered immutable list of stable session objects; retained unavailable sessions may be included.</summary>
     ImmutableArray<MediaSession> Sessions { get; }
 
-    /// <summary>Gets the selected available session, or null when none is available.</summary>
+    /// <summary>Gets the selected available session, or null when none is selected or eligible for automatic selection.</summary>
     /// <remarks>
-    /// Accepted Play retains selection until its session becomes unavailable. Automatic selection prefers playing hints,
+    /// Accepted Play retains selection until its session becomes unavailable, including remote sessions.
+    /// Automatic selection considers only sessions treated as local and prefers playing hints,
     /// other playing sessions, other hints, then remaining sessions. Ties retain the current session, then use published order.
     /// </remarks>
     MediaSession? CurrentSession { get; }

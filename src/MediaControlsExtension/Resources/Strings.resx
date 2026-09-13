@@ -478,7 +478,7 @@
     <value>Pause other sessions when playback starts</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>When playing a session, automatically pause all other sessions.</value>
+    <value>When starting a local session, pause other local sessions. Remote sessions participate only when included below.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
     <value>Show the current media session on the home page</value>
@@ -644,6 +644,36 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   <data name="Settings_Group_MediaBackends" xml:space="preserve">
     <value>Media sources</value>
   </data>
+  <data name="Settings_MediaBackends_Help" xml:space="preserve">
+    <value>Configure media providers from the Media sources page in Media Controls. Open the Media Controls command menu and choose Media sources.</value>
+  </data>
+  <data name="MediaSources_ManageProviders" xml:space="preserve">
+    <value>Select a media source to configure it, or use its command menu to enable or disable it.</value>
+  </data>
+  <data name="MediaSources_Configure" xml:space="preserve">
+    <value>Configure</value>
+  </data>
+  <data name="MediaSources_Enable" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="MediaSources_Disable" xml:space="preserve">
+    <value>Disable</value>
+  </data>
+  <data name="MediaSources_SaveFailed" xml:space="preserve">
+    <value>Could not save media source settings. Check access to the settings file and try again.</value>
+  </data>
+  <data name="MediaSources_TestConnection" xml:space="preserve">
+    <value>Test saved connection</value>
+  </data>
+  <data name="MediaSources_TestConnected" xml:space="preserve">
+    <value>Connected to VLC. The saved connection settings work.</value>
+  </data>
+  <data name="MediaSources_TestFailed" xml:space="preserve">
+    <value>Could not connect to VLC. Check its Web interface and the saved connection settings.</value>
+  </data>
+  <data name="MediaSources_TestSettingsChanged" xml:space="preserve">
+    <value>VLC connection settings changed during the test. Test the saved connection again.</value>
+  </data>
   <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
     <value>Windows media sessions</value>
   </data>
@@ -721,5 +751,77 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
     <value>Disconnected</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
+    <value>VLC media player</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
+    <value>Control one local or remote VLC 3 player through its Web interface.</value>
+  </data>
+  <data name="Settings_Group_Vlc" xml:space="preserve">
+    <value>VLC connection</value>
+  </data>
+  <data name="Settings_Vlc_Help" xml:space="preserve">
+    <value>In VLC, enable the Web interface and set a Lua HTTP password, then restart VLC. For another computer, allow the interface and firewall to accept connections from this computer. Save its server URL and password below, then use Test saved connection from this page's command menu. Enable or disable VLC from Media sources. HTTP connections are intended for trusted networks; use HTTPS when your server provides it.</value>
+    <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
+    <value>Server URL</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Description" xml:space="preserve">
+    <value>For example, http://127.0.0.1:8080 or http://living-room:8080. Use the server root, without a path or password.</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Invalid" xml:space="preserve">
+    <value>Enter a valid HTTP or HTTPS server URL with no path, query, fragment, or embedded password.</value>
+  </data>
+  <data name="Settings_Vlc_Password_Title" xml:space="preserve">
+    <value>HTTP password</value>
+  </data>
+  <data name="Settings_Vlc_Password_Description" xml:space="preserve">
+    <value>Saved in Windows Credential Locker for this server URL. Leave blank to use that server's saved password. A new server needs its own password.</value>
+    <comment>Passwords are saved separately for each server URL. A blank input keeps only that server's saved password.</comment>
+  </data>
+  <data name="Settings_Vlc_Password_Placeholder" xml:space="preserve">
+    <value>Enter or replace the VLC password</value>
+  </data>
+  <data name="Settings_Vlc_Password_LoadFailed" xml:space="preserve">
+    <value>Could not read the saved VLC password from Windows Credential Locker. Enter the password again and save.</value>
+  </data>
+  <data name="Settings_Vlc_Password_SaveFailed" xml:space="preserve">
+    <value>Could not save the VLC password in Windows Credential Locker. The new password was not applied. Try saving again.</value>
+  </data>
+  <data name="Page_Section_RemoteSessions" xml:space="preserve">
+    <value>Remote sessions</value>
+    <comment>Section for sessions treated as remote for playback behavior, regardless of their physical location.</comment>
+  </data>
+  <data name="Session_Remote" xml:space="preserve">
+    <value>Remote</value>
+    <comment>Short marker appended to a player's name when its session is treated as remote.</comment>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Title" xml:space="preserve">
+    <value>Include remote sessions when pausing other players</value>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Subtitle" xml:space="preserve">
+    <value>When pause other players is enabled, starting a remote session can pause other players, and starting any player can pause remote sessions.</value>
+    <comment>Opt-in behavior applies in both directions: remote sessions may pause other sessions and may be paused by them.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Title" xml:space="preserve">
+    <value>Treat this session as local</value>
+    <comment>Behavior preference, not a statement of physical location. The choices are Automatic, Yes, and No.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Description" xml:space="preserve">
+    <value>Local sessions participate in automatic selection, player switching, and pausing other local players. Automatic treats loopback URLs as local and all other URLs as remote. This choice does not change which local VLC sessions are replaced.</value>
+  </data>
+  <data name="Settings_Vlc_Treatment_Auto" xml:space="preserve">
+    <value>Automatic (from server URL)</value>
+    <comment>Detect local playback behavior only for URLs that explicitly address this computer through loopback.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Local" xml:space="preserve">
+    <value>Yes</value>
+    <comment>Answer to Treat this session as local: always participate in local playback behavior.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
+    <value>No</value>
+    <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
   </data>
 </root>

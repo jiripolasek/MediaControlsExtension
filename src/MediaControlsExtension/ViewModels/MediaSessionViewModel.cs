@@ -61,7 +61,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
 
     public MediaSourcePresentationSnapshot SourcePresentation => this._sourcePresentation.State;
 
-    public string SourceName => this.SourcePresentation.DisplayName;
+    public string SourceName => this.DecorateSourceName(this.SourcePresentation.DisplayName);
 
     public string? SourceIconPath => this.SourcePresentation.IconPath;
 
@@ -75,8 +75,12 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         _ => MediaPlaybackType.Unknown,
     };
 
-    public ValueTask<string> GetSourceNameAsync(CancellationToken cancellationToken = default) =>
-        this._sourcePresentation.GetDisplayNameAsync(cancellationToken);
+    public async ValueTask<string> GetSourceNameAsync(CancellationToken cancellationToken = default) =>
+        this.DecorateSourceName(await this._sourcePresentation.GetDisplayNameAsync(cancellationToken).ConfigureAwait(false));
+
+    private string DecorateSourceName(string name) => this.Session.Origin.TreatAsLocal
+        ? name
+        : StringHelper.JoinNonEmpty(" \u2022 ", (string?[])[name, Strings.ResourceManager.GetString("Session_Remote", Strings.Culture)]);
 
     public void RequestArtwork()
     {

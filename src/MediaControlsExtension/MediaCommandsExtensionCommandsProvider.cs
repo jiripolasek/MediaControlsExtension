@@ -20,6 +20,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly MediaMetadataPageCache _metadataPages;
     private readonly SystemVolumeService _systemVolumeService;
     private readonly SettingsManager _settingsManager;
+    private readonly MediaBackendSettings _backendSettings;
     private readonly IconService _iconService;
     private readonly CommandItem _mediaControlsPageItem;
     private readonly CommandItem _nowPlayingItem;
@@ -44,9 +45,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         this._logger = loggerFactory.CreateLogger<MediaControlsExtensionCommandsProvider>();
-        var backendRegistry = MediaBackendCatalog.CreateRegistry();
-        this._settingsManager = new(backendRegistry);
-        this._mediaBackend = new(backendRegistry, this._settingsManager.EnabledMediaBackendIds, loggerFactory);
+        var settingsStore = new SettingsStore(SettingsManager.SettingsJsonPath(), this._logger);
+        var vlcSettings = new VlcSettings();
+        var configurationPages = MediaBackendCatalog.CreateConfigurationPages(vlcSettings, settingsStore, loggerFactory,
+            () => _ = this.UpdateVlcSourceClaimsAsync(vlcSettings));
+        var backendRegistry = MediaBackendCatalog.CreateRegistry(vlcSettings.GetOptions);
+        this._settingsManager = new(settingsStore);
+        this._backendSettings = new(backendRegistry, settingsStore);
+        this._mediaBackend = new(backendRegistry, this._backendSettings.EnabledIds, loggerFactory);
         this._mediaService = new MediaService(this._mediaBackend, loggerFactory);
         this._mediaSessionViewModels = new(this._mediaService, loggerFactory);
         this._systemVolumeService = new(loggerFactory);
@@ -57,6 +63,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this.Settings = this._settingsManager.Settings;
 
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
+        this._backendSettings.EnabledChanged += this.BackendsOnEnabledChanged;
         this._iconService.IconsChanged += this.IconServiceOnIconsChanged;
         this._resultFactory = new(this._settingsManager, loggerFactory);
         this._metadataPages = new(
@@ -76,7 +83,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._resultFactory,
             this._iconService,
             loggerFactory);
-        this._mediaSourcesPage = new(this._mediaService, this.Settings.SettingsPage!, loggerFactory);
+        this._mediaSourcesPage = new(this._mediaService, this._backendSettings.SetEnabled, configurationPages, loggerFactory);
         var reportProblemPage = new ReportProblemPage(
             new DiagnosticLogArchiveService(ExtensionHostIdentity.GetLogDirectoryPath()),
             loggerFactory);
@@ -209,11 +216,27 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
-        this.UpdateEnabledMediaBackends();
         this.UpdateMediaServiceOptions();
         this.UpdateTopLevelCommands();
         this.UpdateDockBands();
         this.RaiseItemsChanged();
+    }
+
+    private void BackendsOnEnabledChanged(object? sender, EventArgs args) => this.UpdateEnabledMediaBackends();
+
+    private async Task UpdateVlcSourceClaimsAsync(VlcSettings settings)
+    {
+        try
+        {
+            await this._mediaBackend.SetSourceClaimsAsync("vlc", MediaBackendCatalog.VlcSourceClaims(settings.GetOptions())).ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException) when (Volatile.Read(ref this._disposeState) != 0)
+        {
+        }
+        catch (Exception ex)
+        {
+            ExtensionLog.UnexpectedError(this._logger, ex);
+        }
     }
 
     private void UpdateEnabledMediaBackends()
@@ -223,7 +246,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             return;
         }
 
-        var enabled = this._settingsManager.EnabledMediaBackendIds;
+        var enabled = this._backendSettings.EnabledIds;
         foreach (var backend in this._mediaBackend.Backends)
         {
             var isEnabled = enabled.Contains(backend.Id);
@@ -299,7 +322,8 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private void UpdateMediaServiceOptions()
     {
         this._mediaService.UpdateOptions(new(
-            this._settingsManager.PauseOthersOnPlay));
+            this._settingsManager.PauseOthersOnPlay,
+            this._settingsManager.IncludeRemoteSessionsInPauseOthers));
     }
 
     private void UpdateDockBands()
@@ -336,6 +360,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             }
 
             this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
+            this._backendSettings.EnabledChanged -= this.BackendsOnEnabledChanged;
             this._iconService.IconsChanged -= this.IconServiceOnIconsChanged;
             this._toggleMuteCommandItem.Dispose();
             foreach (var item in this._trackNavigationCommands)
