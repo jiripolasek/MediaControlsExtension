@@ -10,6 +10,7 @@ Run from the repository root with .NET 10 and the Windows SDK:
 ```powershell
 ./tests/MediaControlsExtension.Media.Hosting.Tests/Run-Tests.ps1
 ./tests/MediaControlsExtension.Media.Hosting.Tests/Run-Tests.ps1 -NativeAot
+./tests/MediaControlsExtension.Media.Hosting.Tests/Test-Package.ps1
 ./eng/Test-MediaWorkerPackage.ps1 -NativeAot -RestartHost
 ./tests/MediaControlsExtension.Media.Hosting.Tests/Run-NativeChecks.ps1 -NativeAot -Packaged
 ```
@@ -26,6 +27,13 @@ They also run the production dummy factory through a real worker, recover it
 while a different backend remains usable, and dispose both through their owner.
 Use `-OutputDirectory <directory>` for a separate executable while a native soak
 is using the default output directory.
+
+`Test-Package.ps1` publishes the x64 NativeAOT fixture and runs the subprocess
+suite plus GSMTC acquisition under an isolated test package identity. It uses
+`Package.appxmanifest` beside the script and retains the package name
+`JPSoftworks.MediaBackendHostSpike`. It does not deploy the extension and removes
+the test package afterward unless `-KeepRegistered` is supplied. Use `-SkipBuild`
+to reuse the published fixture.
 
 `Test-MediaWorkerPackage.ps1` checks the deployed production payload and CmdPal
 activation, recovery and lifetime, including the actual COM page commands and

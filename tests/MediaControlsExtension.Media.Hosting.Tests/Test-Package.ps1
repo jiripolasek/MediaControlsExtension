@@ -9,7 +9,7 @@ $taskRepo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $output = Join-Path $taskRepo 'artifacts\MediaBackendHost\native-x64'
 $layout = Join-Path $taskRepo 'artifacts\MediaBackendHost\package-x64'
 $results = Join-Path $taskRepo ('artifacts\MediaBackendHost\packaged-tests-' + [Guid]::NewGuid().ToString('N'))
-$project = Join-Path $PSScriptRoot '..\..\tests\MediaControlsExtension.Media.Hosting.Tests\JPSoftworks.MediaControlsExtension.Media.Hosting.Tests.csproj'
+$project = Join-Path $PSScriptRoot 'JPSoftworks.MediaControlsExtension.Media.Hosting.Tests.csproj'
 $packageName = 'JPSoftworks.MediaBackendHostSpike'
 $registered = $false
 

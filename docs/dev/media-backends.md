@@ -6,10 +6,11 @@ the composite, and `MediaService`. Provider projects reference this project.
 lifetimes, and GSMTC diagnostics. New integrations should have their own projects
 with their own dependencies and reference the media core.
 
-The original direct GSMTC provider and optional [VLC provider](../user/vlc-backend.md) are registered. The isolated
-worker remains a separate [proof of concept](../../experiments/MediaWorkerProbe/README.md)
-with its own executable, package, and solution. It is not referenced by the
-production extension or exposed in media-source settings.
+Windows media sessions use the [isolated GSMTC worker](media-backend-hosting.md)
+by default, with direct in-process GSMTC available as an alternative in Media
+sources. The two modes are mutually exclusive. The optional
+[VLC provider](../user/vlc-backend.md) is also registered. The worker executable
+ships in the production extension package.
 
 The current scope follows the existing UI: session discovery, metadata, artwork,
 playback controls, and source activation. More detailed control of individual
