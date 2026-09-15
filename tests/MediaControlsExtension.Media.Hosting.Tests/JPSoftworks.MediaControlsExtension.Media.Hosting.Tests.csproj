@@ -4,6 +4,8 @@
     <OutputType Condition="'$(HostingTestsWindowless)' == 'true'">WinExe</OutputType>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <IsAotCompatible>true</IsAotCompatible>
+    <EnableStreamJsonRpcInterceptors>true</EnableStreamJsonRpcInterceptors>
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>

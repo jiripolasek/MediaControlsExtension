@@ -167,7 +167,7 @@ in the extension so launched media applications do not inherit a worker's job.
 The packaged launcher must preserve package identity/capabilities and pass the
 same ownership tests. A COM activation lease alone is not an owner-lifetime guard.
 
-## Protocol version 5
+## Protocol version 6
 
 Use a local asynchronous duplex named pipe restricted to the current user and
 elevation level. Verify the peer PID using the pipe handle against the process
@@ -176,32 +176,73 @@ Validate protocol version, owner token, and worker epoch. Use a bounded handshak
 and reject messages from another lifetime. This is a private trusted-child
 protocol, not a general local service or an untrusted plugin sandbox.
 
-Control messages are length-prefixed UTF-8 JSON with explicit source-generated types.
-Limit each frame to 16 MiB and reject invalid lengths before allocating payloads.
-Use one reader and serialized writes, bounded admission, and unique request IDs.
+Control messages use JSON-RPC 2.0 through StreamJsonRpc, with source-generated
+proxies, target metadata and System.Text.Json DTO metadata for NativeAOT.
+Nerdbank.Streams multiplexes the RPC channel and artwork streams over the pipe.
+The RPC channel uses a four-byte big-endian length prefix. `WorkerMessageHandler`
+limits each frame to 16 MiB before allocating incoming payloads and enforces
+serialized writes, queue/write deadlines, duplicate IDs and worker admission.
+StreamJsonRpc owns method dispatch, reply correlation and cancellation messages.
 The reader must remain responsive while startup, commands, artwork, or cleanup
 are pending. No native work executes inline on that reader.
 
 | Message | Contract |
 | --- | --- |
-| Hello / welcome | Version, owner token, worker epoch, backend ID, initial source policy, activation capability, logging options and command, observation and policy budgets. |
+| InitializeAsync / Begin | Validate version, owner token, backend ID, initial policy, activation capability, logging and budgets; return a fresh epoch. Begin starts backend work after the owner installs that epoch. |
 | Snapshot | Complete immutable snapshot; no deltas or native references. |
-| SnapshotFailure | Recoverable read error and applied source-policy revision; keeps the same connection and session identities. |
-| Execute / reply | Captured session and binding, operation, correlated result. |
-| Artwork / start / chunk / end | Exact versioned key, content metadata, total length, ordered binary chunks, and completion. |
-| Invalidate / reply | Coalescible observation invalidations in the worker's session namespace. |
-| Policy / reply | Complete policy; reply acknowledges application and snapshots carry its revision. |
-| ActivateSource / ActivationReply | One owner callback tied to an admitted activation command, epoch and binding. |
-| Cancel | Requests cancellation of one admitted operation; admission remains occupied until its final reply. Does not undo side effects. |
+| SnapshotFailed | Recoverable read error and applied source-policy revision; keeps the same connection and session identities. |
+| ExecuteAsync | Captured session and binding, operation, semantic command ID and typed result. |
+| CopyArtworkAsync | Exact versioned key and a write-only out-of-band destination stream; returns content metadata and length after copying. |
+| InvalidateAsync | Coalescible observation invalidations in the worker's session namespace. |
+| ApplyPolicyAsync | Complete policy; returns the applied revision, which subsequent snapshots also carry. |
+| ActivateSourceAsync | One reverse RPC tied to an admitted activation command, epoch and binding. |
+| $/cancelRequest | Library cancellation of an admitted operation; admission remains occupied until its terminal reply. Does not undo side effects. |
 | Shutdown | Terminates this connection and backend lifetime. |
-| Fault | Diagnostic followed by connection termination; no exception objects on the wire. |
+| ReportFaultAsync | Acknowledged diagnostic followed by connection termination; no exception objects on the wire. |
 
-Artwork is limited to 32 MiB of encoded image bytes and 64 KiB per binary chunk,
+Artwork is limited to 32 MiB of encoded image bytes and 64 KiB per stream write,
 with one payload transfer at a time. Up to two backend reads may overlap so a slow
 read does not hold the transfer lane; both peers cap admitted artwork requests at
-two to bound retained image buffers. Negative signed frame lengths identify
-binary chunks; positive lengths identify JSON. Chunks contain owner token, epoch,
-request ID and offset. Control frames can interleave between chunks.
+two to bound retained image buffers. Each binary stream begins with a four-byte
+big-endian payload length, followed by exactly that many bytes and EOF. A one-way
+pipe lets the worker close its writing side and the owner observe EOF. The owner
+reads concurrently with the RPC, validates the length before allocating, and
+checks EOF and the returned metadata before closing the stream endpoints.
+Invalid lengths, truncated successful transfers, trailing bytes and mismatched
+metadata retire the connection and return unavailable artwork. It also closes the endpoints on
+cancellation or failed reads. Binary stream backpressure does not block the RPC
+channel. Artwork bytes are never encoded as JSON or base64.
+
+The formatter uses only generated DTO metadata. A narrow metadata resolver reuses
+StreamJsonRpc's own `RequestId` converter for cancellation messages; it does not
+enable reflection serialization. Changes to contracts must be exercised in the
+NativeAOT hosting suite as well as a managed build.
+
+The extension, worker, hosting library, hosting tests and two RPC experiments set
+the SDK's `DisableTransitiveFrameworkReferences` property in their project files.
+This prevents the threading package's Windows asset from adding WPF to those
+consumers. Other projects keep the SDK default. Direct and SDK framework
+references still apply. The normal NuGet-selected assemblies are used; no
+package fork or DLL substitution is needed.
+The setting is implemented by the SDK's
+[ResolvePackageAssets task](https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/ResolvePackageAssets.cs).
+
+The owner records the first available disconnect cause before teardown and
+preserves it in the supervisor's snapshot and logs, including invalidation
+failures. The handler retains fatal read/write errors before canceling transport
+operations. A frame write deadline is reported as a timeout; ordinary caller
+cancellation does not become a connection failure.
+The connection publishes its closed state before canceling requests or disposing
+the RPC endpoint. Request completions can run inline during disposal; policy
+updates must already see the closed connection and absorb its terminal timeout,
+and invalidations must not retry that timeout as an unsent request.
+
+Worker operation and snapshot watchdogs close the connection at their negotiated
+deadline, then report the expired operation and budget to the configured worker
+log. A blocked or failing diagnostic sink cannot delay that closure. These hard
+closures do not wait for an RPC fault acknowledgement, so the owner may only
+receive a generic disconnect reason. Worker logging is best effort and requires
+logging settings from the owner.
 
 The worker coalesces backend signals and serializes complete snapshot reads.
 The proxy caches translated snapshots and publishes local invalidations after
@@ -215,18 +256,19 @@ the error and reports a read failure, so the composite retains sessions as
 unavailable until a fresh snapshot arrives. It discards errors from an obsolete
 policy. The first exception starts an ObservationTimeout recovery window; a
 successful read resets the window and backoff. If the window expires, the worker
-attempts a Fault message containing the last read error, then closes the
+attempts ReportFaultAsync containing the last read error, then closes the
 connection and applies normal restart limits, even if another read or policy
-call is stuck. Fault delivery has a one-second limit and always closes the
+call is stuck. The owner acknowledges recording the diagnostic before the worker
+closes the multiplexed transport. Fault delivery has a one-second limit and always closes the
 connection, including when the peer is not reading. If delivery fails, the owner
 can still report a transport error; the earlier recoverable error remains logged.
 Transient failures within the window preserve the worker and identities.
 Hung observations, startup deadlines, transport failures and
 terminal backend faults still close the connection. Owner and worker must be
-published together for protocol v5.
+published together for protocol v6. There is no v5 compatibility path.
 
 The default owner startup budget is thirty seconds, covering launch, handshake,
-initial policy and the first accepted snapshot. Hello carries the initial policy;
+initial policy and the first accepted snapshot. InitializeAsync carries the initial policy;
 the owner sends another policy request only if it changed. A policy request queued
 during startup uses the startup token on the owner. Worker request deadlines start
 after backend initialization. The owner negotiates separate positive budgets:
@@ -237,13 +279,16 @@ after backend initialization. The owner negotiates separate positive budgets:
 | ObservationTimeout | 30 seconds | Complete snapshot reads, consecutive snapshot-failure recovery, and artwork requests, allowing GSMTC's native observation timeout to finish first. |
 | PolicyTimeout | 45 seconds | Policy requests, including a preceding snapshot and native binding cleanup. |
 
-Both peers use one shared request-kind timeout mapping. The defaults allow a
+Both peers apply the negotiated budget for each typed method. The defaults allow a
 full observation plus cleanup within the policy budget.
 Backends with longer operations must configure appropriate budgets explicitly.
 Outside startup, owner requests have separate admission and completion budgets
 of the selected duration. Completion timing starts after the request frame is
-sent. An admission timeout before a request is sent leaves the pipe and admitted
-peers usable; invalidations remain coalesced for retry. Each frame also has a
+sent. When all 64 request slots are occupied, coalesced invalidations wait for a
+slot before entering admission; a released slot or connection closure wakes the
+waiter. Other requests report unavailable when the queue is full. An admission
+timeout before a request is sent leaves the pipe and admitted peers usable;
+invalidations remain coalesced for retry. Each frame also has a
 bounded writer-queue wait and a fresh RequestTimeout once it acquires the writer;
 queue time cannot shorten the frame's own write budget. A queue timeout alone
 does not close the transport. A completion timeout after sending may have an
@@ -253,14 +298,15 @@ be completed safely. Worker operation watchdogs remain independent.
 
 Both peers admit at most thirty-two requests. Caller cancellation releases its
 wait immediately, but retains its transport admission until the worker removes
-the request and sends its final reply. Artwork completion follows the same rule:
-the worker removes the request before sending the final artwork frame. Late
+the request and sends its final reply. Artwork admission also covers stream
+consumption; the worker releases admission before writing the RPC reply. Late
 activation callbacks for canceled or completed requests are ignored. Callbacks
 for active requests still require matching operation, binding and correlation.
 Caller cancellation can stop a frame while it waits for the writer. Once the
 write starts, it finishes under the connection lifetime and negotiated deadlines;
 caller cancellation cannot interrupt it. This applies to owner requests, worker
-activation callbacks and artwork. A canceled owner caller returns immediately
+activation callbacks. Artwork cancellation closes its separate stream without
+damaging RPC framing. A canceled owner caller returns immediately
 while the frame finishes and transport admission remains held until the terminal
 reply. The worker finishes its frame before acknowledging cancellation,
 preserving framing for unrelated controls and observations.

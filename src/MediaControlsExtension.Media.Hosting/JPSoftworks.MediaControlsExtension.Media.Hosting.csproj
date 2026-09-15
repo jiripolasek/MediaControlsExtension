@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
+    <EnableStreamJsonRpcInterceptors>true</EnableStreamJsonRpcInterceptors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" />
+    <PackageReference Include="Nerdbank.Streams" />
+    <PackageReference Include="PolyType" />
     <ProjectReference Include="../MediaControlsExtension.Media/JPSoftworks.MediaControlsExtension.Media.csproj" />
     <InternalsVisibleTo Include="JPSoftworks.MediaControlsExtension.Media.Hosting.Tests" />
   </ItemGroup>

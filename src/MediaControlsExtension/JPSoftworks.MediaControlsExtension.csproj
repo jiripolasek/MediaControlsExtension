@@ -15,6 +15,8 @@
 		<DefineConstants>$(DefineConstants);FF_ENABLE_FULL_METADATA_PAGE</DefineConstants>
 		<DefineConstants Condition="'$(EnableDummyBackend)' == 'true'">$(DefineConstants);FF_ENABLE_DUMMY_BACKEND</DefineConstants>
 
+		<DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
+
 		<AssemblyName>$(CmdPalExtensionAssemblyName)</AssemblyName>
 		<Company>Jiri Polasek</Company>
 		<Copyright>(c) Jiri Polasek</Copyright>

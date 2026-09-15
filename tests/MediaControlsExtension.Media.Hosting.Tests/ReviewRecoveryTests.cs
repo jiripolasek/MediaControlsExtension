@@ -1,6 +1,3 @@
-using System.Buffers.Binary;
-using System.IO.Pipes;
-using System.Text.Json;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Hosting.Tests;
@@ -11,17 +8,21 @@ internal static class ReviewRecoveryTests
     [
         ("Transient snapshot errors recover in the same worker and preserve sessions", SnapshotRecoveryAsync),
         ("Initial snapshot errors recover within the startup budget", StartupSnapshotRecoveryAsync),
-        ("Persistent snapshot errors replace the poisoned worker and fence old commands", PersistentSnapshotRecoveryAsync),
+        ("Persistent snapshot errors replace the poisoned worker and fence old commands",
+            PersistentSnapshotRecoveryAsync),
         ("Repeated persistent failures exhaust the normal restart budget", PersistentSnapshotBudgetAsync),
         ("Successful snapshots reset the consecutive failure window", SnapshotWindowResetAsync),
         ("Only continuously healthy snapshots reset the restart budget", SnapshotHealthAsync),
-        ("Owner cancellation returns while a partial request finishes safely", OwnerFrameCancellationAsync),
+        ("Owner cancellation returns while a partial request finishes safely", OwnerFrameCancellationAsync)
     ];
 
     private static async Task SnapshotRecoveryAsync()
     {
-        await using var backend = new OutOfProcessMediaBackend(Program.Options("transient-read-failure") with { MaximumRestarts = 0 });
-        var registry = new MediaBackendRegistry().Register(new("worker", "Worker", "", _ => backend, true));
+        await using var backend
+            = new OutOfProcessMediaBackend(Program.Options("transient-read-failure") with { MaximumRestarts = 0 });
+        var registry
+            = new MediaBackendRegistry().Register(new MediaBackendRegistration("worker", "Worker", "", _ => backend,
+                true));
         await using var composite = new CompositeMediaBackend(registry);
         await composite.StartAsync(default).ConfigureAwait(false);
         MediaBackendSnapshot snapshot = null!;
@@ -33,27 +34,37 @@ internal static class ReviewRecoveryTests
         var original = snapshot.Sessions[0];
         var epoch = backend.WorkerEpoch;
         var pid = backend.WorkerProcessId;
-        var result = await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Stop), default).ConfigureAwait(false);
+        var result = await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Stop), default)
+            .ConfigureAwait(false);
         HostingTests.Check(result.Status == MediaBackendCommandStatus.Completed, "The trigger command failed.");
         await HostingTests.EventuallyAsync(async () =>
         {
             snapshot = await composite.ReadSnapshotAsync(default).ConfigureAwait(false);
             return snapshot.Backends[0].Status == MediaBackendLifecycleStatus.Faulted;
         }).ConfigureAwait(false);
-        HostingTests.Check(snapshot.Sessions.Length == 1 && !snapshot.Sessions[0].IsAvailable && snapshot.Sessions[0].Id == original.Id,
+        HostingTests.Check(
+            snapshot.Sessions.Length == 1 && !snapshot.Sessions[0].IsAvailable &&
+            snapshot.Sessions[0].Id == original.Id,
             "A recoverable error removed the captured session instead of making it unavailable.");
-        HostingTests.Check((await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default).ConfigureAwait(false)).Status != MediaBackendCommandStatus.Completed,
+        HostingTests.Check(
+            (await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default)
+                .ConfigureAwait(false)).Status != MediaBackendCommandStatus.Completed,
             "A command bypassed the observation failure.");
         await HostingTests.EventuallyAsync(async () =>
         {
             snapshot = await composite.ReadSnapshotAsync(default).ConfigureAwait(false);
-            return snapshot.Sessions.Length == 1 && snapshot.Sessions[0].IsAvailable && snapshot.Backends[0].Status == MediaBackendLifecycleStatus.Ready;
+            return snapshot.Sessions.Length == 1 && snapshot.Sessions[0].IsAvailable &&
+                   snapshot.Backends[0].Status == MediaBackendLifecycleStatus.Ready;
         }).ConfigureAwait(false);
         HostingTests.Check(backend.WorkerEpoch == epoch && backend.WorkerProcessId == pid && backend.RestartCount == 0,
             "Transient read errors consumed a restart or replaced the worker.");
-        HostingTests.Check(snapshot.Sessions[0].Id == original.Id && snapshot.Sessions[0].BindingGeneration == original.BindingGeneration,
+        HostingTests.Check(
+            snapshot.Sessions[0].Id == original.Id &&
+            snapshot.Sessions[0].BindingGeneration == original.BindingGeneration,
             "Recovery replaced a surviving session identity.");
-        HostingTests.Check((await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default).ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
+        HostingTests.Check(
+            (await composite.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default)
+                .ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
             "Recovered controls remained unavailable.");
     }
 
@@ -61,14 +72,18 @@ internal static class ReviewRecoveryTests
     {
         await using var backend = new OutOfProcessMediaBackend(Program.Options("startup-read-failure") with
         {
-            MaximumRestarts = 0, StartupTimeout = TimeSpan.FromSeconds(5),
+            MaximumRestarts = 0, StartupTimeout = TimeSpan.FromSeconds(5)
         });
         await backend.StartAsync(default).ConfigureAwait(false);
         var errors = 0;
         await HostingTests.EventuallyAsync(async () =>
         {
             try { return (await backend.ReadSnapshotAsync(default).ConfigureAwait(false)).Sessions.Length == 1; }
-            catch (IOException) { errors++; return false; }
+            catch (IOException)
+            {
+                errors++;
+                return false;
+            }
         }).ConfigureAwait(false);
         HostingTests.Check(errors > 0 && backend.RestartCount == 0 && backend.WorkerProcessId != 0,
             "Initial read failures did not recover in the first worker.");
@@ -83,11 +98,13 @@ internal static class ReviewRecoveryTests
         await HostingTests.WaitForSnapshotAsync(backend).ConfigureAwait(false);
         var epoch = backend.WorkerEpoch;
         using var caller = new CancellationTokenSource();
-        var policy = backend.ApplySourcePolicyAsync(new(1, [new string('x', 2 * 1024 * 1024)]), caller.Token);
+        var policy = backend.ApplySourcePolicyAsync(new MediaBackendSourcePolicy(1, [new string('x', 2 * 1024 * 1024)]),
+            caller.Token);
         try
         {
             await HostingTests.EventuallyAsync(async () =>
-                (await backend.ReadSnapshotAsync(default).ConfigureAwait(false)).Sessions[0].MediaProperties.Title == "Partial frame").ConfigureAwait(false);
+                (await backend.ReadSnapshotAsync(default).ConfigureAwait(false)).Sessions[0].MediaProperties.Title ==
+                "Partial frame").ConfigureAwait(false);
             caller.Cancel();
             try
             {
@@ -95,17 +112,24 @@ internal static class ReviewRecoveryTests
                 throw new InvalidOperationException("Caller cancellation did not cancel its wait.");
             }
             catch (OperationCanceledException) { }
-            HostingTests.Check(backend.WorkerEpoch == epoch && backend.RestartCount == 0, "Caller cancellation closed the worker.");
+
+            HostingTests.Check(backend.WorkerEpoch == epoch && backend.RestartCount == 0,
+                "Caller cancellation closed the worker.");
         }
         finally { release.Set(); }
 
         await HostingTests.EventuallyAsync(async () =>
-            (await backend.ReadSnapshotAsync(default).ConfigureAwait(false)).Sessions[0].MediaProperties.Title == "Frame received").ConfigureAwait(false);
+            (await backend.ReadSnapshotAsync(default).ConfigureAwait(false)).Sessions[0].MediaProperties.Title ==
+            "Frame received").ConfigureAwait(false);
         var snapshot = await backend.ReadSnapshotAsync(default).ConfigureAwait(false);
-        HostingTests.Check((await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default).ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
+        HostingTests.Check(
+            (await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default)
+                .ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
             "The completed frame left controls unusable.");
         snapshot = await backend.ReadSnapshotAsync(default).ConfigureAwait(false);
-        HostingTests.Check(snapshot.Sessions[0].MediaProperties.Title == "Frame received" && backend.WorkerEpoch == epoch && backend.RestartCount == 0,
+        HostingTests.Check(
+            snapshot.Sessions[0].MediaProperties.Title == "Frame received" && backend.WorkerEpoch == epoch &&
+            backend.RestartCount == 0,
             "A stale policy failure affected the current snapshot.");
     }
 
@@ -113,7 +137,7 @@ internal static class ReviewRecoveryTests
     {
         await using var backend = new OutOfProcessMediaBackend(Program.Options("persistent-read-failure") with
         {
-            ObservationTimeout = TimeSpan.FromSeconds(1), MaximumRestarts = 1,
+            ObservationTimeout = TimeSpan.FromSeconds(1), MaximumRestarts = 1
         });
         await backend.StartAsync(default).ConfigureAwait(false);
         var snapshot = await HostingTests.WaitForSnapshotAsync(backend).ConfigureAwait(false);
@@ -125,14 +149,19 @@ internal static class ReviewRecoveryTests
             try
             {
                 snapshot = await backend.ReadSnapshotAsync(default).ConfigureAwait(false);
-                return backend.WorkerEpoch != epoch && snapshot.Sessions.Length == 1 && snapshot.Availability == MediaControlAvailability.Available;
+                return backend.WorkerEpoch != epoch && snapshot.Sessions.Length == 1 &&
+                       snapshot.Availability == MediaControlAvailability.Available;
             }
             catch (IOException) { return false; }
         }).ConfigureAwait(false);
         HostingTests.Check(backend.RestartCount == 1, "The poisoned worker did not use exactly one replacement.");
-        HostingTests.Check((await backend.ExecuteAsync(command, default).ConfigureAwait(false)).Status == MediaBackendCommandStatus.SessionGone,
+        HostingTests.Check(
+            (await backend.ExecuteAsync(command, default).ConfigureAwait(false)).Status ==
+            MediaBackendCommandStatus.SessionGone,
             "A pre-restart command reached the replacement.");
-        HostingTests.Check((await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default).ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
+        HostingTests.Check(
+            (await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Play), default)
+                .ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed,
             "The replacement did not restore usable controls.");
     }
 
@@ -140,19 +169,26 @@ internal static class ReviewRecoveryTests
     {
         await using var backend = new OutOfProcessMediaBackend(Program.Options("recurring-read-failure") with
         {
-            ObservationTimeout = TimeSpan.FromMilliseconds(400), MaximumRestarts = 1,
+            ObservationTimeout = TimeSpan.FromMilliseconds(400), MaximumRestarts = 1
         });
-        var registry = new MediaBackendRegistry().Register(new("worker", "Worker", "", _ => backend, true));
+        var registry
+            = new MediaBackendRegistry().Register(new MediaBackendRegistration("worker", "Worker", "", _ => backend,
+                true));
         await using var composite = new CompositeMediaBackend(registry);
         await composite.StartAsync(default).ConfigureAwait(false);
         await HostingTests.EventuallyAsync(async () =>
         {
             await composite.ReadSnapshotAsync(default).ConfigureAwait(false);
-            return composite.Backends[0].DiagnosticMessage?.Contains("restart budget exhausted", StringComparison.Ordinal) == true;
+            return composite.Backends[0].DiagnosticMessage
+                ?.Contains("restart budget exhausted", StringComparison.Ordinal) == true;
         }).ConfigureAwait(false);
-        HostingTests.Check(backend.WorkerProcessId == 0 && backend.RestartCount == 1 && composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted,
+        HostingTests.Check(
+            backend.WorkerProcessId == 0 && backend.RestartCount == 1 &&
+            composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted,
             "Permanently failing observations escaped the restart budget.");
-        HostingTests.Check(composite.Backends[0].DiagnosticMessage?.Contains("Persistent snapshot failure.", StringComparison.Ordinal) == true,
+        HostingTests.Check(
+            composite.Backends[0].DiagnosticMessage
+                ?.Contains("Persistent snapshot failure.", StringComparison.Ordinal) == true,
             "The exhausted restart diagnostic lost the backend's read error.");
     }
 
@@ -160,7 +196,7 @@ internal static class ReviewRecoveryTests
     {
         await using var backend = new OutOfProcessMediaBackend(Program.Options("short-read-failure") with
         {
-            ObservationTimeout = TimeSpan.FromMilliseconds(900), MaximumRestarts = 0,
+            ObservationTimeout = TimeSpan.FromMilliseconds(900), MaximumRestarts = 0
         });
         await backend.StartAsync(default).ConfigureAwait(false);
         var snapshot = await HostingTests.WaitForSnapshotAsync(backend).ConfigureAwait(false);
@@ -168,7 +204,8 @@ internal static class ReviewRecoveryTests
         for (var cycle = 0; cycle < 2; cycle++)
         {
             var revision = snapshot.Revision;
-            await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Stop), default).ConfigureAwait(false);
+            await backend.ExecuteAsync(HostingTests.Command(snapshot, MediaOperation.Stop), default)
+                .ConfigureAwait(false);
             await HostingTests.EventuallyAsync(async () =>
             {
                 try
@@ -180,6 +217,7 @@ internal static class ReviewRecoveryTests
             }).ConfigureAwait(false);
             await Task.Delay(250).ConfigureAwait(false);
         }
+
         HostingTests.Check(backend.WorkerEpoch == epoch && backend.RestartCount == 0 && backend.WorkerProcessId != 0,
             "A previous failure window retired a recovered worker.");
     }
@@ -205,7 +243,8 @@ internal static class ReviewRecoveryTests
         clock.Advance(50);
         interrupted.Observe(true);
         interrupted.Complete();
-        HostingTests.Check(!interrupted.WasStable, "Separate healthy periods or cleanup time accumulated into stability.");
+        HostingTests.Check(!interrupted.WasStable,
+            "Separate healthy periods or cleanup time accumulated into stability.");
         var stable = new WorkerHealth(clock);
         stable.Observe(true);
         clock.Advance(30);
@@ -215,66 +254,14 @@ internal static class ReviewRecoveryTests
         return Task.CompletedTask;
     }
 
+    internal static Task RunPartialRequestPeerAsync(string pipeName, Guid owner, int processId, string id) =>
+        ReviewPartialRequestPeer.RunAsync(pipeName, processId, id);
+
     private sealed class HealthClock : TimeProvider
     {
         private long _ticks;
         public override long TimestampFrequency => TimeSpan.TicksPerSecond;
         public override long GetTimestamp() => this._ticks;
         public void Advance(int seconds) => this._ticks += TimeSpan.FromSeconds(seconds).Ticks;
-    }
-
-    internal static async Task RunPartialRequestPeerAsync(string pipeName, Guid owner, int processId, string id)
-    {
-        using var release = EventWaitHandle.OpenExisting(id);
-        using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        await pipe.ConnectAsync(deadline.Token).ConfigureAwait(false);
-        PipeProtocol.VerifyPeer(pipe, processId, server: false);
-        using var protocol = new PipeProtocol(pipe);
-        await protocol.ReadAsync(deadline.Token).ConfigureAwait(false);
-        var epoch = Guid.NewGuid();
-        await protocol.WriteAsync(new(MessageKind.Welcome, owner, epoch), deadline.Token).ConfigureAwait(false);
-        await using var backend = new SyntheticBackend();
-        var snapshot = await backend.ReadSnapshotAsync(default).ConfigureAwait(false);
-        await protocol.WriteAsync(new(MessageKind.Snapshot, owner, epoch) { Snapshot = snapshot }, deadline.Token).ConfigureAwait(false);
-
-        var header = new byte[4];
-        await pipe.ReadExactlyAsync(header, deadline.Token).ConfigureAwait(false);
-        var payload = new byte[BinaryPrimitives.ReadInt32LittleEndian(header)];
-        await pipe.ReadExactlyAsync(payload.AsMemory(0, 1), deadline.Token).ConfigureAwait(false);
-        snapshot = snapshot with
-        {
-            Revision = 2, SourcePolicyRevision = 1,
-            Sessions = [snapshot.Sessions[0] with { MediaProperties = snapshot.Sessions[0].MediaProperties with { Title = "Partial frame" } }],
-        };
-        await protocol.WriteAsync(new(MessageKind.Snapshot, owner, epoch) { Snapshot = snapshot }, deadline.Token).ConfigureAwait(false);
-        if (!release.WaitOne(TimeSpan.FromSeconds(5))) { throw new TimeoutException("The owner did not release its partial frame."); }
-        await pipe.ReadExactlyAsync(payload.AsMemory(1), deadline.Token).ConfigureAwait(false);
-        var request = JsonSerializer.Deserialize(payload, WireJsonContext.Default.WireMessage)!;
-        HostingTests.Check(request.Kind == MessageKind.Policy && request.Policy?.ExcludedApplicationIds[0].Length == 2 * 1024 * 1024,
-            "The owner canceled its frame mid-write.");
-        await protocol.WriteAsync(new(MessageKind.Reply, owner, epoch, request.RequestId) { Policy = request.Policy }, deadline.Token).ConfigureAwait(false);
-        snapshot = snapshot with
-        {
-            Revision = 3,
-            Sessions = [snapshot.Sessions[0] with { MediaProperties = snapshot.Sessions[0].MediaProperties with { Title = "Frame received" } }],
-        };
-        await protocol.WriteAsync(new(MessageKind.Snapshot, owner, epoch) { Snapshot = snapshot }, deadline.Token).ConfigureAwait(false);
-        while (true)
-        {
-            request = await protocol.ReadAsync(deadline.Token).ConfigureAwait(false);
-            if (request.Kind == MessageKind.Shutdown) { return; }
-            if (request.Kind == MessageKind.Execute)
-            {
-                await protocol.WriteAsync(new(MessageKind.SnapshotFailure, owner, epoch)
-                {
-                    Error = "Obsolete read failure", SourcePolicyRevision = 0,
-                }, deadline.Token).ConfigureAwait(false);
-                await protocol.WriteAsync(new(MessageKind.Reply, owner, epoch, request.RequestId)
-                {
-                    Result = new(MediaBackendCommandStatus.Completed, null),
-                }, deadline.Token).ConfigureAwait(false);
-            }
-        }
     }
 }
