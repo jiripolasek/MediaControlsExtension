@@ -1,6 +1,8 @@
 # Player compatibility and GSMTC
 
-Media Controls for Command Palette works with media applications that publish a Windows media session. It does not contain player-specific playback integrations: applications publish controls and metadata through [System Media Transport Controls (SMTC)](https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/integrate-with-systemmediatransportcontrols), and the extension discovers and controls those sessions through the Global System Media Transport Controls (GSMTC) API.
+Media Controls for Command Palette discovers Windows media sessions through the Global System Media Transport Controls (GSMTC) API. Applications publish their controls and metadata through [System Media Transport Controls (SMTC)](https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/integrate-with-systemmediatransportcontrols). The tables below describe this Windows integration.
+
+VLC 3 desktop also has an optional [direct VLC media source](vlc-backend.md), configured through Media sources in the Media Controls command menu. It supports local and remote playback controls, metadata, timeline, artwork, shuffle, and repeat without an SMTC plugin. While enabled with a loopback URL, it excludes duplicate desktop VLC sessions from GSMTC. Disabling it or configuring a remote URL restores local GSMTC discovery, independently of how the remote session is treated for playback behavior.
 
 The extension uses the capabilities advertised by each live session. A player may expose play and pause but omit previous, next, stop, shuffle, repeat, artwork, or the timeline information used to show track length. Availability can also change with the current content.
 
@@ -101,7 +103,7 @@ If an application does not appear or a command is unavailable:
 1. Start playback in the application or browser tab at least once. Some players do not publish a session while idle.
 2. Check the player's settings for media keys, system media controls, background activity, or operating-system integration.
 3. For browser playback, try the same website in Edge, Chrome, or Firefox. Website and browser support are both required.
-4. Confirm that Windows or another GSMTC-aware utility can see the session. If the application does not publish a Windows media session, this extension cannot discover it.
+4. Confirm that Windows or another GSMTC-aware utility can see the session. Applications that do not publish a Windows media session need a separate media source, such as the [direct VLC integration](vlc-backend.md).
 5. Update the application, browser, and extension. For a plugin-enabled player, also verify the plugin's supported player version and architecture.
 
 When reporting a compatibility problem, include the player and version, Windows version, whether the player is native or browser-based, and which metadata or commands are missing.

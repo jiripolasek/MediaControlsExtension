@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DisableTransitiveFrameworkReferences>true</DisableTransitiveFrameworkReferences>
+    <OutputType>WinExe</OutputType>
+    <RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'x64'">win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <PublishAot Condition="'$(PublishAot)' == '' and '$(Configuration)' == 'Release' and '$(ForceManagedPublish)' != 'true'">true</PublishAot>
+    <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">$(PublishAot)</PublishTrimmed>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MediaControlsExtension.Media.Hosting/JPSoftworks.MediaControlsExtension.Media.Hosting.csproj" />
+    <ProjectReference Include="../MediaControlsExtension.Media.Gsmtc/JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
+    <ProjectReference Include="../MediaControlsExtension.Media.Dummy/JPSoftworks.MediaControlsExtension.Media.Dummy.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" />
+  </ItemGroup>
+  <Import Project="../../eng/MediaMemory.props" />
+  <Target Name="GetMediaWorkerPublishPayload" DependsOnTargets="Publish" Returns="@(_MediaWorkerDistinctPublishPayload)">
+    <ItemGroup>
+      <_MediaWorkerPublishPayload Include="@(ResolvedFileToPublish->'$(PublishDir)%(RelativePath)')"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
+      <_MediaWorkerPublishPayload Include="$(PublishDir)$(TargetName)$(NativeSymbolExt)"
+        Condition="'$(PublishAot)' == 'true' and '$(CopyOutputSymbolsToPublishDirectory)' == 'true' and Exists('$(PublishDir)$(TargetName)$(NativeSymbolExt)')">
+        <RelativePath>$(TargetName)$(NativeSymbolExt)</RelativePath>
+      </_MediaWorkerPublishPayload>
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(_MediaWorkerPublishPayload)">
+      <Output TaskParameter="Filtered" ItemName="_MediaWorkerDistinctPublishPayload" />
+    </RemoveDuplicates>
+  </Target>
+</Project>

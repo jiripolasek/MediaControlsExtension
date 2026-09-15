@@ -22,6 +22,9 @@ public sealed record MediaBackendRegistration(
     Func<ILoggerFactory, IMediaBackend> CreateBackend,
     bool EnabledByDefault = false)
 {
+    /// <summary>Gets an optional ordinal group allowing zero or one selected provider.</summary>
+    public string? ExclusiveGroup { get; init; }
+
     /// <summary>Gets initial source claims held while enabled, including while disconnected or faulted; defaults to empty.</summary>
     /// <remarks>The composite can replace these claims when the provider's configuration changes.</remarks>
     public ImmutableArray<MediaBackendSourceClaim> ReplacesSources { get; init; } = [];
@@ -48,6 +51,10 @@ public sealed class MediaBackendRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(registration.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(registration.DisplayName);
         ArgumentNullException.ThrowIfNull(registration.CreateBackend);
+        if (registration.ExclusiveGroup is { } group)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(group);
+        }
         ValidateSourceClaims(registration.Id, registration.ReplacesSources);
 
         if (this._registrations.Any(existing => string.Equals(existing.Id, registration.Id, StringComparison.Ordinal)))
@@ -57,6 +64,35 @@ public sealed class MediaBackendRegistry
 
         this._registrations.Add(registration);
         return this;
+    }
+
+    /// <summary>Validates registered IDs and exclusive groups without creating providers.</summary>
+    /// <exception cref="ArgumentException">An ID is unknown.</exception>
+    /// <exception cref="InvalidOperationException">Multiple selected providers belong to one exclusive group.</exception>
+    public void ValidateSelection(IEnumerable<string> enabledIds)
+    {
+        ArgumentNullException.ThrowIfNull(enabledIds);
+        ValidateSelection(this.Registrations, enabledIds.ToHashSet(StringComparer.Ordinal));
+    }
+
+    internal static void ValidateSelection(ImmutableArray<MediaBackendRegistration> registrations, HashSet<string> enabledIds)
+    {
+        foreach (var id in enabledIds)
+        {
+            if (!registrations.Any(registration => registration.Id == id))
+            {
+                throw new ArgumentException($"Unknown media backend '{id}'.", nameof(enabledIds));
+            }
+        }
+
+        var groups = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var registration in registrations)
+        {
+            if (enabledIds.Contains(registration.Id) && registration.ExclusiveGroup is { } group && !groups.Add(group))
+            {
+                throw new InvalidOperationException($"Multiple selected media backends belong to exclusive group '{group}'.");
+            }
+        }
     }
 
     internal static void ValidateSourceClaims(string backendId, ImmutableArray<MediaBackendSourceClaim> sourceClaims)

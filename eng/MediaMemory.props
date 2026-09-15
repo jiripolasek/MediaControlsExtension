@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <MediaGcConserveMemory Condition="'$(MediaGcConserveMemory)' == ''">9</MediaGcConserveMemory>
+  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="$(MediaGcConserveMemory)" />
+  </ItemGroup>
+</Project>

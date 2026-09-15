@@ -43,7 +43,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
     /// <exception cref="ArgumentNullException">The registry is null.</exception>
     /// <exception cref="ArgumentException">An enabled ID or source-claim target is not registered.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The timeout is not positive or exceeds 4,294,967,294 milliseconds.</exception>
-    /// <exception cref="InvalidOperationException">Multiple enabled providers claim the same backend and application.</exception>
+    /// <exception cref="InvalidOperationException">Enabled providers conflict in an exclusive group or source claim.</exception>
     public CompositeMediaBackend(
         MediaBackendRegistry registry,
         IEnumerable<string>? enabledBackendIds = null,
@@ -60,15 +60,17 @@ public sealed class CompositeMediaBackend : IMediaBackend
         var enabled = enabledBackendIds?.ToHashSet(StringComparer.Ordinal)
             ?? registrations.Where(static registration => registration.EnabledByDefault)
                 .Select(static registration => registration.Id).ToHashSet(StringComparer.Ordinal);
-        foreach (var id in enabled)
-        {
-            if (!registrations.Any(registration => string.Equals(registration.Id, id, StringComparison.Ordinal)))
-            {
-                throw new ArgumentException($"Unknown media backend '{id}'.", nameof(enabledBackendIds));
-            }
-        }
+        MediaBackendRegistry.ValidateSelection(registrations, enabled);
 
         this._providers = [.. registrations.Select(registration => new ProviderEntry(registration, enabled.Contains(registration.Id)))];
+        foreach (var grouping in this._providers.GroupBy(static entry => (object?)entry.Registration.ExclusiveGroup ?? entry))
+        {
+            var group = new ProviderGroup([.. grouping]);
+            foreach (var entry in group.Members)
+            {
+                entry.Group = group;
+            }
+        }
         foreach (var claim in registrations.SelectMany(static registration => registration.ReplacesSources))
         {
             if (!registrations.Any(registration => registration.Id == claim.BackendId))
@@ -130,70 +132,137 @@ public sealed class CompositeMediaBackend : IMediaBackend
     /// <exception cref="OperationCanceledException">The request or its wait was canceled.</exception>
     /// <exception cref="ObjectDisposedException">The composite is disposed.</exception>
     /// <remarks>
-    /// Before startup this only updates selection. Disabling immediately withdraws sessions, then drains and disposes the instance.
+    /// Enabling deselects exclusive peers. Before startup this only updates selection; disabling immediately withdraws sessions.
+    /// Group replacement waits for outgoing work to drain and its instance to be disposed.
     /// Concurrent requests converge on the latest selection. Disposal failure blocks replacement until this composite is replaced.
+    /// Enabling an already selected Faulted provider explicitly requests a fresh instance.
     /// </remarks>
     public Task SetEnabledAsync(string backendId, bool enabled, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         Task transition;
-        ProviderRun? retired = null;
+        List<ProviderRun> retired = [];
         lock (this._stateLock)
         {
             ObjectDisposedException.ThrowIf(this._disposed, this);
-            var entry = this._providers.FirstOrDefault(entry => string.Equals(entry.Registration.Id, backendId, StringComparison.Ordinal))
+            var entry = this._providers.FirstOrDefault(entry => entry.Registration.Id == backendId)
                 ?? throw new ArgumentException($"Unknown media backend '{backendId}'.", nameof(backendId));
-            var changed = entry.Enabled != enabled;
-            var retry = entry.Status == MediaBackendLifecycleStatus.Faulted;
-            this.ValidateSourceOwnersUnderLock(entry, enabled);
-            entry.Enabled = enabled;
-            var affected = this.UpdateSourcePoliciesUnderLock();
-            if (changed)
+            var selection = this._providers.Where(static provider => provider.Enabled)
+                .Select(static provider => provider.Registration.Id).ToHashSet(StringComparer.Ordinal);
+            if (enabled)
             {
+                selection.ExceptWith(entry.Group.Members.Select(static member => member.Registration.Id));
+                selection.Add(backendId);
+            }
+            else
+            {
+                selection.Remove(backendId);
+            }
+
+            transition = this.ApplySelectionUnderLock(selection, retired, retryTarget: entry, requested: entry);
+        }
+
+        foreach (var run in retired)
+        {
+            _ = this.CancelRunAsync(run);
+        }
+
+        return transition.WaitAsync(cancellationToken);
+    }
+
+    /// <summary>Accepts the complete selection without retrying unchanged faulted providers.</summary>
+    public Task SetEnabledBackendsAsync(IEnumerable<string> enabledBackendIds, CancellationToken cancellationToken = default) =>
+        this.SetEnabledBackendsAsync(enabledBackendIds, retryBackendId: null, cancellationToken);
+
+    /// <summary>Atomically accepts the complete desired selection and reconciles affected groups independently.</summary>
+    /// <param name="enabledBackendIds">Exact registered IDs; an empty set disables all providers.</param>
+    /// <param name="cancellationToken">Checked before acceptance; afterward only cancels this caller's wait.</param>
+    /// <param name="retryBackendId">Optional selected provider explicitly requested for retry; unchanged peers are not retried.</param>
+    /// <returns>Completion of all groups, including pending transitions; inspect Backends for lifecycle failures.</returns>
+    /// <exception cref="ArgumentException">An ID is unknown.</exception>
+    /// <exception cref="InvalidOperationException">The selection has conflicting groups or source claims.</exception>
+    /// <remarks>Validation precedes mutation. Outgoing routes retire immediately; replacement waits for disposal.</remarks>
+    public Task SetEnabledBackendsAsync(IEnumerable<string> enabledBackendIds, string? retryBackendId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(enabledBackendIds);
+        cancellationToken.ThrowIfCancellationRequested();
+        var selection = enabledBackendIds.ToHashSet(StringComparer.Ordinal);
+        List<ProviderRun> retired = [];
+        Task transition;
+        lock (this._stateLock)
+        {
+            ObjectDisposedException.ThrowIf(this._disposed, this);
+            var retry = retryBackendId is null ? null : this._providers.FirstOrDefault(entry => entry.Registration.Id == retryBackendId);
+            if (retryBackendId is not null && (retry is null || !selection.Contains(retryBackendId)))
+            {
+                throw new ArgumentException("The retry provider must be registered and selected.", nameof(retryBackendId));
+            }
+            transition = this.ApplySelectionUnderLock(selection, retired, retryTarget: retry);
+        }
+
+        foreach (var run in retired)
+        {
+            _ = this.CancelRunAsync(run);
+        }
+
+        return transition.WaitAsync(cancellationToken);
+    }
+
+    private Task ApplySelectionUnderLock(HashSet<string> selection, List<ProviderRun> retired,
+        ProviderEntry? retryTarget, ProviderEntry? requested = null)
+    {
+        MediaBackendRegistry.ValidateSelection([.. this._providers.Select(static entry => entry.Registration)], selection);
+        this.ValidateSourceOwnersUnderLock(null, false, selection: selection);
+        var affected = new HashSet<ProviderEntry>();
+        foreach (var entry in this._providers)
+        {
+            var enabled = selection.Contains(entry.Registration.Id);
+            var retry = enabled && (!entry.Enabled || entry == retryTarget) && entry.Status == MediaBackendLifecycleStatus.Faulted;
+            if (entry.Enabled != enabled || retry)
+            {
+                affected.Add(entry);
+            }
+            if (retry) { entry.RetryRequested = true; }
+            if (!enabled) { entry.RetryRequested = false; }
+
+            if (entry.Enabled != enabled)
+            {
+                entry.Enabled = enabled;
                 this._revision++;
                 this.Signal(MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
             }
 
-            if (!enabled && entry.Run is { } run)
+            if (!enabled && entry.Run is { Retired: false } run)
             {
                 this.RetireUnderLock(run);
-                retired = run;
-                this.SetLifecycleStateUnderLock(entry,
-                    run.DisposalFailed ? MediaBackendLifecycleStatus.Faulted : MediaBackendLifecycleStatus.Stopping, entry.Error);
-            }
-
-            if (this._started)
-            {
-                if (changed || retry)
-                {
-                    affected.Add(entry);
-                }
-
-                foreach (var affectedEntry in affected)
-                {
-                    this.QueueTransitionUnderLock(affectedEntry);
-                }
-
-                affected.Add(entry);
-                foreach (var claim in entry.SourceClaims)
-                {
-                    affected.Add(this._providers.Single(provider => provider.Registration.Id == claim.BackendId));
-                }
-
-                transition = Task.WhenAll(affected.Select(static provider => provider.Transition));
-            }
-            else
-            {
-                transition = entry.Transition;
+                retired.Add(run);
+                this.SetLifecycleStateUnderLock(entry, MediaBackendLifecycleStatus.Stopping, entry.Error);
             }
         }
 
-        if (retired is not null)
+        affected.UnionWith(this.UpdateSourcePoliciesUnderLock());
+        if (this._started)
         {
-            _ = this.CancelRunAsync(retired);
+            foreach (var entry in affected.DistinctBy(static entry => entry.Group))
+            {
+                this.QueueTransitionUnderLock(entry);
+            }
         }
 
-        return transition.WaitAsync(cancellationToken);
+        if (requested is not null)
+        {
+            affected.Add(requested);
+            foreach (var claim in requested.SourceClaims)
+            {
+                affected.Add(this._providers.Single(entry => entry.Registration.Id == claim.BackendId));
+            }
+        }
+        else
+        {
+            affected.UnionWith(this._providers);
+        }
+
+        return Task.WhenAll(affected.Select(static entry => entry.Transition).Distinct());
     }
 
     /// <summary>Replaces a provider's configured source claims without changing enablement or recreating it.</summary>
@@ -460,6 +529,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         [.. this._providers.Select(static entry => new MediaBackendState(entry.Registration.Id, entry.Enabled, entry.Status, entry.Error)
         {
             DisplayName = entry.Registration.DisplayName,
+            ExclusiveGroup = entry.Registration.ExclusiveGroup,
             Connection = GetConnectionState(entry),
             AvailableSessionCount = entry.Run?.Routes.Values.Count(IsAvailable) ?? 0,
         })];
@@ -511,6 +581,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
     private void SetLifecycleStateUnderLock(ProviderEntry entry, MediaBackendLifecycleStatus status, string? error)
     {
+        if (status != MediaBackendLifecycleStatus.Faulted) { entry.RetryRequested = false; }
         if (entry.Status == status && entry.Error == error)
         {
             return;
@@ -524,27 +595,80 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
     private Task QueueTransitionUnderLock(ProviderEntry entry)
     {
-        if (this._started && entry.Enabled && entry.Run is null && entry.Status == MediaBackendLifecycleStatus.Disabled)
+        var group = entry.Group;
+        foreach (var member in group.Members)
         {
-            this.SetLifecycleStateUnderLock(entry, MediaBackendLifecycleStatus.Starting, null);
+            if (this._started && member.Enabled && member.Run is null && member.Status == MediaBackendLifecycleStatus.Disabled)
+            {
+                this.SetLifecycleStateUnderLock(member, MediaBackendLifecycleStatus.Starting, null);
+            }
         }
 
-        var previous = entry.Transition;
-        entry.Transition = Task.Run(async () =>
+        var previous = group.Transition;
+        group.Transition = Task.Run(async () =>
         {
             await previous.ConfigureAwait(false);
-            await this.ReconcileAsync(entry).ConfigureAwait(false);
-        });
-        return entry.Transition;
+            await this.ReconcileGroupAsync(group).ConfigureAwait(false);
+        }, CancellationToken.None);
+        return group.Transition;
+    }
+
+    private async Task ReconcileGroupAsync(ProviderGroup group)
+    {
+        while (true)
+        {
+            ProviderEntry? outgoing;
+            ProviderEntry? selected;
+            lock (this._stateLock)
+            {
+                foreach (var idle in group.Members.Where(static member => !member.Enabled && member.Run is null))
+                {
+                    this.SetLifecycleStateUnderLock(idle, MediaBackendLifecycleStatus.Disabled, null);
+                }
+
+                outgoing = group.Members.FirstOrDefault(static member => member.Run is { } run && (!member.Enabled || run.Retired));
+                selected = group.Members.SingleOrDefault(static member => member.Enabled);
+                if (outgoing is not null && selected is not null && outgoing != selected)
+                {
+                    this.SetLifecycleStateUnderLock(selected, MediaBackendLifecycleStatus.Starting, "Waiting for the previous media provider to stop.");
+                }
+            }
+
+            if (outgoing is null)
+            {
+                if (selected is not null)
+                {
+                    await this.ReconcileAsync(selected).ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            await this.ReconcileAsync(outgoing).ConfigureAwait(false);
+            lock (this._stateLock)
+            {
+                if (outgoing.Run is { DisposalFailed: true })
+                {
+                    selected = group.Members.SingleOrDefault(static member => member.Enabled);
+                    if (selected is not null && selected != outgoing)
+                    {
+                        this.SetLifecycleStateUnderLock(selected, MediaBackendLifecycleStatus.Faulted,
+                            "The previous media provider failed to stop. Reload the extension before switching providers.");
+                    }
+
+                    return;
+                }
+            }
+        }
     }
 
     private void ValidateSourceOwnersUnderLock(ProviderEntry? changedEntry, bool enabled,
-        ImmutableArray<MediaBackendSourceClaim>? replacementClaims = null)
+        ImmutableArray<MediaBackendSourceClaim>? replacementClaims = null, HashSet<string>? selection = null)
     {
         var owners = new HashSet<MediaBackendSourceClaim>();
         foreach (var entry in this._providers)
         {
-            if (!(entry == changedEntry ? enabled : entry.Enabled))
+            if (!(selection?.Contains(entry.Registration.Id) ?? (entry == changedEntry ? enabled : entry.Enabled)))
             {
                 continue;
             }
@@ -611,9 +735,14 @@ public sealed class CompositeMediaBackend : IMediaBackend
             var updatePolicy = false;
             lock (this._stateLock)
             {
+                if (entry.Enabled && entry.Status == MediaBackendLifecycleStatus.Faulted && !entry.RetryRequested &&
+                    entry.Run is not { Retired: true } && entry.Run is not { Started: true, TerminalFault: false })
+                {
+                    return;
+                }
                 if (entry.Run is { } existing)
                 {
-                    if (entry.Enabled && !existing.Retired && !existing.TerminalFault && !existing.ReadFailed)
+                    if (entry.Enabled && !existing.Retired && !existing.TerminalFault && (!existing.ReadFailed || !entry.RetryRequested))
                     {
                         if (existing.AppliedPolicyRevision == entry.SourcePolicy.Revision)
                         {
@@ -627,6 +756,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                     create = false;
                     if (!updatePolicy)
                     {
+                        entry.RetryRequested = false;
                         this.RetireUnderLock(run);
                         this.SetLifecycleStateUnderLock(entry, MediaBackendLifecycleStatus.Stopping, entry.Error);
                     }
@@ -639,6 +769,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                         return;
                     }
 
+                    entry.RetryRequested = false;
                     run = new ProviderRun(entry);
                     entry.Run = run;
                     this.SetLifecycleStateUnderLock(entry, MediaBackendLifecycleStatus.Starting, null);
@@ -680,6 +811,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
             try
             {
+                run.Cancellation.Token.ThrowIfCancellationRequested();
                 run.Backend = entry.Registration.CreateBackend(this._loggerFactory)
                     ?? throw new InvalidOperationException("The provider factory returned no backend.");
                 run.Cancellation.Token.ThrowIfCancellationRequested();
@@ -836,7 +968,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
     private async Task RefreshProviderAsync(ProviderRun run, long policyRevision)
     {
-        var changes = MediaBackendSignal.ObservationsChanged | MediaBackendSignal.BackendsChanged;
+        var changes = MediaBackendSignal.ObservationsChanged;
         try
         {
             var snapshot = await run.Backend!.ReadSnapshotAsync(run.Cancellation.Token).ConfigureAwait(false);
@@ -880,6 +1012,12 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 if (ids.Count != snapshot.Sessions.Length)
                 {
                     throw new InvalidOperationException("The provider returned duplicate session IDs.");
+                }
+
+                if (run.Snapshot is null || !snapshot.Connection.HasSameContent(run.Snapshot.Connection) ||
+                    snapshot.Sessions.Count(static session => session.IsAvailable) != run.Snapshot.Sessions.Count(static session => session.IsAvailable))
+                {
+                    changes |= MediaBackendSignal.BackendsChanged;
                 }
 
                 if (run.Snapshot is null || !snapshot.Sessions.Select(static session => session.Id)
@@ -1317,11 +1455,19 @@ public sealed class CompositeMediaBackend : IMediaBackend
         public ImmutableArray<MediaBackendSourceClaim> SourceClaims { get; set; } = registration.ReplacesSources;
         public MediaSourceProvider SourceProvider { get; } = new(registration.Id, registration.DisplayName);
         public bool Enabled { get; set; } = enabled;
+        public bool RetryRequested { get; set; }
         public MediaBackendLifecycleStatus Status { get; set; }
         public string? Error { get; set; }
-        public Task Transition { get; set; } = Task.CompletedTask;
+        public ProviderGroup Group { get; set; } = null!;
+        public Task Transition => this.Group.Transition;
         public ProviderRun? Run { get; set; }
         public MediaBackendSourcePolicy SourcePolicy { get; set; } = MediaBackendSourcePolicy.Empty;
+    }
+
+    private sealed class ProviderGroup(ProviderEntry[] members)
+    {
+        public ProviderEntry[] Members { get; } = members;
+        public Task Transition { get; set; } = Task.CompletedTask;
     }
 
     private sealed class ProviderRun(ProviderEntry entry)
