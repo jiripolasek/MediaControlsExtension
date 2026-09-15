@@ -675,10 +675,10 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <value>VLC connection settings changed during the test. Test the saved connection again.</value>
   </data>
   <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
-    <value>Windows media sessions</value>
+    <value>Windows media sessions (internal)</value>
   </data>
   <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
-    <value>Discover and control players that share media sessions with Windows. Changes apply immediately.</value>
+    <value>Run Windows media sessions inside the extension for troubleshooting. Native Windows media failures can affect the extension.</value>
   </data>
   <data name="MediaSources_Title" xml:space="preserve">
     <value>Media sources</value>
@@ -823,5 +823,34 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
     <value>No</value>
     <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
+    <value>Windows media sessions (worker)</value>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
+    <value>Default Windows media provider. Run sessions in a separate process to isolate native Windows media failures. Selecting this provider replaces the internal provider.</value>
+  </data>
+  <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
+    <value>Could not read saved media sources. They will be restored automatically when the settings file is readable. Choose a source to retry now.</value>
+  </data>
+  <data name="Settings_Backend_InvalidSavedSelection" xml:space="preserve">
+    <value>The saved provider selection could not be read. Choose a provider again after checking the settings file.</value>
+  </data>
+  <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
+    <value>The saved selection for this group is invalid or conflicting. Choose one provider to repair it.</value>
+  </data>
+  <data name="MediaSources_ExclusiveSelection" xml:space="preserve">
+    <value>Provider selection</value>
+  </data>
+  <data name="MediaSources_ExclusiveSelectionDescription" xml:space="preserve">
+    <value>Enabling this provider disables the other provider in its group. Switching waits for the previous provider to stop.</value>
+  </data>
+  <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
+    <value>Dummy media</value>
+    <comment>Opt-in simulated media provider for testing.</comment>
+  </data>
+  <data name="Settings_Backend_Dummy_Description" xml:space="preserve">
+    <value>Three simulated players with random tracks and artwork. No audio is played.</value>
+    <comment>Description of the dummy media provider.</comment>
   </data>
 </root>

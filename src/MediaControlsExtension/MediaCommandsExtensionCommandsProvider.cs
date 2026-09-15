@@ -4,9 +4,11 @@
 // 
 // ------------------------------------------------------------
 
+using JPSoftworks.CommandPalette.Extensions.Toolkit.Logging.Abstractions;
+using JPSoftworks.MediaControlsExtension.Media.Hosting;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension;
 
@@ -16,11 +18,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly ILogger _logger;
     private readonly MediaService _mediaService;
     private readonly CompositeMediaBackend _mediaBackend;
+    private readonly MediaWorkerOwner _workerOwner;
+    private readonly Lock _backendSelectionGate = new();
     private readonly MediaSessionViewModelCache _mediaSessionViewModels;
     private readonly MediaMetadataPageCache _metadataPages;
     private readonly SystemVolumeService _systemVolumeService;
     private readonly SettingsManager _settingsManager;
     private readonly MediaBackendSettings _backendSettings;
+    private readonly MediaBackendSettingsBinding _backendSettingsBinding;
     private readonly IconService _iconService;
     private readonly CommandItem _mediaControlsPageItem;
     private readonly CommandItem _nowPlayingItem;
@@ -41,17 +46,22 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     {
     }
 
-    internal MediaControlsExtensionCommandsProvider(ILoggerFactory loggerFactory)
+    internal MediaControlsExtensionCommandsProvider(ILoggerFactory loggerFactory) : this(loggerFactory, new MediaWorkerOwner())
+    {
+    }
+
+    internal MediaControlsExtensionCommandsProvider(ILoggerFactory loggerFactory, MediaWorkerOwner workerOwner)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
+        this._workerOwner = workerOwner;
         this._logger = loggerFactory.CreateLogger<MediaControlsExtensionCommandsProvider>();
         var settingsStore = new SettingsStore(SettingsManager.SettingsJsonPath(), this._logger);
         var vlcSettings = new VlcSettings();
         var configurationPages = MediaBackendCatalog.CreateConfigurationPages(vlcSettings, settingsStore, loggerFactory,
             () => _ = this.UpdateVlcSourceClaimsAsync(vlcSettings));
-        var backendRegistry = MediaBackendCatalog.CreateRegistry(vlcSettings.GetOptions);
+        var backendRegistry = MediaBackendCatalog.CreateRegistry(vlcSettings.GetOptions, workerOwner);
         this._settingsManager = new(settingsStore);
-        this._backendSettings = new(backendRegistry, settingsStore);
+        this._backendSettings = new(backendRegistry, settingsStore, WindowsMediaBackendDefaults.Normalize, this._logger);
         this._mediaBackend = new(backendRegistry, this._backendSettings.EnabledIds, loggerFactory);
         this._mediaService = new MediaService(this._mediaBackend, loggerFactory);
         this._mediaSessionViewModels = new(this._mediaService, loggerFactory);
@@ -63,7 +73,6 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this.Settings = this._settingsManager.Settings;
 
         this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-        this._backendSettings.EnabledChanged += this.BackendsOnEnabledChanged;
         this._iconService.IconsChanged += this.IconServiceOnIconsChanged;
         this._resultFactory = new(this._settingsManager, loggerFactory);
         this._metadataPages = new(
@@ -83,7 +92,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._resultFactory,
             this._iconService,
             loggerFactory);
-        this._mediaSourcesPage = new(this._mediaService, this._backendSettings.SetEnabled, configurationPages, loggerFactory);
+        this._mediaSourcesPage = new(this._mediaService, this._backendSettings.SetEnabled, configurationPages, loggerFactory,
+            this._backendSettings.GetDiagnostic);
+        this._backendSettingsBinding = new(this._backendSettings, this._mediaSourcesPage, this.UpdateEnabledMediaBackends);
         var reportProblemPage = new ReportProblemPage(
             new DiagnosticLogArchiveService(ExtensionHostIdentity.GetLogDirectoryPath()),
             loggerFactory);
@@ -97,14 +108,15 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 new CommandContextItem(reportProblemPage),
             ]
         };
-        IPage? currentMediaMetadataPage = null;
 #if FF_ENABLE_FULL_METADATA_PAGE
-        currentMediaMetadataPage = new CurrentMediaMetadataPage(
+        IPage? currentMediaMetadataPage = new CurrentMediaMetadataPage(
             this._mediaService,
             this._mediaSessionViewModels,
             this._resultFactory,
             this._iconService,
             loggerFactory);
+#else
+        IPage? currentMediaMetadataPage = null;
 #endif
         this._nowPlayingItem = new NowPlayingListItem(
             this._mediaService,
@@ -222,8 +234,6 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this.RaiseItemsChanged();
     }
 
-    private void BackendsOnEnabledChanged(object? sender, EventArgs args) => this.UpdateEnabledMediaBackends();
-
     private async Task UpdateVlcSourceClaimsAsync(VlcSettings settings)
     {
         try
@@ -239,29 +249,25 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         }
     }
 
-    private void UpdateEnabledMediaBackends()
+    private void UpdateEnabledMediaBackends(string? retryBackendId = null)
     {
         if (Volatile.Read(ref this._disposeState) != 0)
         {
             return;
         }
 
-        var enabled = this._backendSettings.EnabledIds;
-        foreach (var backend in this._mediaBackend.Backends)
+        lock (this._backendSelectionGate)
         {
-            var isEnabled = enabled.Contains(backend.Id);
-            if (backend.IsEnabled != isEnabled)
-            {
-                _ = this.UpdateMediaBackendAsync(backend.Id, isEnabled);
-            }
+            var enabled = this._backendSettings.EnabledIds;
+            _ = this.UpdateMediaBackendsAsync(enabled, retryBackendId is not null && enabled.Contains(retryBackendId) ? retryBackendId : null);
         }
     }
 
-    private async Task UpdateMediaBackendAsync(string id, bool enabled)
+    private async Task UpdateMediaBackendsAsync(System.Collections.Immutable.ImmutableArray<string> enabled, string? retryBackendId)
     {
         try
         {
-            await this._mediaBackend.SetEnabledAsync(id, enabled).ConfigureAwait(false);
+            await this._mediaBackend.SetEnabledBackendsAsync(enabled, retryBackendId: retryBackendId).ConfigureAwait(false);
         }
         catch (ObjectDisposedException) when (Volatile.Read(ref this._disposeState) != 0)
         {
@@ -359,8 +365,11 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
                 return;
             }
 
+            this._workerOwner.RequestStop();
+
             this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
-            this._backendSettings.EnabledChanged -= this.BackendsOnEnabledChanged;
+            this._backendSettingsBinding.Dispose();
+            this._backendSettings.Dispose();
             this._iconService.IconsChanged -= this.IconServiceOnIconsChanged;
             this._toggleMuteCommandItem.Dispose();
             foreach (var item in this._trackNavigationCommands)

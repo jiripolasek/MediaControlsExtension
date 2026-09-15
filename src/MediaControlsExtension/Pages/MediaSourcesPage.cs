@@ -24,6 +24,7 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
     private readonly IMediaService _mediaService;
     private readonly ILogger _logger;
     private readonly Action<string, bool> _setEnabled;
+    private readonly Func<string, string?>? _getConfigurationDiagnostic;
     private readonly IReadOnlyDictionary<string, ICommand> _configurationPages;
     private readonly Dictionary<string, MediaSourceStatusItem> _rows = new(StringComparer.Ordinal);
     private TypedEventHandler<object, IItemsChangedEventArgs>? _itemsChanged;
@@ -35,13 +36,14 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
     private long _lastAppliedRefresh;
 
     public MediaSourcesPage(IMediaService mediaService, Action<string, bool> setEnabled,
-        IReadOnlyDictionary<string, ICommand> configurationPages, ILoggerFactory loggerFactory)
+        IReadOnlyDictionary<string, ICommand> configurationPages, ILoggerFactory loggerFactory, Func<string, string?>? getConfigurationDiagnostic = null)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(setEnabled);
         ArgumentNullException.ThrowIfNull(configurationPages);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         this._mediaService = mediaService;
+        this._getConfigurationDiagnostic = getConfigurationDiagnostic;
         this._setEnabled = setEnabled;
         this._configurationPages = configurationPages;
         this._logger = loggerFactory.CreateLogger<MediaSourcesPage>();
@@ -148,6 +150,18 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
 
     private void BackendsOnChanged(object? sender, EventArgs args) => this.Refresh(allowInactive: false, forceItemsChanged: false);
 
+    public void RefreshConfiguration() => this.Refresh(allowInactive: false, forceItemsChanged: false);
+
+    private void RefreshInactiveState()
+    {
+        lock (this._stateLock)
+        {
+            if (this._monitoring || this._disposed) { return; }
+        }
+
+        this.Refresh(allowInactive: true, forceItemsChanged: false);
+    }
+
     private void Refresh(bool allowInactive, bool forceItemsChanged)
     {
         long epoch;
@@ -165,7 +179,9 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
 
         try
         {
-            var states = this._mediaService.Backends;
+            var states = this._mediaService.Backends.Select(state => this._getConfigurationDiagnostic?.Invoke(state.Id) is { } diagnostic
+                ? state with { DiagnosticMessage = diagnostic, Status = MediaBackendLifecycleStatus.Faulted }
+                : state).ToImmutableArray();
             var presentations = states.Select(MediaSourceStatusPresentation.FromState).ToArray();
             List<(MediaSourceStatusItem Item, MediaSourceStatusChanges Changes)> changedRows = [];
             bool itemsChanged;
@@ -187,7 +203,7 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
                     {
                         this._configurationPages.TryGetValue(id, out var configurationPage);
                         row = new MediaSourceStatusItem(states[index], presentations[index], this._setEnabled,
-                            configurationPage, this.Icon, this._logger);
+                            this.RefreshInactiveState, configurationPage, this.Icon, this._logger);
                         this._rows.Add(id, row);
                     }
                     else
@@ -295,6 +311,10 @@ internal sealed record MediaSourceStatusPresentation(string Title, string Subtit
         facts.Add((MediaSourcesPage.Text("Lifecycle"), lifecycle));
         facts.Add((MediaSourcesPage.Text("Connection"), connection));
         facts.Add((MediaSourcesPage.Text("AvailableSessions"), count));
+        if (state.ExclusiveGroup is not null)
+        {
+            facts.Add((MediaSourcesPage.Text("ExclusiveSelection"), MediaSourcesPage.Text("ExclusiveSelectionDescription")));
+        }
         if (!string.IsNullOrWhiteSpace(state.DiagnosticMessage))
         {
             facts.Add((MediaSourcesPage.Text("ProviderMessage"), state.DiagnosticMessage));
@@ -338,10 +358,10 @@ internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
     private readonly MediaSourceToggleCommand _toggle;
 
     public MediaSourceStatusItem(MediaBackendState backend, MediaSourceStatusPresentation presentation,
-        Action<string, bool> setEnabled, ICommand? configurationPage, IIconInfo? icon, ILogger logger)
+        Action<string, bool> setEnabled, Action refreshInactiveState, ICommand? configurationPage, IIconInfo? icon, ILogger logger)
     {
         this._state = new(presentation, CreateDetails(presentation), backend.IsEnabled);
-        this._toggle = new MediaSourceToggleCommand(backend.Id, backend.IsEnabled, setEnabled, logger);
+        this._toggle = new MediaSourceToggleCommand(backend.Id, backend.IsEnabled, setEnabled, refreshInactiveState, logger);
         this.Command = configurationPage ?? this._toggle;
         this.Icon = icon;
         this.MoreCommands = configurationPage is null
@@ -431,13 +451,15 @@ internal sealed partial class MediaSourceToggleCommand : InvokableCommand
         LogLevel.Warning, new EventId(1, nameof(SaveFailed)), "Could not change media source enablement.");
     private readonly string _id;
     private readonly Action<string, bool> _setEnabled;
+    private readonly Action _refreshInactiveState;
     private readonly ILogger _logger;
     private bool _enabled;
 
-    public MediaSourceToggleCommand(string id, bool enabled, Action<string, bool> setEnabled, ILogger logger)
+    public MediaSourceToggleCommand(string id, bool enabled, Action<string, bool> setEnabled, Action refreshInactiveState, ILogger logger)
     {
         this._id = id;
         this._setEnabled = setEnabled;
+        this._refreshInactiveState = refreshInactiveState;
         this._logger = logger;
         this.Id = $"com.jpsoftworks.cmdpal.mediacontrols.sources.{id}.enablement";
         this.UpdatePresentation(enabled);
@@ -453,9 +475,10 @@ internal sealed partial class MediaSourceToggleCommand : InvokableCommand
     {
         try
         {
+            this._refreshInactiveState();
             var enabled = !Volatile.Read(ref this._enabled);
             this._setEnabled(this._id, enabled);
-            this.UpdatePresentation(enabled);
+            this._refreshInactiveState();
             return CommandResult.KeepOpen();
         }
         catch (Exception ex)

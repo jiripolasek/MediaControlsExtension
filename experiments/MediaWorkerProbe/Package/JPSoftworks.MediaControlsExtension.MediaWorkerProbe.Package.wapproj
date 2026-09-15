@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '17.0'">
+    <VisualStudioVersion>17.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup>
+    <WapProjPath Condition="'$(WapProjPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
+  </PropertyGroup>
+  <Import Project="..\..\..\eng\CmdPal.Extension.props" Condition="'$(CmdPalExtensionProject)' == ''" />
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+  <PropertyGroup>
+    <ProjectGuid>73417c30-fb28-4d52-9a0c-946aac7e381d</ProjectGuid>
+    <ProjectName>JPSoftworks.MediaControlsExtension.MediaWorkerProbe</ProjectName>
+    <TargetPlatformVersion>$(CmdPalTargetPlatformVersion)</TargetPlatformVersion>
+    <TargetPlatformMinVersion>$(CmdPalTargetPlatformMinVersion)</TargetPlatformMinVersion>
+    <AssetTargetFallback>$(CmdPalTargetFramework);$(AssetTargetFallback)</AssetTargetFallback>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <EntryPointProjectUniqueName>..\Worker\JPSoftworks.MediaControlsExtension.MediaWorkerProbe.csproj</EntryPointProjectUniqueName>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <GenerateAppInstallerFile>false</GenerateAppInstallerFile>
+    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <AppxAutoIncrementPackageRevision>false</AppxAutoIncrementPackageRevision>
+    <AppxPackageDir>$(CmdPalArtifactsPath)MediaWorkerProbe\</AppxPackageDir>
+    <GenerateTestArtifacts>true</GenerateTestArtifacts>
+    <AppxBundle>Never</AppxBundle>
+    <AppxSymbolPackageEnabled>true</AppxSymbolPackageEnabled>
+    <AppxPackageIncludePrivateSymbols>false</AppxPackageIncludePrivateSymbols>
+    <PublishAot Condition="'$(PublishAot)' == '' and '$(Configuration)' == 'Release'">true</PublishAot>
+    <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">$(PublishAot)</PublishTrimmed>
+    <RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+    <Content Include="..\..\..\src\MediaControlsExtension.Package\Assets\**\*">
+      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+    <ProjectReference Include="..\Worker\JPSoftworks.MediaControlsExtension.MediaWorkerProbe.csproj">
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <PublishProfile>Properties\PublishProfiles\win-$(Platform).pubxml</PublishProfile>
+    </ProjectReference>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
+  </ItemGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <Target Name="RestoreProbeWapPublishAssets" BeforeTargets="_BuildDependentProjects" DependsOnTargets="_WapProjGetProjectClosure" Condition="'$(_IsGeneratingAppxPackage)' == 'true'">
+    <MSBuild Projects="@(ProjectReferenceWithPublishProps)" Targets="Restore" BuildInParallel="$(BuildInParallel)" Properties="%(ProjectReferenceWithPublishProps.SetConfiguration);%(ProjectReferenceWithPublishProps.SetPlatform)" Condition="'%(ProjectReferenceWithPublishProps.TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </Target>
+  <Target Name="RemoveUnusedProbeVCLibs" BeforeTargets="_GenerateCurrentProjectAppxManifest;_GenerateDesktopBridgeAppxManifest" DependsOnTargets="_ResolveVCLibDependencies" Condition="'$(PublishAot)' == 'true'">
+    <ItemGroup>
+      <FrameworkSdkReference Remove="@(FrameworkSdkReference)" Condition="'%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs' or '%(FrameworkSdkReference.SimpleName)' == 'Microsoft.VCLibs.Desktop'" />
+      <FrameworkSdkPackage Remove="@(FrameworkSdkPackage)" Condition="'%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.UWPDesktop' or '%(FrameworkSdkPackage.Name)' == 'Microsoft.VCLibs.140.00.Debug.UWPDesktop'" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap7="http://schemas.microsoft.com/appx/manifest/uap/windows10/7"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap7 com rescap">
+  <Identity
+    Name="JiriPolasek.MediaControlsWorkerProbe"
+    Publisher="CN=735F2779-478E-4220-AA28-465CBADFF852"
+    Version="1.0.0.0" />
+  <Properties>
+    <DisplayName>Media Controls worker probe</DisplayName>
+    <PublisherDisplayName>Jiri Polasek</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="en-US" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="Media Controls worker probe"
+        Description="Packaged GSMTC worker proof of concept"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        AppListEntry="none" />
+      <Extensions>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer
+              Executable="JPSoftworks.MediaControlsExtension.MediaWorkerProbe\JPSoftworks.MediaControlsExtension.MediaWorkerProbe.exe"
+              Arguments="-RegisterProcessAsComServer"
+              DisplayName="Media Controls worker probe">
+              <com:Class Id="f47a961b-a78e-4523-9c9e-ef9bf5e88706" DisplayName="Media Controls worker probe" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <uap7:Capability Name="globalMediaControl" />
+  </Capabilities>
+</Package>

@@ -74,6 +74,8 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
 
     public bool FailDisposal { get; set; }
 
+    public Task? DisposalBarrier { get; set; }
+
     public MediaArtworkContent? Artwork { get; set; }
 
     public ImmutableArray<MediaBackendCommand> Commands
@@ -312,7 +314,7 @@ internal sealed class FakeMediaBackend(MediaBackendSnapshot initialSnapshot) : I
         this._releaseStart.TrySetResult();
         return this.FailDisposal
             ? ValueTask.FromException(new InvalidOperationException("Injected disposal failure."))
-            : ValueTask.CompletedTask;
+            : this.DisposalBarrier is { } barrier ? new ValueTask(barrier) : ValueTask.CompletedTask;
     }
 
     public static MediaBackendSnapshot CreateSnapshot(

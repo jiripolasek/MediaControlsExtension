@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MediaControlsExtension.Media/JPSoftworks.MediaControlsExtension.Media.csproj" />
+    <InternalsVisibleTo Include="JPSoftworks.MediaControlsExtension.Media.Hosting.Tests" />
+  </ItemGroup>
+</Project>

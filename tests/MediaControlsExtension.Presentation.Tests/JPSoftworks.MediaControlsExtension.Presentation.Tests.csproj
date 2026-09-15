@@ -19,6 +19,8 @@
     <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaBackendConfigurationPage.cs" Link="Pages\MediaBackendConfigurationPage.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsStore.cs" Link="Helpers\SettingsStore.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaBackendSettings.cs" Link="Helpers\MediaBackendSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaBackendSettingsBinding.cs" Link="Helpers\MediaBackendSettingsBinding.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\WindowsMediaBackendDefaults.cs" Link="Helpers\WindowsMediaBackendDefaults.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaCommandFeedback.cs" Link="Helpers\MediaCommandFeedback.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaPauseFailureNotifier.cs" Link="Helpers\MediaPauseFailureNotifier.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcPasswordSetting.cs" Link="Helpers\VlcPasswordSetting.cs" />

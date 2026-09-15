@@ -83,6 +83,9 @@ public sealed record MediaBackendState(
     /// <summary>Gets the localized registration name; defaults to the registration ID.</summary>
     public string DisplayName { get; init; } = Id;
 
+    /// <summary>Gets the optional ordinal group shared by mutually exclusive registrations.</summary>
+    public string? ExclusiveGroup { get; init; }
+
     /// <summary>Gets explicit connection state, independent of lifecycle and command availability.</summary>
     public MediaBackendConnectionState Connection { get; init; } = MediaBackendConnectionState.Unknown;
 
@@ -90,7 +93,7 @@ public sealed record MediaBackendState(
     public int AvailableSessionCount { get; init; }
 
     internal bool HasSameContent(MediaBackendState other) =>
-        this.Id == other.Id && this.IsEnabled == other.IsEnabled && this.Status == other.Status &&
+        this.Id == other.Id && this.ExclusiveGroup == other.ExclusiveGroup && this.IsEnabled == other.IsEnabled && this.Status == other.Status &&
         this.DiagnosticMessage == other.DiagnosticMessage && this.DisplayName == other.DisplayName &&
         this.AvailableSessionCount == other.AvailableSessionCount && this.Connection.HasSameContent(other.Connection);
 }

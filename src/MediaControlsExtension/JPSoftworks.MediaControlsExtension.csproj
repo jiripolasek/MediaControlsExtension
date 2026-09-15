@@ -13,6 +13,7 @@
 		<GenerateSatelliteAssembliesForCore>true</GenerateSatelliteAssembliesForCore>
 		<!-- Remove this symbol to compile out the experimental full metadata page. -->
 		<DefineConstants>$(DefineConstants);FF_ENABLE_FULL_METADATA_PAGE</DefineConstants>
+		<DefineConstants Condition="'$(EnableDummyBackend)' == 'true'">$(DefineConstants);FF_ENABLE_DUMMY_BACKEND</DefineConstants>
 
 		<AssemblyName>$(CmdPalExtensionAssemblyName)</AssemblyName>
 		<Company>Jiri Polasek</Company>
@@ -46,6 +47,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+		<ProjectReference Include="..\MediaControlsExtension.Media.Hosting\JPSoftworks.MediaControlsExtension.Media.Hosting.csproj" />
+		<ProjectReference Include="..\MediaControlsExtension.MediaHost\JPSoftworks.MediaControlsExtension.MediaHost.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
 	</ItemGroup>
@@ -85,6 +88,9 @@
 			<LastGenOutput>Strings.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<Import Project="..\..\eng\MediaMemory.props" />
+	<Import Project="..\..\eng\MediaWorker.targets" />
 
 	<Target Name="UpdateVersionFromPackageManifest" BeforeTargets="BeforeBuild">
 		<XmlPeek XmlInputPath="$(PackageManifestPath)" Query="/appx:Package/appx:Identity/@Version" Namespaces="&lt;Namespace Prefix='appx' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10'/&gt;">

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputType Condition="'$(HostingTestsWindowless)' == 'true'">WinExe</OutputType>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CsWinRTAotOptimizerEnabled>true</CsWinRTAotOptimizerEnabled>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MediaControlsExtension.Media.Hosting/JPSoftworks.MediaControlsExtension.Media.Hosting.csproj" />
+    <ProjectReference Include="../../src/MediaControlsExtension.Media.Gsmtc/JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
+    <ProjectReference Include="../../src/MediaControlsExtension.Media.Dummy/JPSoftworks.MediaControlsExtension.Media.Dummy.csproj" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/WorkerApplication.cs" Link="WorkerApplication.cs" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/WorkerBackendFactory.cs" Link="WorkerBackendFactory.cs" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/WorkerBackendCatalog.cs" Link="WorkerBackendCatalog.cs" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/Backends/GsmtcBackendFactory.cs" Link="Backends/GsmtcBackendFactory.cs" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/Backends/DummyBackendFactory.cs" Link="Backends/DummyBackendFactory.cs" />
+    <Compile Include="../../src/MediaControlsExtension.MediaHost/WorkerFileLoggerProvider.cs" Link="WorkerFileLoggerProvider.cs" />
+  </ItemGroup>
+  <Import Project="../../eng/MediaMemory.props" />
+</Project>

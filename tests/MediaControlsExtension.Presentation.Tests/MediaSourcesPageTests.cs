@@ -5,7 +5,9 @@
 // ------------------------------------------------------------
 
 using System.Collections.Immutable;
+using System.Text.Json.Nodes;
 using JPSoftworks.MediaControlsExtension.Media;
+using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Pages;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
@@ -20,6 +22,8 @@ public sealed class MediaSourcesPageTests
     private static readonly string[] AllRowProperties = ["Title", "Subtitle", "Details"];
     private static readonly string[] StatusProperties = ["Subtitle", "Details"];
     private static readonly string[] DetailProperty = ["Details"];
+    private static readonly bool[] ToggleChoices = [true, false];
+    private static readonly string[] RecoverySources = ["gsmtc", "gsmtc.worker", "vlc"];
     [TestMethod]
     public void PrefetchDoesNotSubscribeAndOpeningRefreshesTheExistingRows()
     {
@@ -236,6 +240,7 @@ public sealed class MediaSourcesPageTests
         var changes = new List<(string, bool)>();
         using var page = new MediaSourcesPage(service, (id, enabled) => changes.Add((id, enabled)),
             new Dictionary<string, ICommand> { ["vlc"] = configuration }, NullLoggerFactory.Instance);
+        page.ItemsChanged += (_, _) => { };
         var items = page.GetItems();
         Assert.AreEqual(2, items.Length);
         Assert.AreSame(configuration, items[0].Command);
@@ -244,6 +249,8 @@ public sealed class MediaSourcesPageTests
         Assert.AreEqual("Enable", ((ICommand)toggle).Name);
         Assert.AreEqual(CommandResultKind.KeepOpen, toggle.Invoke(page).Kind);
         CollectionAssert.AreEqual(new[] { ("vlc", true) }, changes);
+        Assert.AreEqual("Enable", ((ICommand)toggle).Name);
+        service.Publish(State("vlc"), State("gsmtc"));
         Assert.AreEqual("Disable", ((ICommand)toggle).Name);
         Assert.AreSame(configuration, ((ICommandContextItem)items[0].MoreCommands[1]).Command);
         Assert.IsInstanceOfType<IInvokableCommand>(items[1].Command);
@@ -265,6 +272,37 @@ public sealed class MediaSourcesPageTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void InactiveToggleReadsPublishedStateBeforeAndAfterInvocation(bool delayedPublication)
+    {
+        var state = State() with { IsEnabled = false };
+        var service = new StatusService(state);
+        var choices = new List<bool>();
+        using var page = new MediaSourcesPage(service, (_, enabled) =>
+        {
+            choices.Add(enabled);
+            state = state with { IsEnabled = enabled };
+            if (!delayedPublication) { service.Publish(state); }
+        }, new Dictionary<string, ICommand>(), NullLoggerFactory.Instance);
+        var row = Rows(page).Single();
+        var toggle = (IInvokableCommand)row.Command!;
+
+        Assert.AreEqual(CommandResultKind.KeepOpen, toggle.Invoke(page).Kind);
+        Assert.AreEqual(delayedPublication ? "Enable" : "Disable", row.Command!.Name);
+        service.Publish(state);
+        Assert.AreEqual(CommandResultKind.KeepOpen, toggle.Invoke(page).Kind);
+
+        CollectionAssert.AreEqual(ToggleChoices, choices);
+        Assert.AreEqual(0, service.SubscriberCount);
+        Assert.AreEqual(0, service.AddCount);
+        Assert.AreEqual(delayedPublication ? "Disable" : "Enable", row.Command.Name);
+        service.Publish(state);
+        Assert.AreSame(row, Rows(page).Single());
+        Assert.AreEqual("Enable", row.Command.Name);
+    }
+
+    [TestMethod]
     public void FailedEnablementWriteKeepsTheOriginalActionAndReportsFailure()
     {
         using var page = new MediaSourcesPage(new StatusService(State()), (_, _) => throw new IOException(),
@@ -272,6 +310,134 @@ public sealed class MediaSourcesPageTests
         var command = (IInvokableCommand)Rows(page).Single().Command!;
         Assert.AreEqual(CommandResultKind.ShowToast, command.Invoke(page).Kind);
         Assert.AreEqual("Disable", ((ICommand)command).Name);
+    }
+
+    [TestMethod]
+    public async Task ExclusiveSelectionRefreshesBothRowsAfterAsynchronousPublication()
+    {
+        var first = State("gsmtc") with { ExclusiveGroup = "windows" };
+        var second = State("gsmtc.worker") with { ExclusiveGroup = "windows", IsEnabled = false };
+        var service = new StatusService(first, second);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var publication = Task.CompletedTask;
+        async Task PublishAsync(string id, bool enabled)
+        {
+            await release.Task;
+            service.Publish(first with { IsEnabled = id == first.Id && enabled }, second with { IsEnabled = id == second.Id && enabled });
+        }
+
+        using var page = new MediaSourcesPage(service, (id, enabled) => publication = PublishAsync(id, enabled),
+            new Dictionary<string, ICommand>(), NullLoggerFactory.Instance);
+        var rows = Rows(page);
+        Assert.AreEqual(0, service.SubscriberCount);
+        page.ItemsChanged += (_, _) => { };
+        var reads = service.ReadCount;
+        Assert.AreEqual("Disable", rows[0].Command!.Name);
+        Assert.AreEqual(CommandResultKind.KeepOpen, ((IInvokableCommand)rows[1].Command!).Invoke(page).Kind);
+        Assert.AreEqual(reads, service.ReadCount);
+        Assert.AreEqual("Disable", rows[0].Command!.Name);
+        Assert.AreEqual("Enable", rows[1].Command!.Name);
+        release.SetResult();
+        await publication.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.AreEqual("Enable", rows[0].Command!.Name);
+        Assert.AreEqual("Disable", rows[1].Command!.Name);
+        Assert.AreSame(rows[0], Rows(page)[0]);
+        Assert.AreSame(rows[1], Rows(page)[1]);
+    }
+
+    [TestMethod]
+    public void ConfigurationDiagnosticsAreVisibleAndClearAfterAnExplicitChoice()
+    {
+        var invalid = true;
+        var state = State() with { IsEnabled = false, Status = MediaBackendLifecycleStatus.Disabled };
+        var service = new StatusService(state);
+        using var page = new MediaSourcesPage(service, (_, enabled) =>
+        {
+            invalid = false;
+            service.Publish(state with { IsEnabled = enabled });
+        }, new Dictionary<string, ICommand>(), NullLoggerFactory.Instance, _ => invalid ? "Choose one provider." : null);
+        page.ItemsChanged += (_, _) => { };
+        var row = Rows(page).Single();
+        StringAssert.Contains(row.Subtitle, "Failed");
+        Assert.IsTrue(row.Details!.Metadata.Any(fact => fact.Data is DetailsLink link && link.Text == "Choose one provider."));
+        ((IInvokableCommand)row.Command!).Invoke(page);
+        Assert.IsFalse(row.Details!.Metadata.Any(fact => fact.Data is DetailsLink link && link.Text == "Choose one provider."));
+    }
+
+    [TestMethod]
+    [DataRow("open", false)]
+    [DataRow("closed", false)]
+    [DataRow("disposed", false)]
+    [DataRow("open", true)]
+    [DataRow("closed", true)]
+    [DataRow("disposed", true)]
+    public async Task SettingsRecoveryRefreshesAnOpenPageWithoutProviderStateChanges(string lifecycle, bool bindAfterRecovery)
+    {
+        var directory = Directory.CreateTempSubdirectory("MediaControls-page-recovery-").FullName;
+        try
+        {
+            var path = Path.Combine(directory, "settings.json");
+            var saved = new JsonObject();
+            var registry = new MediaBackendRegistry();
+            var states = RecoverySources.Select(id =>
+                State(id) with { IsEnabled = false, Status = MediaBackendLifecycleStatus.Disabled }).ToArray();
+            foreach (var state in states)
+            {
+                saved[$"jpsoftworks.mediacontrols.MediaBackends.{state.Id}.Enabled"] = "false";
+                registry.Register(new(state.Id, state.DisplayName, "", _ => throw new InvalidOperationException("No provider should start."), false));
+            }
+            File.WriteAllText(path, saved.ToJsonString());
+            using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            using var settings = new MediaBackendSettings(registry, new SettingsStore(path, NullLogger.Instance));
+            var service = new StatusService(states);
+            using var page = new MediaSourcesPage(service, settings.SetEnabled, new Dictionary<string, ICommand>(),
+                NullLoggerFactory.Instance, settings.GetDiagnostic);
+            using var binding = bindAfterRecovery ? null : new MediaBackendSettingsBinding(settings, page, _ => { });
+            TypedEventHandler<object, IItemsChangedEventArgs> listener = (_, _) => { };
+            page.ItemsChanged += listener;
+            var rows = Rows(page);
+            foreach (var row in rows) { StringAssert.Contains(row.Subtitle, "Failed"); }
+            var changed = new System.Collections.Concurrent.ConcurrentQueue<string>();
+            foreach (var row in rows) { row.PropChanged += (_, args) => changed.Enqueue(args.PropertyName); }
+            if (lifecycle == "closed") { page.ItemsChanged -= listener; }
+            if (lifecycle == "disposed") { page.Dispose(); }
+            var reads = service.ReadCount;
+            var recovered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            settings.EnabledChanged += (_, _) => recovered.TrySetResult();
+            locked.Dispose();
+            await recovered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            if (bindAfterRecovery)
+            {
+                foreach (var row in rows) { StringAssert.Contains(row.Subtitle, "Failed"); }
+            }
+            using var lateBinding = bindAfterRecovery ? new MediaBackendSettingsBinding(settings, page, _ => { }) : null;
+
+            Assert.IsEmpty(settings.EnabledIds);
+            foreach (var state in states) { Assert.IsNull(settings.GetDiagnostic(state.Id)); }
+            if (lifecycle != "open")
+            {
+                Assert.AreEqual(reads, service.ReadCount);
+                Assert.IsEmpty(changed);
+                if (lifecycle == "disposed") { return; }
+                page.ItemsChanged += listener;
+            }
+            foreach (var row in rows)
+            {
+                StringAssert.Contains(row.Subtitle, "Disabled");
+                Assert.IsFalse(row.Subtitle.Contains("Failed", StringComparison.Ordinal));
+                Assert.IsFalse(row.Details!.Metadata.Any(fact => fact.Data is DetailsLink link &&
+                    link.Text.Contains("Could not read", StringComparison.Ordinal)));
+                Assert.AreEqual("Enable", row.Command!.Name);
+            }
+            Assert.HasCount(3, changed.Where(static property => property == "Subtitle"));
+            Assert.HasCount(3, changed.Where(static property => property == "Details"));
+        }
+        finally
+        {
+            Assert.StartsWith(Path.GetFullPath(Path.GetTempPath()), Path.GetFullPath(directory));
+            Assert.StartsWith("MediaControls-page-recovery-", Path.GetFileName(directory));
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [TestMethod]

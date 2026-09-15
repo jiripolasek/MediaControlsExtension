@@ -1,0 +1,62 @@
+<Project>
+  <PropertyGroup>
+    <_MediaWorkerProject>$(MSBuildThisFileDirectory)..\src\MediaControlsExtension.MediaHost\JPSoftworks.MediaControlsExtension.MediaHost.csproj</_MediaWorkerProject>
+    <_MediaWorkerPublishDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\obj\MediaWorker\$(Configuration)\$(RuntimeIdentifier)\$(PublishAot)\'))</_MediaWorkerPublishDirectory>
+  </PropertyGroup>
+  <Target Name="PublishMediaWorker" Condition="'$(DesignTimeBuild)' != 'true'" Returns="@(_MediaWorkerPayload)">
+    <PropertyGroup>
+      <_MediaWorkerProperties>Configuration=$(Configuration);Platform=$(Platform);RuntimeIdentifier=$(RuntimeIdentifier);PublishAot=$(PublishAot);PublishTrimmed=$(PublishTrimmed);ForceManagedPublish=$(ForceManagedPublish);MediaGcConserveMemory=$(MediaGcConserveMemory);PublishDir=$(_MediaWorkerPublishDirectory)</_MediaWorkerProperties>
+      <_MediaWorkerRemovedProperties>PublishProfile;OutputPath;IntermediateOutputPath;BaseIntermediateOutputPath;BaseOutputPath;OutDir</_MediaWorkerRemovedProperties>
+    </PropertyGroup>
+    <Error Condition="!$(_MediaWorkerPublishDirectory.StartsWith('$(MSBuildProjectDirectory)\obj\MediaWorker\'))" Text="The media worker staging directory must remain under this project's obj/MediaWorker directory." />
+    <MSBuild Projects="$(_MediaWorkerProject)" Targets="Restore"
+      RemoveProperties="$(_MediaWorkerRemovedProperties)"
+      Properties="$(_MediaWorkerProperties);MediaWorkerRestore=true" />
+    <MSBuild Projects="$(_MediaWorkerProject)" Targets="GetMediaWorkerPublishPayload"
+      RemoveProperties="$(_MediaWorkerRemovedProperties)"
+      Properties="$(_MediaWorkerProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_MediaWorkerPayload" />
+    </MSBuild>
+    <ItemGroup>
+      <_MediaWorkerObsolete Include="$(_MediaWorkerPublishDirectory)**\*" Exclude="@(_MediaWorkerPayload)" />
+    </ItemGroup>
+    <Delete Files="@(_MediaWorkerObsolete)" />
+    <Error Condition="!Exists('$(_MediaWorkerPublishDirectory)JPSoftworks.MediaControlsExtension.MediaHost.exe')" Text="The media worker publish did not produce its executable." />
+    <Error Condition="'$(PublishAot)' != 'true' and !Exists('$(_MediaWorkerPublishDirectory)coreclr.dll')" Text="The managed media worker is missing its self-contained runtime." />
+  </Target>
+  <!-- Add the isolated payload after dependency conflict resolution in the owner. -->
+  <Target Name="AddMediaWorkerPublishPayload" AfterTargets="ComputeFilesToPublish" DependsOnTargets="PublishMediaWorker" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_MediaWorkerPayload)">
+        <RelativePath>MediaHost\%(_MediaWorkerPayload.RelativePath)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyMediaWorkerForBuild" AfterTargets="Build" DependsOnTargets="PublishMediaWorker" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_MediaWorkerBuildDirectory>$([System.IO.Path]::GetFullPath('$(TargetDir)MediaHost\'))</_MediaWorkerBuildDirectory>
+    </PropertyGroup>
+    <Error Condition="!$(_MediaWorkerBuildDirectory.StartsWith('$([System.IO.Path]::GetFullPath('$(TargetDir)'))'))" Text="The media worker build payload must remain under the build output directory." />
+    <ItemGroup>
+      <_MediaWorkerBuildFiles Include="@(_MediaWorkerPayload->'$(_MediaWorkerBuildDirectory)%(RelativePath)')" />
+      <_MediaWorkerObsoleteBuildFiles Include="$(_MediaWorkerBuildDirectory)**\*" Exclude="@(_MediaWorkerBuildFiles)" />
+    </ItemGroup>
+    <Delete Files="@(_MediaWorkerObsoleteBuildFiles)" />
+    <Copy SourceFiles="@(_MediaWorkerPayload)" DestinationFiles="@(_MediaWorkerBuildFiles)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="ValidatePublishedMediaWorker" AfterTargets="Publish" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_MediaWorkerParentPublishDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)'))</_MediaWorkerParentPublishDirectory>
+      <_MediaWorkerFinalDirectory>$([MSBuild]::NormalizeDirectory('$(_MediaWorkerParentPublishDirectory)', 'MediaHost'))</_MediaWorkerFinalDirectory>
+    </PropertyGroup>
+    <Error Condition="!$(_MediaWorkerFinalDirectory.StartsWith('$(_MediaWorkerParentPublishDirectory)'))" Text="The final media worker payload must remain under the extension publish directory." />
+    <ItemGroup>
+      <_MediaWorkerFinalFiles Include="@(_MediaWorkerPayload->'$(_MediaWorkerFinalDirectory)%(RelativePath)')" />
+      <_MediaWorkerObsoleteFinalFiles Include="$(_MediaWorkerFinalDirectory)**\*" Exclude="@(_MediaWorkerFinalFiles)" />
+    </ItemGroup>
+    <Delete Files="@(_MediaWorkerObsoleteFinalFiles)" />
+    <Error Condition="!Exists('$(PublishDir)MediaHost\JPSoftworks.MediaControlsExtension.MediaHost.exe')" Text="The published extension is missing its media worker." />
+    <Error Condition="'$(PublishAot)' != 'true' and !Exists('$(PublishDir)MediaHost\coreclr.dll')" Text="The published media worker is missing its self-contained runtime." />
+  </Target>
+</Project>

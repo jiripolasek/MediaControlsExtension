@@ -15,6 +15,151 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class MediaSourcePolicyTests
 {
     [TestMethod]
+    public async Task RecoverableReadFailureStillAppliesPolicyAndRetainsTheRun()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var created = 0;
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ => { created++; return native; }, true))
+            .Register(new("companion", "Companion", "", _ => new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable)), true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        var initial = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
+        var retained = initial.Sessions.Single(static session => session.MediaProperties.Title == "Other").Id;
+        native.Inner.SnapshotFailure = new IOException("Transient read failure.");
+        native.Inner.SetSnapshot(NativeSnapshot(2));
+        await WaitForSnapshotAsync(composite, _ => composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted);
+
+        await composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")]);
+        Assert.IsTrue(native.Policy.ExcludedApplicationIds.Contains("browser.app"));
+        native.Inner.SnapshotFailure = null;
+        native.Inner.SetSnapshot(NativeSnapshot(3));
+        var recovered = await WaitForSnapshotAsync(composite, snapshot =>
+            snapshot.Sessions.Length == 1 && composite.Backends[0].Status == MediaBackendLifecycleStatus.Ready);
+        Assert.AreEqual(retained, recovered.Sessions.Single().Id);
+        Assert.AreEqual(1, created);
+        Assert.AreEqual(0, native.Inner.DisposeCount);
+    }
+
+    [TestMethod]
+    public async Task RecoveryBeforeQueuedRetryDoesNotLeaveRetryIntentForALaterFault()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot()) { BlockPolicy = true };
+        var created = 0;
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ => ++created == 1 ? native : new FakeSourcePolicyBackend(NativeSnapshot()), true))
+            .Register(new("companion", "Companion", "", _ => new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable)), true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
+        native.Inner.SnapshotFailure = new IOException("Transient read failure.");
+        native.Inner.SetSnapshot(NativeSnapshot(2));
+        await WaitForSnapshotAsync(composite, _ => composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted);
+        var policy = composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")]);
+        try
+        {
+            await native.PolicyStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var retry = composite.SetEnabledBackendsAsync(["native", "companion"], retryBackendId: "native");
+            Assert.IsFalse(retry.IsCompleted);
+            native.Inner.SnapshotFailure = null;
+            native.ReleasePolicy();
+            await Task.WhenAll(policy, retry).WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(MediaBackendLifecycleStatus.Ready, composite.Backends[0].Status);
+            Assert.AreEqual(1, created);
+
+            native.Inner.CompleteWatch(new IOException("Later terminal failure."));
+            await WaitUntilAsync(() => composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted);
+            await composite.SetSourceClaimsAsync("companion", []);
+            Assert.AreEqual(1, created);
+            Assert.AreEqual(MediaBackendLifecycleStatus.Faulted, composite.Backends[0].Status);
+        }
+        finally { native.ReleasePolicy(); }
+    }
+
+    [TestMethod]
+    [DataRow("factory")]
+    [DataRow("start")]
+    [DataRow("read")]
+    [DataRow("watch")]
+    public async Task UnrelatedSelectionsAndSourceClaimsDoNotRetryFaultedProviders(string failure)
+    {
+        var first = new FakeSourcePolicyBackend(NativeSnapshot());
+        if (failure == "start") { first.Inner.StartFailure = new InvalidOperationException("Start failed."); }
+        if (failure == "read") { first.Inner.SnapshotFailure = new InvalidOperationException("Read failed."); }
+        var created = 0;
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ =>
+            {
+                created++;
+                if (created != 1) { return new FakeSourcePolicyBackend(NativeSnapshot()); }
+                if (failure == "factory") { throw new InvalidOperationException("Factory failed."); }
+                return first;
+            }, true))
+            .Register(new("companion", "Companion", "", _ => new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable))))
+            .Register(new("other", "Other", "", _ => new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable))));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        if (failure == "watch")
+        {
+            await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
+            first.Inner.CompleteWatch(new InvalidOperationException("Watch failed."));
+        }
+        await WaitUntilAsync(() => composite.Backends[0].Status == MediaBackendLifecycleStatus.Faulted);
+
+        await composite.SetEnabledAsync("other", true);
+        await composite.SetEnabledBackendsAsync(["native", "other", "companion"]);
+        await composite.SetSourceClaimsAsync("companion", [new("native", "browser.app")]);
+
+        Assert.AreEqual(1, created);
+        Assert.AreEqual(MediaBackendLifecycleStatus.Faulted, composite.Backends[0].Status);
+        await composite.SetEnabledBackendsAsync(["native", "other", "companion"], retryBackendId: "native");
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 1);
+        Assert.AreEqual(2, created);
+        Assert.AreEqual(MediaBackendLifecycleStatus.Ready, composite.Backends[0].Status);
+    }
+
+    [TestMethod]
+    [DataRow("missing")]
+    [DataRow("companion")]
+    public async Task InvalidRetryTargetDoesNotChangeTheSelection(string retryId)
+    {
+        var registry = Registry(new FakeSourcePolicyBackend(NativeSnapshot()), new FakeMediaBackend(NativeSnapshot()));
+        await using var composite = new CompositeMediaBackend(registry);
+        Assert.ThrowsExactly<ArgumentException>(() => composite.SetEnabledBackendsAsync([], retryBackendId: retryId));
+        Assert.IsTrue(composite.Backends[0].IsEnabled);
+        Assert.IsFalse(composite.Backends[1].IsEnabled);
+    }
+
+    [TestMethod]
+    public async Task ExclusiveSwitchRetainsClaimsFromADisconnectedOwnerForBothModes()
+    {
+        var internalBackend = new FakeSourcePolicyBackend(NativeSnapshot());
+        var workerBackend = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable)
+        {
+            Connection = MediaBackendConnectionState.Disconnected,
+        });
+        var registry = new MediaBackendRegistry()
+            .Register(new("gsmtc", "Internal", "", _ => internalBackend, true) { ExclusiveGroup = "windows" })
+            .Register(new("gsmtc.worker", "Worker", "", _ => workerBackend) { ExclusiveGroup = "windows" })
+            .Register(new("companion", "Companion", "", _ => companion, true)
+            {
+                ReplacesSources = [new("gsmtc", "browser.app"), new("gsmtc.worker", "browser.app")],
+            });
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 1);
+        Assert.IsTrue(internalBackend.Policy.ExcludedApplicationIds.Contains("browser.app"));
+        await composite.SetEnabledAsync("gsmtc.worker", true);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 1);
+        Assert.AreEqual(1, internalBackend.Inner.DisposeCount);
+        Assert.IsTrue(workerBackend.Policy.ExcludedApplicationIds.Contains("browser.app"));
+        await composite.SetEnabledAsync("companion", false);
+        await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
+        Assert.IsEmpty(workerBackend.Policy.ExcludedApplicationIds);
+    }
+
+    [TestMethod]
     public async Task RapidClaimChangesFenceLateReadsAndSurviveCallerCancellation()
     {
         var native = new FakeSourcePolicyBackend(NativeSnapshot());
