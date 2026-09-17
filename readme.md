@@ -7,7 +7,7 @@
 
 Take full control of your media playback without leaving your workflow. Media Controls for [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) brings Windows media sessions and system audio controls together in the Command Palette and Dock.
 
-The extension works with desktop apps, Microsoft Store apps, and browser tabs that publish a Windows Global System Media Transport Controls (GSMTC) session.
+The extension works with desktop apps, Microsoft Store apps, and browser tabs that publish a Windows Global System Media Transport Controls (GSMTC) session. It also includes direct media sources for desktop iTunes and VLC 3.
 
 <div align="center">
 <img src="./art/screenshot_01.png" alt="Screenshot" />
@@ -25,7 +25,7 @@ The extension works with desktop apps, Microsoft Store apps, and browser tabs th
 
 Popular compatible players include Spotify, Apple Music, foobar2000, Media Player, VLC UWP, and media websites running in Edge, Chrome, other Chromium-based browsers, or Firefox. Exact controls and metadata depend on what each player exposes to Windows.
 
-See the [player compatibility and GSMTC guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, optional integrations, and troubleshooting. For a version-by-version history of changes, see the [changelog](CHANGELOG.md).
+See the [player compatibility and media source guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, optional integrations, and troubleshooting. For a version-by-version history of changes, see the [changelog](CHANGELOG.md).
 
 ## Installation
 

@@ -14,6 +14,7 @@
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
+		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.ITunes\JPSoftworks.MediaControlsExtension.Media.ITunes.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
