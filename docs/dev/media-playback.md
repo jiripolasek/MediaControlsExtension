@@ -110,8 +110,11 @@ Each transition sends at most one primary native command.
 
 ### Choose a native operation
 
-Read state and controls, then recheck them inside the control gate immediately
-before sending. Apply these rules in order:
+Each attempt drains any shared playback read, then reserves the reader while
+waiting for the control gate. Drain failures do not fail the command; cancellation
+and retirement still stop it. Revalidate state and controls inside the gate
+immediately before sending. Cached state is only a readiness hint. Apply these
+rules in order:
 
 | Observation | Action |
 | --- | --- |
@@ -133,24 +136,47 @@ capabilities, so a later-arriving Pause control can still be missed.
 | Intent | Successful observation |
 | --- | --- |
 | Play | Playing. |
-| Pause | Paused, or two consecutive Stopped reads after the send/skip decision, separated by the normal poll interval. |
+| Pause | Paused, or two consecutive Stopped observations after the send/skip decision, at least 50 ms apart. |
 
 Unknown, Changing, Opened, and Closed do not confirm Pause. An intervening state
 resets the Stopped count.
 
-After a skipped send, playback can change again. If no native mutation has started
-and a read no longer satisfies the intent, reuse that read to return to readiness
-and reset Stopped confirmation. A first Stopped read for Pause keeps waiting for
-the second. Once any native mutation starts, reads only confirm; they cannot
-trigger another send.
+Matching Playing/Paused with the directional control disabled completes from the
+gated read. A skipped Stopped Pause still needs two later observations. If playback
+changes before any mutation, return to readiness. Primary sends and ancillary
+pauses are never replayed within a request.
 
-Confirmation polls every 50 ms, including when native events are missed. It uses
-a per-binding observation gate, separate from both the shared native control gate
-and background snapshot/artwork reads. A hung confirmation read therefore occupies
-only its binding's observation gate until it returns. Actual sends retain the
-control gate's 500 ms acquisition timeout; a hung send or recheck can still block
-that gate and open its circuit. Native playback objects remain owned by their lane
-until replacement or retirement.
+### Share playback observations
+
+[GsmtcPlaybackObservations](../../src/MediaControlsExtension.Media.Gsmtc/GsmtcPlaybackObservations.cs)
+shares one outstanding playback read per binding between snapshots and confirmation.
+Events only mark changes and wake readers. Successful reads update cached scalars;
+newer events remain dirty, and older reads cannot overwrite newer observations.
+Failed snapshots retain the cache without repeating the read or warning for the
+same event. A transient event-read failure can still use the remaining fallback.
+
+Confirmation uses reads started after the send/skip decision. Retirement wakes
+waiters with SessionGone. Native leases and separate RCW root lanes are preserved.
+Committed observations satisfy later snapshots without another playback read.
+
+### Bound missing-event reads
+
+Each request has one 500 ms fallback: from request start for readiness, or from
+send completion (the decision for skipped Stopped) if unused. Forced readiness
+revalidation consumes it. Only the Stopped/stop-only rule adds a scheduled 50 ms
+read. Events never extend the three-second deadline or replenish the budget.
+
+Typical playback read counts are two for normal confirmation, one for already
+satisfied Playing/Paused, and three for Stopped confirmation. Stable stop-only
+takes two; unchanged snapshots take none. Later silent changes may remain
+Unconfirmed or Unavailable. Native CFG crashes remain possible.
+
+Snapshots wait one active second plus two seconds of resume grace. On timeout,
+they keep cached data and defer that binding's timeline/media reads until recovery,
+freeing the global observation gate. Hung playback reads keep their native lease.
+Each read logs slowness at two active seconds, a stall at three, and recovery on
+return. Timeline, media, or artwork hangs can still block global observations.
+Commands retain the control gate's 500 ms acquisition timeout.
 
 ## Outcomes and user feedback
 
@@ -178,11 +204,9 @@ toast messages. Disposing notification observers does not cancel media commands.
 
 ## Validation
 
-The [media tests](../../tests/MediaControlsExtension.Media.Tests) cover admission,
-shared-binding order, replacement generations, abandonment, stale predictions,
-and partial pause outcomes. `GsmtcPlaybackControllerTests`, `GsmtcPlaybackDeadlineTests`,
-and `GsmtcPlaybackIsolationTests` exercise readiness, retries, one-send behavior,
-deadlines, and the production control/observation gates with controlled delegates.
+The [media tests](../../tests/MediaControlsExtension.Media.Tests) cover scheduling,
+predictions, partial pause outcomes, and GSMTC readiness, deadlines, read budgets,
+event races, retirement, and snapshot recovery using controlled native delegates.
 
 The [presentation tests](../../tests/MediaControlsExtension.Presentation.Tests)
 cover captured button intent, inverse actions, settled Stop fallback, notifications,

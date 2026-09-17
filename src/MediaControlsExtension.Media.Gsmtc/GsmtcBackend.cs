@@ -34,7 +34,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
     }
 
     [Flags]
-    private enum SessionObservationChanges
+    internal enum SessionObservationChanges
     {
         None = 0,
         Playback = 1 << 0,
@@ -148,7 +148,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
             this._sourcePolicy = policy;
             var excluded = this._bindings.Values.Concat(this._recentlyRemovedBindings.Select(static recent => recent.Binding))
                 .Where(binding => policy.ExcludedApplicationIds.Contains(binding.ApplicationId))
-                .Distinct<SessionBinding>(ReferenceEqualityComparer.Instance).ToArray();
+                .Distinct<SessionBinding>(ReferenceEqualityComparer.Instance)
+                .ToArray();
             foreach (var binding in excluded)
             {
                 this._bindings.Remove(binding.Id);
@@ -186,7 +187,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
 
         var manager = await this._controlGate.RunAsync(
-            async () => await GlobalSystemMediaTransportControlsSessionManager.RequestAsync(),
+            static async () => await GlobalSystemMediaTransportControlsSessionManager.RequestAsync(),
             "RequestSessionManager",
             cancellationToken).ConfigureAwait(false);
 
@@ -290,8 +291,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     },
                     $"ReadSession:{binding.ApplicationId}",
                     cancellationToken).ConfigureAwait(false);
-                binding.CompleteObservation(observed);
-                snapshots.Add(observed);
+                snapshots.Add(binding.CompleteObservation(observed));
             }
             catch (GsmtcSessionRetiredException)
             {
@@ -371,6 +371,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     binding.Generation == request.BindingGeneration ? binding : null)
                 .Where(static binding => binding is { IsMissing: false })
                 .Cast<SessionBinding>()
+                .Distinct()
                 .ToArray();
         }
 
@@ -402,7 +403,41 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     : new(MediaBackendCommandStatus.Failed, "The source application could not be activated.");
             }
 
-            async Task<bool> SendAsync(MediaOperation? operation, Action markSending, CancellationToken token)
+            var ancillaryPausesProcessed = false;
+
+            if (command.Operation is MediaOperation.Play or MediaOperation.Pause)
+            {
+                var result = await target.PlaybackController.ExecuteAsync(
+                    command.Operation,
+                    target.PlaybackObservations,
+                    () => this.ReadPlaybackAsync(target, PlaybackReadLane.Transition),
+                    (markSending, token) => RunControlAsync(
+                        targetUse => GsmtcPlaybackController.SendRevalidatedAsync(
+                            command.Operation,
+                            target.PlaybackObservations,
+                            target.PlaybackObservations.ReadCommand(() => this.ReadPlayback(target, targetUse, PlaybackReadLane.Command)),
+                            nativeOperation => ExecuteOperationAsync(target.Session, nativeOperation, targetUse),
+                            markSending),
+                        markSending, token),
+                    cancellationToken).ConfigureAwait(false);
+                this.SignalStateChanged(MediaBackendSignal.ObservationsChanged);
+                return result;
+            }
+
+            var accepted = await RunControlAsync(
+                targetUse => ExecuteOperationAsync(target.Session, command.Operation, targetUse),
+                static () => { }, cancellationToken).ConfigureAwait(false);
+            if (accepted)
+            {
+                target.Invalidate(ChangesForOperation(command.Operation));
+            }
+
+            return accepted
+                ? new(MediaBackendCommandStatus.Completed, null)
+                : new(MediaBackendCommandStatus.Failed, "GSMTC rejected the requested operation.");
+
+            async Task<T> RunControlAsync<T>(
+                Func<GsmtcSessionNativeLifetime.NativeUse, Task<T>> execute, Action markSending, CancellationToken token)
             {
                 var nativeOperationName = $"Command:{command.Operation}";
                 var call = this.BeginNativeCall(target, nativeOperationName);
@@ -410,13 +445,15 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     async () =>
                     {
                         using var targetUse = target.TryEnterNativeUse()
-                            ?? throw new GsmtcSessionRetiredException();
+                                              ?? throw new GsmtcSessionRetiredException();
                         if (target.IsMissing)
                         {
                             throw new GsmtcSessionRetiredException();
                         }
 
-                        foreach (var other in sessionsToPause)
+                        var pauseTargets = ancillaryPausesProcessed ? [] : sessionsToPause;
+                        ancillaryPausesProcessed = true;
+                        foreach (var other in pauseTargets)
                         {
                             token.ThrowIfCancellationRequested();
                             using var otherUse = other.TryEnterNativeUse();
@@ -440,47 +477,13 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                         }
 
                         token.ThrowIfCancellationRequested();
-                        if (command.Operation is MediaOperation.Play or MediaOperation.Pause)
-                        {
-                            return await GsmtcPlaybackController.SendRevalidatedAsync(
-                                command.Operation,
-                                this.ReadPlayback(target, targetUse, PlaybackReadLane.Command),
-                                nativeOperation => ExecuteOperationAsync(target.Session, nativeOperation, targetUse),
-                                markSending).ConfigureAwait(false);
-                        }
-
-                        markSending();
-                        return await ExecuteOperationAsync(
-                            target.Session,
-                            operation!.Value,
-                            targetUse).ConfigureAwait(false);
+                        return await execute(targetUse).ConfigureAwait(false);
                     },
                     command.Operation.ToString(),
                     token).ConfigureAwait(false);
                 this.CompleteNativeCall(target, nativeOperationName, call);
-                if (success)
-                {
-                    target.Invalidate(ChangesForOperation(command.Operation));
-                }
-
                 return success;
             }
-
-            if (command.Operation is MediaOperation.Play or MediaOperation.Pause)
-            {
-                var result = await target.PlaybackController.ExecuteAsync(
-                    command.Operation,
-                    token => this.ReadPlaybackAsync(target, token),
-                    SendAsync,
-                    cancellationToken).ConfigureAwait(false);
-                target.Invalidate(SessionObservationChanges.Playback);
-                this.SignalStateChanged(MediaBackendSignal.ObservationsChanged);
-                return result;
-            }
-
-            return await SendAsync(command.Operation, static () => { }, cancellationToken).ConfigureAwait(false)
-                ? new(MediaBackendCommandStatus.Completed, null)
-                : new(MediaBackendCommandStatus.Failed, "GSMTC rejected the requested operation.");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -518,16 +521,15 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
 
     private Task<GsmtcPlaybackController.PlaybackObservation> ReadPlaybackAsync(
         SessionBinding binding,
-        CancellationToken cancellationToken)
+        PlaybackReadLane lane)
     {
-        cancellationToken.ThrowIfCancellationRequested();
         using var nativeUse = binding.TryEnterNativeUse() ?? throw new GsmtcSessionRetiredException();
         if (binding.IsMissing)
         {
             throw new GsmtcSessionRetiredException();
         }
 
-        return Task.FromResult(this.ReadPlayback(binding, nativeUse, PlaybackReadLane.Transition));
+        return Task.FromResult(this.ReadPlayback(binding, nativeUse, lane));
     }
 
     private enum PlaybackReadLane { Snapshot, Command, Transition }
@@ -539,8 +541,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         var call = this.BeginNativeCall(binding, operationName);
         var playbackInfo = binding.Session.GetPlaybackInfo();
         var controls = playbackInfo?.Controls;
-        var observed = new GsmtcPlaybackController.PlaybackObservation(
-            MapPlaybackState(playbackInfo?.PlaybackStatus), MapCapabilities(controls));
+        var observed = new GsmtcPlaybackController.PlaybackObservation(MapPlaybackState(playbackInfo?.PlaybackStatus), MapCapabilities(controls));
+
         switch (lane)
         {
             case PlaybackReadLane.Snapshot:
@@ -690,8 +692,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         }
     }
 
-    private async Task<bool> UnhookSessionManagerAsync(
-        GlobalSystemMediaTransportControlsSessionManager manager)
+    private async Task<bool> UnhookSessionManagerAsync(GlobalSystemMediaTransportControlsSessionManager manager)
     {
         try
         {
@@ -767,106 +768,113 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         SessionObservationPlan plan,
         GsmtcSessionNativeLifetime.NativeUse nativeUse)
     {
-        var previous = plan.PreviousSnapshot;
-        var source = previous?.MediaProperties.Source
-            ?? new MediaSourceSnapshot { NativeApplication = new(binding.ApplicationId) };
-        var mediaProperties = previous?.MediaProperties
-            ?? MediaPropertiesSnapshot.Empty(source);
-        var timelineProperties = previous?.TimelineProperties
-            ?? MediaTimelinePropertiesSnapshot.Empty;
-        var playbackState = previous?.PlaybackState ?? MediaPlaybackState.Unknown;
-        var capabilities = previous?.Capabilities ?? MediaCapabilities.None;
+        var previous = plan.PreviousSnapshot ?? this.CreateFallbackSnapshot(binding);
 
-        if ((plan.Changes & SessionObservationChanges.Playback) != 0)
+        var snapshot = await ReadSessionPartsAsync(
+            previous, plan.Changes, binding.PlaybackObservations,
+            () => this.ReadPlaybackAsync(binding, PlaybackReadLane.Snapshot), ReadTimeline, ReadMedia,
+            binding.RestoreObservation,
+            (part, exception) => GsmtcLog.SessionObservationPartFailed(this._logger, binding.ApplicationId, part, exception),
+            this._disposeCts.Token).ConfigureAwait(false);
+        return new(binding.Id, binding.Generation, snapshot.MediaProperties, snapshot.TimelineProperties,
+            snapshot.PlaybackState, snapshot.Capabilities | this.SourceCapabilities);
+
+        async Task<MediaPropertiesSnapshot> ReadMedia()
+        {
+            var call = this.BeginNativeCall(binding, "TryGetMediaPropertiesAsync");
+            var properties = await binding.Session.TryGetMediaPropertiesAsync();
+            var thumbnail = properties?.Thumbnail;
+            var genres = properties?.Genres;
+            var artwork = binding.UpdateArtworkReference(thumbnail);
+            var source = previous.MediaProperties.Source;
+            var result = properties is null ? MediaPropertiesSnapshot.Empty(source) : new(
+                source, properties.Title ?? string.Empty, properties.Artist ?? string.Empty,
+                properties.AlbumTitle ?? string.Empty, properties.AlbumArtist ?? string.Empty,
+                properties.Subtitle ?? string.Empty, genres?.ToImmutableArray() ?? [],
+                properties.TrackNumber, properties.AlbumTrackCount, MapContentType(properties.PlaybackType), artwork);
+            nativeUse.CommitMediaObjects(properties, thumbnail, genres);
+            this.CompleteNativeCall(binding, "TryGetMediaPropertiesAsync", call);
+            return result;
+        }
+
+        MediaTimelinePropertiesSnapshot ReadTimeline()
+        {
+            var call = this.BeginNativeCall(binding, "GetTimelineProperties");
+            var timeline = binding.Session.GetTimelineProperties();
+            var result = new MediaTimelinePropertiesSnapshot(
+                timeline.StartTime, timeline.EndTime, timeline.MinSeekTime, timeline.MaxSeekTime,
+                timeline.Position, timeline.LastUpdatedTime);
+            nativeUse.CommitTimelineObjects(timeline);
+            this.CompleteNativeCall(binding, "GetTimelineProperties", call);
+            return result;
+        }
+    }
+
+    internal static async Task<MediaBackendSessionSnapshot> ReadSessionPartsAsync(
+        MediaBackendSessionSnapshot previous, SessionObservationChanges changes, GsmtcPlaybackObservations observations,
+        Func<Task<GsmtcPlaybackController.PlaybackObservation>> readPlayback, Func<MediaTimelinePropertiesSnapshot> readTimeline,
+        Func<Task<MediaPropertiesSnapshot>> readMedia, Action<SessionObservationChanges> restore,
+        Action<string, Exception> reportFailure, CancellationToken cancellationToken)
+    {
+        var snapshot = previous;
+        observations.EnsureActive();
+        if ((changes & SessionObservationChanges.Playback) != 0)
         {
             try
             {
-                var playback = this.ReadPlayback(binding, nativeUse, PlaybackReadLane.Snapshot);
-                playbackState = playback.State;
-                capabilities = playback.Capabilities;
+                var playback = await observations.ReadSnapshotAsync(readPlayback, cancellationToken).ConfigureAwait(false);
+                if (playback.Sequence != 0)
+                {
+                    snapshot = snapshot with { PlaybackState = playback.Value.State, Capabilities = playback.Value.Capabilities };
+                }
             }
             catch (Exception ex) when (CanRetainObservationPart(ex))
             {
-                binding.RestoreObservation(SessionObservationChanges.Playback);
-                GsmtcLog.SessionObservationPartFailed(
-                    this._logger,
-                    binding.ApplicationId,
-                    "playback information",
-                    ex);
+                reportFailure("playback information", ex);
             }
         }
 
-        if ((plan.Changes & SessionObservationChanges.Timeline) != 0)
+        observations.EnsureActive();
+        if (observations.IsSnapshotSuspended)
+        {
+            restore(changes & ~SessionObservationChanges.Playback);
+            return snapshot;
+        }
+
+        if ((changes & SessionObservationChanges.Timeline) != 0)
         {
             try
             {
-                var call = this.BeginNativeCall(binding, "GetTimelineProperties");
-                var timeline = binding.Session.GetTimelineProperties();
-                timelineProperties = new(
-                    timeline.StartTime,
-                    timeline.EndTime,
-                    timeline.MinSeekTime,
-                    timeline.MaxSeekTime,
-                    timeline.Position,
-                    timeline.LastUpdatedTime);
-                nativeUse.CommitTimelineObjects(timeline);
-                this.CompleteNativeCall(binding, "GetTimelineProperties", call);
+                snapshot = snapshot with { TimelineProperties = readTimeline() };
             }
             catch (Exception ex) when (CanRetainObservationPart(ex))
             {
-                binding.RestoreObservation(SessionObservationChanges.Timeline);
-                GsmtcLog.SessionObservationPartFailed(
-                    this._logger,
-                    binding.ApplicationId,
-                    "timeline",
-                    ex);
+                restore(SessionObservationChanges.Timeline);
+                reportFailure("timeline", ex);
             }
         }
 
-        if ((plan.Changes & SessionObservationChanges.MediaProperties) != 0)
+        observations.EnsureActive();
+        if (observations.IsSnapshotSuspended)
+        {
+            restore(changes & SessionObservationChanges.MediaProperties);
+            return snapshot;
+        }
+
+        if ((changes & SessionObservationChanges.MediaProperties) != 0)
         {
             try
             {
-                var call = this.BeginNativeCall(binding, "TryGetMediaPropertiesAsync");
-                var properties = await binding.Session.TryGetMediaPropertiesAsync();
-                var thumbnail = properties?.Thumbnail;
-                var genres = properties?.Genres;
-                var artwork = binding.UpdateArtworkReference(thumbnail);
-                mediaProperties = properties is null
-                    ? MediaPropertiesSnapshot.Empty(source)
-                    : new(
-                        source,
-                        properties.Title ?? string.Empty,
-                        properties.Artist ?? string.Empty,
-                        properties.AlbumTitle ?? string.Empty,
-                        properties.AlbumArtist ?? string.Empty,
-                        properties.Subtitle ?? string.Empty,
-                        genres?.ToImmutableArray() ?? [],
-                        properties.TrackNumber,
-                        properties.AlbumTrackCount,
-                        MapContentType(properties.PlaybackType),
-                        artwork);
-                nativeUse.CommitMediaObjects(properties, thumbnail, genres);
-                this.CompleteNativeCall(binding, "TryGetMediaPropertiesAsync", call);
+                snapshot = snapshot with { MediaProperties = await readMedia().ConfigureAwait(false) };
             }
             catch (Exception ex) when (CanRetainObservationPart(ex))
             {
-                binding.RestoreObservation(SessionObservationChanges.MediaProperties);
-                GsmtcLog.SessionObservationPartFailed(
-                    this._logger,
-                    binding.ApplicationId,
-                    "media properties",
-                    ex);
+                restore(SessionObservationChanges.MediaProperties);
+                reportFailure("media properties", ex);
             }
         }
 
-        return new(
-            binding.Id,
-            binding.Generation,
-            mediaProperties,
-            timelineProperties,
-            playbackState,
-            capabilities | this.SourceCapabilities);
+        return snapshot;
     }
 
     private NativeCallTrace BeginNativeCall(
@@ -948,7 +956,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
 
     private static bool CanRetainObservationPart(Exception exception)
     {
-        return exception is not OperationCanceledException &&
+        return exception is not OperationCanceledException and not GsmtcSessionRetiredException &&
                !GsmtcErrors.IndicatesStaleSession(exception);
     }
 
@@ -1679,6 +1687,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
     {
         private readonly GsmtcSessionNativeLifetime _nativeLifetime = new();
         private readonly Lock _stateLock = new();
+        private GsmtcPlaybackObservations? _playbackObservations;
         private IRandomAccessStreamReference? _artworkReference;
         private bool _artworkChanged = true;
         private int _isHooked;
@@ -1686,7 +1695,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         private TimeSpan _missingSince;
         private long _artworkVersion;
         private MediaBackendSessionSnapshot? _lastSnapshot;
-        private SessionObservationChanges _pendingChanges = SessionObservationChanges.All;
+        private SessionObservationChanges _pendingChanges = SessionObservationChanges.Timeline | SessionObservationChanges.MediaProperties;
         private bool _removalDue;
         private TimeSpan _retentionDeadline;
         private long _retentionVersion;
@@ -1699,7 +1708,20 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
 
         public GlobalSystemMediaTransportControlsSession Session { get; } = session;
 
-        public GsmtcPlaybackController PlaybackController { get; } = new(owner._logger);
+        public GsmtcPlaybackController PlaybackController { get; } = new();
+
+        public GsmtcPlaybackObservations PlaybackObservations
+        {
+            get
+            {
+                lock (this._stateLock)
+                {
+                    return this._playbackObservations ??= new(this._stateLock,
+                        () => owner.SignalStateChanged(MediaBackendSignal.ObservationsChanged),
+                        owner._logger, $"GetPlaybackInfo:{this.ApplicationId}");
+                }
+            }
+        }
 
         public GsmtcSessionNativeLifetime.NativeUse? TryEnterNativeUse()
         {
@@ -1714,11 +1736,13 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
 
         public Task<bool> RetireAsync()
         {
+            this.PlaybackObservations.Retire();
             return this._nativeLifetime.RetireAsync(this.UnhookAfterNativeUsesAsync);
         }
 
         public Task<bool> RetireInCurrentControlTurn()
         {
+            this.PlaybackObservations.Retire();
             return this._nativeLifetime.RetireInCurrentTurn(
                 this.TryUnhookCore,
                 this.UnhookAfterNativeUsesAsync);
@@ -1752,7 +1776,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
             {
                 lock (this._stateLock)
                 {
-                    return this._lastSnapshot;
+                    return this._lastSnapshot is { } snapshot ? this.PlaybackObservations.Merge(snapshot, owner.SourceCapabilities) : null;
                 }
             }
         }
@@ -1761,32 +1785,43 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         {
             lock (this._stateLock)
             {
+                if (this.PlaybackObservations.IsSnapshotSuspended)
+                {
+                    return new(this.LastSnapshot ?? owner.CreateFallbackSnapshot(this), SessionObservationChanges.None);
+                }
+
                 var plan = new SessionObservationPlan(
-                    this._lastSnapshot,
-                    this._pendingChanges);
+                    this.LastSnapshot,
+                    this._pendingChanges |
+                    (this.PlaybackObservations.NeedsSnapshotRead ? SessionObservationChanges.Playback : SessionObservationChanges.None));
                 this._pendingChanges = SessionObservationChanges.None;
                 return plan;
             }
         }
 
-        public void CompleteObservation(MediaBackendSessionSnapshot snapshot)
+        public MediaBackendSessionSnapshot CompleteObservation(MediaBackendSessionSnapshot snapshot)
         {
             lock (this._stateLock)
             {
-                this._lastSnapshot = snapshot;
+                this._lastSnapshot = this.PlaybackObservations.Merge(snapshot, owner.SourceCapabilities);
+                return this._lastSnapshot;
             }
         }
 
         public void RestoreObservation(SessionObservationChanges changes)
         {
-            this.Invalidate(changes);
+            this.Invalidate(changes & ~SessionObservationChanges.Playback);
         }
 
         public void Invalidate(SessionObservationChanges changes)
         {
             lock (this._stateLock)
             {
-                this._pendingChanges |= changes;
+                this._pendingChanges |= changes & ~SessionObservationChanges.Playback;
+                if ((changes & SessionObservationChanges.Playback) != 0)
+                {
+                    this.PlaybackObservations.Invalidate();
+                }
                 if ((changes & SessionObservationChanges.MediaProperties) != 0)
                 {
                     this._artworkChanged = true;
@@ -1814,6 +1849,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                 }
 
                 this._isMissing = true;
+                this.PlaybackObservations.Retire();
                 this._missingSince = missingSince;
                 this._removalDue = false;
                 this._retentionDeadline = deadline;

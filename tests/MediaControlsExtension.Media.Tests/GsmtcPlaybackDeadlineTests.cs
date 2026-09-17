@@ -4,11 +4,12 @@
 //
 // ------------------------------------------------------------
 
-using System.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
 using Observation = JPSoftworks.MediaControlsExtension.Media.Gsmtc.GsmtcPlaybackController.PlaybackObservation;
+using SendResult = JPSoftworks.MediaControlsExtension.Media.Gsmtc.GsmtcPlaybackController.PlaybackSendResult;
+using SendStatus = JPSoftworks.MediaControlsExtension.Media.Gsmtc.GsmtcPlaybackController.PlaybackSendStatus;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 
@@ -16,22 +17,89 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class GsmtcPlaybackDeadlineTests
 {
     [TestMethod]
+    [DataRow(0, 600)]
+    [DataRow(300, 300)]
+    public async Task MissingEventFallbackWaitsAfterSlowSendCompletion(int gateWaitMilliseconds, int sendMilliseconds)
+    {
+        var session = new PlaybackTestSession();
+        var entered = PlaybackTestSession.Signal();
+        var release = PlaybackTestSession.Signal();
+        var blocker = session.Controls.RunCommandAsync(async () =>
+        {
+            entered.TrySetResult();
+            await release.Task;
+            return true;
+        }, "Other session", default);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Task? stateChange = null;
+        session.NativeSend = async _ =>
+        {
+            await Task.Delay(sendMilliseconds);
+            stateChange = Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                session.Value = new(MediaPlaybackState.Paused, MediaCapabilities.Play);
+            });
+            return true;
+        };
+        try
+        {
+            var transition = session.ExecuteAsync();
+            await Task.Delay(gateWaitMilliseconds);
+            release.TrySetResult();
+            await blocker;
+
+            Assert.AreEqual(MediaBackendCommandStatus.Completed, (await transition).Status);
+            Assert.AreEqual(2, session.Reads);
+            Assert.HasCount(1, session.Operations);
+        }
+        finally
+        {
+            release.TrySetResult();
+            if (stateChange is not null)
+            {
+                await stateChange;
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task PostSendFallbackCannotExtendTheOriginalDeadline()
+    {
+        var session = new PlaybackTestSession
+        {
+            Controller = new(TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(200)),
+        };
+        session.NativeSend = async _ =>
+        {
+            await Task.Delay(200);
+            return true;
+        };
+
+        Assert.AreEqual(MediaBackendCommandStatus.Unconfirmed, (await session.ExecuteAsync()).Status);
+        Assert.AreEqual(1, session.Reads);
+        Assert.HasCount(1, session.Operations);
+    }
+
+    [TestMethod]
     [DataRow(true, MediaBackendCommandStatus.Unconfirmed)]
     [DataRow(false, MediaBackendCommandStatus.Unavailable)]
     public async Task DeadlineDistinguishesAHungSendFromACallThatHasNotStarted(bool startNativeCall, MediaBackendCommandStatus expected)
     {
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var entered = PlaybackTestSession.Signal();
+        var release = PlaybackTestSession.Signal();
         var gate = new GsmtcControlGate(NullLogger.Instance);
-        var controller = new GsmtcPlaybackController(TimeSpan.FromMilliseconds(150), TimeSpan.FromMilliseconds(10));
+        var observations = new GsmtcPlaybackObservations(new Lock());
+        var controller = new GsmtcPlaybackController(TimeSpan.FromMilliseconds(150), TimeSpan.FromMilliseconds(50));
         var nativeCalls = 0;
-        Task<bool>? nativeTask = null;
+        Task<SendResult>? nativeTask = null;
         try
         {
-            var transition = controller.ExecuteAsync(MediaOperation.Pause,
-                _ => Task.FromResult(new Observation(MediaPlaybackState.Playing, MediaCapabilities.Pause)),
-                (_, markSending, token) => nativeTask = gate.RunCommandAsync(async () =>
+            var transition = controller.ExecuteAsync(MediaOperation.Pause, observations,
+                () => throw new AssertFailedException("The send has not completed."),
+                (markSending, token) => nativeTask = gate.RunCommandAsync(async () =>
                 {
+                    var sample = observations.ReadCommand(() => new(MediaPlaybackState.Playing, MediaCapabilities.Pause));
                     if (startNativeCall)
                     {
                         markSending();
@@ -46,17 +114,16 @@ public sealed class GsmtcPlaybackDeadlineTests
                         Interlocked.Increment(ref nativeCalls);
                     }
 
-                    return true;
+                    return new SendResult(SendStatus.Sent, sample, sample.Sequence);
                 }, "Playback", token), default);
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
-            var result = await transition.WaitAsync(TimeSpan.FromSeconds(2));
-            Assert.AreEqual(expected, result.Status);
+            Assert.AreEqual(expected, (await transition.WaitAsync(TimeSpan.FromSeconds(2))).Status);
             Assert.IsFalse(nativeTask!.IsCompleted);
             release.TrySetResult();
             if (startNativeCall)
             {
-                Assert.IsTrue(await nativeTask.WaitAsync(TimeSpan.FromSeconds(2)));
+                Assert.AreEqual(SendStatus.Sent, (await nativeTask.WaitAsync(TimeSpan.FromSeconds(2))).Status);
             }
             else
             {
@@ -75,10 +142,8 @@ public sealed class GsmtcPlaybackDeadlineTests
     public async Task BackgroundObservationDoesNotBlockPlaybackControlOrConfirmation()
     {
         var observations = new GsmtcObservationGate(NullLogger.Instance);
-        var playbackObservations = new GsmtcObservationGate(NullLogger.Instance);
-        var controls = new GsmtcControlGate(NullLogger.Instance);
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var entered = PlaybackTestSession.Signal();
+        var release = PlaybackTestSession.Signal();
         var background = observations.RunAsync(async () =>
         {
             entered.TrySetResult();
@@ -86,19 +151,11 @@ public sealed class GsmtcPlaybackDeadlineTests
             return true;
         }, "Artwork", default);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        var state = MediaPlaybackState.Playing;
         try
         {
-            var result = await new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-                token => playbackObservations.RunAsync(() => Task.FromResult(new Observation(state, MediaCapabilities.Pause)), "Read playback", token),
-                (_, markSending, token) => controls.RunCommandAsync(() =>
-                {
-                    markSending();
-                    state = MediaPlaybackState.Paused;
-                    return Task.FromResult(true);
-                }, "Pause", token), default).WaitAsync(TimeSpan.FromSeconds(2));
-
-            Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
+            var session = new PlaybackTestSession();
+            Assert.AreEqual(MediaBackendCommandStatus.Completed, (await session.ExecuteAsync()).Status);
+            Assert.AreEqual(2, session.Reads);
             Assert.IsFalse(background.IsCompleted);
         }
         finally
@@ -109,195 +166,41 @@ public sealed class GsmtcPlaybackDeadlineTests
     }
 
     [TestMethod]
-    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.TogglePlayback, MediaOperation.TogglePlayback, MediaBackendCommandStatus.Completed, 0)]
+    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.TogglePlayback, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 0)]
+    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.None, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 0)]
+    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.Pause, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 1)]
+    [DataRow(MediaPlaybackState.Stopped, MediaCapabilities.None, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 0)]
+    [DataRow(MediaPlaybackState.Stopped, MediaCapabilities.Pause, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 0)]
     [DataRow(MediaPlaybackState.Playing, MediaCapabilities.Pause, MediaOperation.Pause, MediaBackendCommandStatus.Completed, 1)]
     [DataRow(MediaPlaybackState.Playing, MediaCapabilities.TogglePlayback, MediaOperation.TogglePlayback, MediaBackendCommandStatus.Completed, 1)]
-    [DataRow(MediaPlaybackState.Unknown, MediaCapabilities.TogglePlayback, MediaOperation.TogglePlayback, MediaBackendCommandStatus.Unavailable, 0)]
-    public async Task ToggleFallbackRechecksStateAfterWaitingForTheControlGate(
-        MediaPlaybackState latestState, MediaCapabilities latestCapabilities, MediaOperation expectedOperation,
-        MediaBackendCommandStatus expectedStatus, int expectedCalls)
+    [DataRow(MediaPlaybackState.Playing, MediaCapabilities.Stop, MediaOperation.Pause, MediaBackendCommandStatus.Unsupported, 0)]
+    [DataRow(MediaPlaybackState.Unknown, MediaCapabilities.TogglePlayback, MediaOperation.Pause, MediaBackendCommandStatus.Unavailable, 0)]
+    public async Task RevalidationUsesCurrentStateAndControlsAfterWaitingForTheGate(
+        MediaPlaybackState state, MediaCapabilities capabilities, MediaOperation expectedOperation,
+        MediaBackendCommandStatus expectedStatus, int sends)
     {
-        await AssertSendRevalidationAsync(MediaCapabilities.TogglePlayback, latestState, latestCapabilities,
-            expectedOperation, expectedStatus, expectedCalls);
-    }
-
-    [TestMethod]
-    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.None, MediaOperation.Pause, 0)]
-    [DataRow(MediaPlaybackState.Paused, MediaCapabilities.Pause, MediaOperation.Pause, 1)]
-    [DataRow(MediaPlaybackState.Stopped, MediaCapabilities.None, MediaOperation.Pause, 0)]
-    [DataRow(MediaPlaybackState.Stopped, MediaCapabilities.Pause, MediaOperation.Pause, 0)]
-    [DataRow(MediaPlaybackState.Playing, MediaCapabilities.TogglePlayback, MediaOperation.TogglePlayback, 1)]
-    public async Task DirectionalSendRechecksStateAndControlsAfterWaitingForTheControlGate(
-        MediaPlaybackState latestState, MediaCapabilities latestCapabilities, MediaOperation expectedOperation, int expectedCalls)
-    {
-        await AssertSendRevalidationAsync(MediaCapabilities.Pause, latestState, latestCapabilities,
-            expectedOperation, MediaBackendCommandStatus.Completed, expectedCalls);
-    }
-
-    [TestMethod]
-    [DataRow(MediaCapabilities.Pause)]
-    [DataRow(MediaCapabilities.TogglePlayback)]
-    public async Task PauseSkipsStopOnlyControlsObservedUnderTheControlGate(MediaCapabilities readinessCapabilities)
-    {
-        await AssertSendRevalidationAsync(readinessCapabilities, MediaPlaybackState.Playing,
-            MediaCapabilities.Play | MediaCapabilities.Stop, MediaOperation.Pause, MediaBackendCommandStatus.Unsupported, 0);
-    }
-
-    [TestMethod]
-    [DataRow(true, MediaBackendCommandStatus.Completed)]
-    [DataRow(false, MediaBackendCommandStatus.Unsupported)]
-    public async Task StopOnlyRevalidationWaitsOutsideTheControlGate(bool pauseAppears, MediaBackendCommandStatus expected)
-    {
-        var controls = new GsmtcControlGate(NullLogger.Instance);
-        var retryRead = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseRead = new TaskCompletionSource<Observation>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var reads = 0;
-        var controlReads = 0;
-        var sends = 0;
-        var firstStopOnlyAt = 0L;
-        var nextReadAt = 0L;
-        var transition = new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-            _ =>
-            {
-                var read = Interlocked.Increment(ref reads);
-                if (read == 2)
-                {
-                    nextReadAt = Stopwatch.GetTimestamp();
-                    retryRead.TrySetResult();
-                    return releaseRead.Task;
-                }
-
-                return Task.FromResult(new Observation(read == 1 ? MediaPlaybackState.Playing : MediaPlaybackState.Paused,
-                    MediaCapabilities.Pause));
-            },
-            (_, markSending, token) => controls.RunCommandAsync(() =>
-            {
-                var first = Interlocked.Increment(ref controlReads) == 1;
-                if (first)
-                {
-                    firstStopOnlyAt = Stopwatch.GetTimestamp();
-                }
-
-                return GsmtcPlaybackController.SendRevalidatedAsync(MediaOperation.Pause,
-                    new(MediaPlaybackState.Playing, first ? MediaCapabilities.Stop : MediaCapabilities.Stop | MediaCapabilities.Pause),
-                    operation =>
-                    {
-                        Assert.AreEqual(MediaOperation.Pause, operation);
-                        Interlocked.Increment(ref sends);
-                        return Task.FromResult(true);
-                    }, markSending);
-            }, "Pause", token), default);
-        try
-        {
-            Assert.AreSame(retryRead.Task, await Task.WhenAny(retryRead.Task, transition).WaitAsync(TimeSpan.FromSeconds(2)),
-                "A first stop-only observation must request another read.");
-            Assert.IsTrue(Stopwatch.GetElapsedTime(firstStopOnlyAt, nextReadAt) >= TimeSpan.FromMilliseconds(40),
-                "The default 50 ms poll must separate the reads, allowing for timer resolution.");
-            Assert.IsTrue(await controls.RunCommandAsync(() => Task.FromResult(true), "Independent command", default)
-                .WaitAsync(TimeSpan.FromSeconds(1)));
-            Assert.IsFalse(transition.IsCompleted);
-            releaseRead.TrySetResult(new(MediaPlaybackState.Playing,
-                pauseAppears ? MediaCapabilities.Stop | MediaCapabilities.Pause : MediaCapabilities.Stop));
-
-            Assert.AreEqual(expected, (await transition.WaitAsync(TimeSpan.FromSeconds(2))).Status);
-            Assert.AreEqual(pauseAppears ? 1 : 0, sends);
-            Assert.AreEqual(pauseAppears ? 2 : 1, controlReads);
-            Assert.AreEqual(pauseAppears ? 3 : 2, reads);
-        }
-        finally
-        {
-            releaseRead.TrySetResult(new(MediaPlaybackState.Playing, MediaCapabilities.Stop));
-        }
-    }
-
-    [TestMethod]
-    public async Task StopOnlyConfirmationCannotExtendTheTransitionDeadline()
-    {
-        var reads = 0;
-        var controller = new GsmtcPlaybackController(TimeSpan.FromMilliseconds(150), TimeSpan.FromSeconds(1));
-        var result = await controller.ExecuteAsync(MediaOperation.Pause,
-            _ =>
-            {
-                Interlocked.Increment(ref reads);
-                return Task.FromResult(new Observation(MediaPlaybackState.Playing, MediaCapabilities.Stop));
-            },
-            (_, _, _) => throw new AssertFailedException("Pause is not ready."), default)
-            .WaitAsync(TimeSpan.FromSeconds(2));
-
-        Assert.AreEqual(MediaBackendCommandStatus.Unavailable, result.Status);
-        Assert.AreEqual(1, reads);
-    }
-
-    [TestMethod]
-    public async Task StopOnlyRevalidationAfterAMutationDoesNotRetry()
-    {
-        var sends = 0;
-        var result = await new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-            _ => Task.FromResult(new Observation(MediaPlaybackState.Playing, MediaCapabilities.Pause)),
-            (_, markSending, _) =>
-            {
-                markSending();
-                Interlocked.Increment(ref sends);
-                return GsmtcPlaybackController.SendRevalidatedAsync(MediaOperation.Pause,
-                    new(MediaPlaybackState.Playing, MediaCapabilities.Stop),
-                    _ => throw new AssertFailedException("No usable Pause control was observed."), markSending);
-            }, default);
-
-        Assert.AreEqual(MediaBackendCommandStatus.Unconfirmed, result.Status);
-        Assert.AreEqual(1, sends);
-    }
-
-    private static async Task AssertSendRevalidationAsync(
-        MediaCapabilities readinessCapabilities, MediaPlaybackState latestState, MediaCapabilities latestCapabilities,
-        MediaOperation expectedOperation, MediaBackendCommandStatus expectedStatus, int expectedCalls)
-    {
-        var gate = new GsmtcControlGate(NullLogger.Instance);
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var blocker = gate.RunCommandAsync(async () =>
+        var session = new PlaybackTestSession { Controller = new(TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(100)) };
+        session.Observations.ReadCommand(() => session.Value);
+        var entered = PlaybackTestSession.Signal();
+        var release = PlaybackTestSession.Signal();
+        var blocker = session.Controls.RunCommandAsync(async () =>
         {
             entered.TrySetResult();
             await release.Task;
             return true;
         }, "Other session", default);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        var state = MediaPlaybackState.Playing;
-        var reads = 0;
-        var queued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var operations = new List<MediaOperation>();
         try
         {
-            var transition = new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-                _ => Task.FromResult(Interlocked.Increment(ref reads) == 1
-                    ? new Observation(MediaPlaybackState.Playing, readinessCapabilities)
-                    : new Observation(state, latestCapabilities)),
-                (_, markSending, token) =>
-                {
-                    var pending = gate.RunCommandAsync(() => GsmtcPlaybackController.SendRevalidatedAsync(
-                        MediaOperation.Pause, new(state, latestCapabilities), operation =>
-                        {
-                            operations.Add(operation);
-                            state = MediaPlaybackState.Paused;
-                            return Task.FromResult(true);
-                        }, markSending), "Pause", token);
-                    queued.TrySetResult();
-                    return pending;
-                }, default);
-            await queued.Task.WaitAsync(TimeSpan.FromSeconds(2));
-            state = latestState;
+            var transition = session.ExecuteAsync();
+            session.Value = new(state, capabilities);
             release.TrySetResult();
-            await blocker.WaitAsync(TimeSpan.FromSeconds(2));
-
-            Assert.AreEqual(expectedStatus, (await transition.WaitAsync(TimeSpan.FromSeconds(2))).Status);
-            Assert.HasCount(expectedCalls, operations);
-            if (expectedStatus == MediaBackendCommandStatus.Unsupported)
+            await blocker;
+            Assert.AreEqual(expectedStatus, (await transition).Status);
+            Assert.HasCount(sends, session.Operations);
+            if (sends > 0)
             {
-                Assert.AreEqual(2, reads);
-            }
-
-            if (expectedCalls != 0)
-            {
-                Assert.AreEqual(expectedOperation, operations[0]);
+                CollectionAssert.AreEqual(new[] { expectedOperation }, session.Operations.ToArray());
             }
         }
         finally
@@ -307,19 +210,115 @@ public sealed class GsmtcPlaybackDeadlineTests
     }
 
     [TestMethod]
-    public async Task CircuitOpenBeforeSendingIsNotAnUnconfirmedOperation()
+    [DataRow(true, MediaBackendCommandStatus.Completed)]
+    [DataRow(false, MediaBackendCommandStatus.Unsupported)]
+    public async Task StopOnlySecondObservationRunsOutsideTheControlGate(bool pauseAppears, MediaBackendCommandStatus expected)
     {
-        await Assert.ThrowsAsync<GsmtcControlCircuitOpenException>(() => new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-            _ => Task.FromResult(new Observation(MediaPlaybackState.Playing, MediaCapabilities.Pause)),
-            (_, _, _) => throw new GsmtcControlCircuitOpenException("Previous command", TimeSpan.Zero), default));
+        var session = new PlaybackTestSession { Value = new(MediaPlaybackState.Playing, MediaCapabilities.Stop) };
+        var entered = PlaybackTestSession.Signal();
+        var release = PlaybackTestSession.Signal();
+        session.SharedRead = async () =>
+        {
+            if (session.Reads == 2)
+            {
+                entered.TrySetResult();
+                await release.Task;
+                if (pauseAppears)
+                {
+                    session.Value = session.Value with { Capabilities = MediaCapabilities.Pause };
+                }
+            }
 
-        var result = await new GsmtcPlaybackController().ExecuteAsync(MediaOperation.Pause,
-            _ => Task.FromResult(new Observation(MediaPlaybackState.Playing, MediaCapabilities.Pause)),
-            (_, markSending, _) =>
+            return session.Value;
+        };
+        var transition = session.ExecuteAsync();
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.IsTrue(await session.Controls.RunCommandAsync(() => Task.FromResult(true), "Independent", default)
+                .WaitAsync(TimeSpan.FromSeconds(1)));
+            Assert.IsFalse(transition.IsCompleted);
+            release.TrySetResult();
+            Assert.AreEqual(expected, (await transition).Status);
+            Assert.AreEqual(pauseAppears ? 4 : 2, session.Reads);
+            Assert.AreEqual(pauseAppears ? 2 : 1, session.CommandReads);
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+    }
+
+    [TestMethod]
+    public async Task StopOnlyConfirmationCannotExtendTheTransitionDeadline()
+    {
+        var session = new PlaybackTestSession
+        {
+            Value = new(MediaPlaybackState.Playing, MediaCapabilities.Stop),
+            Controller = new(TimeSpan.FromMilliseconds(25), TimeSpan.FromSeconds(1)),
+        };
+
+        Assert.AreEqual(MediaBackendCommandStatus.Unavailable, (await session.ExecuteAsync()).Status);
+        Assert.AreEqual(1, session.Reads);
+        Assert.IsEmpty(session.Operations);
+    }
+
+    [TestMethod]
+    public async Task StopOnlyRevalidationAfterAMutationDoesNotRetry()
+    {
+        var session = new PlaybackTestSession { Value = new(MediaPlaybackState.Playing, MediaCapabilities.Stop) };
+        var mutations = 0;
+        session.BeforeRevalidation = (markSending, _) =>
+        {
+            markSending();
+            mutations++;
+            return Task.CompletedTask;
+        };
+
+        Assert.AreEqual(MediaBackendCommandStatus.Unconfirmed, (await session.ExecuteAsync()).Status);
+        Assert.AreEqual(1, mutations);
+        Assert.AreEqual(1, session.Reads);
+    }
+
+    [TestMethod]
+    public async Task ReadinessFallbackUsesTheOriginalDeadlineAndOnlyTwoReads()
+    {
+        var session = new PlaybackTestSession
+        {
+            Value = new(MediaPlaybackState.Playing, MediaCapabilities.None),
+            Controller = new(TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(30)),
+        };
+
+        Assert.AreEqual(MediaBackendCommandStatus.Unavailable, (await session.ExecuteAsync()).Status);
+        Assert.AreEqual(2, session.Reads);
+        Assert.AreEqual(2, session.CommandReads);
+        Assert.IsEmpty(session.Operations);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task CircuitFailureIsUnconfirmedOnlyAfterMutation(bool mutate)
+    {
+        var session = new PlaybackTestSession();
+        session.BeforeRevalidation = (markSending, _) =>
+        {
+            if (mutate)
             {
                 markSending();
-                throw new GsmtcControlCircuitOpenException("Current command", TimeSpan.Zero);
-            }, default);
-        Assert.AreEqual(MediaBackendCommandStatus.Unconfirmed, result.Status);
+            }
+
+            throw new GsmtcControlCircuitOpenException("Playback", TimeSpan.Zero);
+        };
+        if (mutate)
+        {
+            Assert.AreEqual(MediaBackendCommandStatus.Unconfirmed, (await session.ExecuteAsync()).Status);
+        }
+        else
+        {
+            await Assert.ThrowsAsync<GsmtcControlCircuitOpenException>(() => session.ExecuteAsync());
+        }
+
+        Assert.AreEqual(0, session.Reads);
     }
 }

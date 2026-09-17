@@ -32,6 +32,7 @@ public sealed class CompositeMediaBackendTests
         });
         var target = NewBackend("Target");
         var controller = new GsmtcPlaybackController();
+        var observations = new GsmtcPlaybackObservations(new Lock());
         var controls = new GsmtcControlGate(NullLogger.Instance);
         var otherPlaying = false;
         var pauseEnabled = supportsPause && !pauseControlLags;
@@ -43,8 +44,9 @@ public sealed class CompositeMediaBackendTests
             ? new(MediaPlaybackState.Playing, MediaCapabilities.Play | MediaCapabilities.Stop |
                 (Volatile.Read(ref pauseEnabled) ? MediaCapabilities.Pause : MediaCapabilities.None))
             : new(MediaPlaybackState.Paused, initialCapabilities);
-        other.CommandHandler = (command, cancellationToken) => controller.ExecuteAsync(command.Operation,
-            _ =>
+        other.CommandHandler = (command, cancellationToken) =>
+        {
+            Observation Read()
             {
                 if (command.Operation == MediaOperation.Pause)
                 {
@@ -54,16 +56,20 @@ public sealed class CompositeMediaBackendTests
                     }
                 }
 
-                return Task.FromResult(ReadPlayback());
-            },
-            (_, markSending, token) => controls.RunCommandAsync(() => GsmtcPlaybackController.SendRevalidatedAsync(
-                command.Operation, ReadPlayback(), operation =>
+                return ReadPlayback();
+            }
+
+            return controller.ExecuteAsync(command.Operation, observations, () => Task.FromResult(Read()),
+            (markSending, token) => controls.RunCommandAsync(() => GsmtcPlaybackController.SendRevalidatedAsync(
+                command.Operation, observations, observations.ReadCommand(Read), operation =>
                 {
                     Assert.IsTrue(operation == MediaOperation.Play || (supportsPause && operation == MediaOperation.Pause));
                     nativeOperations.Add(operation);
                     Volatile.Write(ref otherPlaying, operation == MediaOperation.Play);
+                    observations.Invalidate();
                     return Task.FromResult(true);
                 }, markSending), command.Operation.ToString(), token), cancellationToken);
+        };
         target.CommandHandler = (_, token) => controls.RunCommandAsync(() =>
         {
             otherCommandsAtTargetPlay = other.Commands.Select(static command => command.Operation).ToArray();
@@ -97,7 +103,7 @@ public sealed class CompositeMediaBackendTests
             Assert.AreEqual(initialCapabilities, otherSession.PlaybackInfo.Capabilities);
             CollectionAssert.AreEqual(supportsPause ? new[] { MediaOperation.Play, MediaOperation.Pause } : [MediaOperation.Play],
                 nativeOperations);
-            Assert.AreEqual(pauseControlLags ? 3 : 2, pauseReads);
+            Assert.AreEqual(pauseControlLags ? 4 : 2, pauseReads);
         }
         finally
         {
