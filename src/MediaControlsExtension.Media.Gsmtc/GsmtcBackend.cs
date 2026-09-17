@@ -441,7 +441,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
             {
                 var nativeOperationName = $"Command:{command.Operation}";
                 var call = this.BeginNativeCall(target, nativeOperationName);
-                var success = await this._controlGate.RunCommandAsync(
+                var result = await this._controlGate.RunCommandAsync(
                     async () =>
                     {
                         using var targetUse = target.TryEnterNativeUse()
@@ -482,7 +482,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     command.Operation.ToString(),
                     token).ConfigureAwait(false);
                 this.CompleteNativeCall(target, nativeOperationName, call);
-                return success;
+                return result;
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

@@ -135,7 +135,7 @@ internal sealed class GsmtcControlGate(ILogger logger)
         _ = this.WarnIfSlowAsync(nativeTask, operationId, operationName);
 
         using var timeoutCts = new CancellationTokenSource();
-        var timeoutTask = DelayUntilTimeoutAsync(OperationTimeout, timeoutCts.Token);
+        var timeoutTask = GsmtcUnbiasedClock.DelayUntilTimeoutAsync(OperationTimeout, ResumeGraceDelay, timeoutCts.Token);
         if (await Task.WhenAny(nativeTask, timeoutTask).ConfigureAwait(false) == nativeTask ||
             nativeTask.IsCompleted)
         {
@@ -163,25 +163,6 @@ internal sealed class GsmtcControlGate(ILogger logger)
     {
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         return true;
-    }
-
-    private static async Task DelayUntilTimeoutAsync(
-        TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        var started = GsmtcUnbiasedClock.GetTime();
-        while (true)
-        {
-            var remaining = timeout - (GsmtcUnbiasedClock.GetTime() - started);
-            if (remaining <= TimeSpan.Zero)
-            {
-                break;
-            }
-
-            await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
-        }
-
-        await Task.Delay(ResumeGraceDelay, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task ObserveCompletionAsync<T>(Task<T> task)

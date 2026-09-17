@@ -201,7 +201,7 @@ public sealed class GsmtcPlaybackControllerTests
         var transition = session.ExecuteAsync();
         await intervening.Task.WaitAsync(TimeSpan.FromSeconds(2));
         resume.TrySetResult();
-        await session.Observations.DrainPendingReadAsync(default);
+        await session.Observations.WithCommandReadAsync(static () => Task.FromResult(true), default);
         Assert.IsFalse(transition.IsCompleted);
         session.Value = new(MediaPlaybackState.Playing, MediaCapabilities.Stop);
         session.Observations.Invalidate();

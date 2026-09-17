@@ -250,22 +250,6 @@ internal sealed class GsmtcPlaybackObservations
         }
     }
 
-    public async Task DrainPendingReadAsync(CancellationToken cancellationToken)
-    {
-        Task<Sample>? pending;
-        lock (this._stateLock)
-        {
-            this.ThrowIfRetired();
-            pending = this._read is { Task.IsCompleted: false } ? this._read.Task : null;
-        }
-
-        if (pending is not null)
-        {
-            // Drain ownership, not the preceding snapshot's outcome.
-            await this.AwaitReadCompletionAsync(pending, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
     public async Task<Sample> ReadSnapshotAsync(Func<Task<Observation>> read, CancellationToken cancellationToken)
     {
         ReadFlight pending;
