@@ -34,6 +34,9 @@ param(
     [string] $VisualStudioPath,
 
     [Parameter()]
+    [switch] $IncludePrerelease,
+
+    [Parameter()]
     [ValidateSet('Reload', 'Restart')]
     [string] $AfterDeploy = 'Reload',
 
@@ -86,6 +89,9 @@ if ($Aot) {
 }
 if ($PSBoundParameters.ContainsKey('VisualStudioPath')) {
     $deployParameters.VisualStudioPath = $VisualStudioPath
+}
+if ($IncludePrerelease) {
+    $deployParameters.IncludePrerelease = $true
 }
 
 & $deployScriptPath @deployParameters
