@@ -143,7 +143,7 @@ public sealed class GsmtcPlaybackIsolationTests
 
             stalled.Value = new(MediaPlaybackState.Paused, MediaCapabilities.Play);
             release.TrySetResult(stalled.Value);
-            await stalled.Observations.DrainPendingReadAsync(default).WaitAsync(TimeSpan.FromSeconds(2));
+            await stalled.Observations.WithCommandReadAsync(static () => Task.FromResult(true), default).WaitAsync(TimeSpan.FromSeconds(2));
             Assert.AreEqual(MediaBackendCommandStatus.Completed, (await stalled.ExecuteAsync()).Status);
         }
         finally
@@ -278,7 +278,6 @@ public sealed class GsmtcPlaybackIsolationTests
 
             Assert.AreEqual(1, reads);
             release.TrySetResult(new(MediaPlaybackState.Paused, MediaCapabilities.Play));
-            await observations.DrainPendingReadAsync(default);
             await published.Task.WaitAsync(TimeSpan.FromSeconds(2));
             if (confirmation is not null)
             {

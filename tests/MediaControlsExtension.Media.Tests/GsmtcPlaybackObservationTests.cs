@@ -35,7 +35,7 @@ public sealed class GsmtcPlaybackObservationTests
 
                 await entered.Task.WaitAsync(token);
                 release.TrySetResult(new(MediaPlaybackState.Paused, MediaCapabilities.Play));
-                await observations!.DrainPendingReadAsync(token);
+                await observations!.WithCommandReadAsync(static () => Task.FromResult(true), token);
             });
         var sample = await observations.ReadSnapshotAsync(() =>
         {
@@ -207,7 +207,6 @@ public sealed class GsmtcPlaybackObservationTests
             cancellation.Cancel();
             await Assert.ThrowsAsync<OperationCanceledException>(() => pending);
             release.TrySetResult(new(MediaPlaybackState.Paused, MediaCapabilities.Play));
-            await observations.DrainPendingReadAsync(default);
             await published.Task.WaitAsync(TimeSpan.FromSeconds(2));
             Assert.AreEqual(1, signals);
             Assert.AreEqual(MediaPlaybackState.Paused, observations.Latest.Value.State);
