@@ -60,7 +60,8 @@
     <ItemGroup>
       <ResolvedFileToPublish Include="@(_MediaWorkerPayload)">
         <RelativePath>MediaHost\%(_MediaWorkerPayload.RelativePath)</RelativePath>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <!-- Cached output from the selected publish mode can be older than the destination. -->
+        <CopyToPublishDirectory>IfDifferent</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>

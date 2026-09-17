@@ -65,11 +65,24 @@ and convention checks, see [Command Palette WAP Packaging Guide](WapPackaging.md
 
 The repository script performs the redirected restore, builds the WAP directly
 with Visual Studio MSBuild, unpacks its generated unsigned MSIX, and registers
-the unpacked development package:
+the unpacked development package. It uses MSBuild's reported
+`AppxPackageOutput`, so older or unrelated MSIX files in `artifacts` cannot be
+selected accidentally. Use Visual Studio 2026 MSBuild with
+`-getResultOutputFile` support for this .NET 10 application:
 
 ```powershell
 .\eng\Deploy-Package.ps1
 ```
+
+Automatic discovery selects a released Visual Studio 2026 installation. Add
+`-IncludePrerelease` to also consider preview or Insiders installations:
+
+```powershell
+.\eng\Deploy-Package.ps1 -IncludePrerelease
+```
+
+An explicit `-VisualStudioPath` takes precedence over automatic discovery and
+can select either a released or prerelease installation.
 
 It defaults to a managed, untrimmed `Release|x64` deployment. Add `-Aot` to
 enable Native AOT and trimming together:
@@ -100,10 +113,33 @@ JPSoftworks.MediaControlsExtension.Media could not be loaded.
 
 Because the development MSIX is unsigned, deployment registers an unpacked
 package layout in Visual Studio's standard
-`bin\<Platform>\<Configuration>\AppX` directory. Any existing registration for
-the same package identity is removed with `-PreserveApplicationData` before
-the new layout is registered. The directory is replaced through a staged swap,
-so the previous layout and registration can be restored if registration fails.
+`bin\<Platform>\<Configuration>\AppX` directory. The script checks the staged
+package's identity, publisher, architecture, and publish mode before changing
+the existing registration. An existing development registration for the same
+identity and publisher is removed with `-PreserveApplicationData` before the
+new layout is registered. Store or other non-development installations are
+rejected because [data preservation only supports development registrations](https://learn.microsoft.com/en-us/powershell/module/appx/remove-appxpackage#-preserveapplicationdata).
+
+The directory is replaced through a staged swap. If registration or its
+verification fails, the script attempts to restore the previous layout and
+registration while retaining the original error. Failed recovery leaves any
+remaining backup available for manual recovery. Cleanup only removes this
+invocation's temporary files and its backup after a verified deployment.
+
+After a successful deployment, the script prints the registered
+package identity and version, executable product version when available,
+configuration, architecture, publish mode, deployment time, total elapsed
+time, source MSIX, and install location. Timestamps use local time with an
+explicit UTC offset. The package timestamp and build age use the MSIX file's
+last-write time, so an incrementally reused package keeps its original age;
+this is package freshness, not an embedded compilation timestamp.
+
+Run the deployment regression checks without building or changing installed
+packages:
+
+```powershell
+.\tests\Deploy-Package.Tests.ps1
+```
 
 ### Reusing the scripts
 
@@ -134,8 +170,9 @@ Build and deploy the package, then ask Command Palette to reload extensions:
 .\eng\Test-Package.ps1 -AfterDeploy Restart
 ```
 
-The test script accepts the same `-Configuration`, `-Platform`, `-Aot`, and
-`-VisualStudioPath` build options as `Deploy-Package.ps1`. Restart preserves
+The test script accepts the same `-Configuration`, `-Platform`, `-Aot`,
+`-VisualStudioPath`, and `-IncludePrerelease` build options as
+`Deploy-Package.ps1`. Restart preserves
 the active Command Palette channel by relaunching the executable of the
 running host; if Command Palette was not running, it falls back to the launch
 URI from `Package.config.psd1`.
