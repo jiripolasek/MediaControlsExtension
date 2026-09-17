@@ -1,438 +1,316 @@
 # Out-of-process media backend hosting
 
-Status: implemented as a production MVP with GSMTC hosted in a worker by default.
+Worker hosting runs an `IMediaBackend` in its own process. Production GSMTC uses
+this mode by default; the same `GsmtcBackend` can also run inside the extension.
+The worker executable ships with the extension package.
 
-## Purpose and boundary
+Use this guide when adding a worker, changing hosting modes, or investigating
+transport and lifetime problems. Start with [Media backends](media-backends.md)
+for provider contracts, or [Playback](media-playback.md) for command ordering and
+GSMTC confirmation.
 
-Run an existing `IMediaBackend` in a dedicated worker process. Keep `MediaService`,
-the composite, session presentation, predictions, and cross-provider coordination
-in the extension. Reuse `GsmtcBackend` in both hosting modes. GSMTC native objects,
-subscriptions, operation gates, retention, and artwork streams stay in the worker.
-Only managed values cross the process boundary.
+Jump to [adding a worker](#adding-a-worker-backend),
+[switching modes](#provider-selection-and-mutual-exclusion),
+[timeouts and capacity](#timeouts-and-capacity), or
+[recovery](#recovery-and-diagnostics).
 
-The generic hosting library owns the proxy, transport, server, process launcher,
-and recovery. A small executable supplies explicit backend factories. Each process
-hosts one backend instance for one extension owner. Factories are compiled into
-the executable; the protocol does not accept assembly paths or arbitrary types.
-Out-of-process local playback retains `TreatAsLocal = true`.
+## What moves into the worker
+
+| Stays in the extension | Runs in the worker |
+| --- | --- |
+| `MediaService`, selection, predictions, and UI | One backend instance and its native dependencies |
+| Composite routing and cross-provider coordination | Native discovery, subscriptions, control gates, and artwork reads |
+| Process ownership, proxy, and recovery | Backend startup, observations, execution, and cleanup |
+| Source application activation | A validated callback to request activation |
+
+Only managed values and artwork bytes cross the boundary. Each worker belongs to
+one extension instance and one connection lifetime. Multiple hosted providers get
+separate processes. Hosting a local player elsewhere does not make it remote:
+`TreatAsLocal` remains true.
+
+The [hosting library](../../src/MediaControlsExtension.Media.Hosting) owns transport,
+processes, and recovery. The [worker executable](../../src/MediaControlsExtension.MediaHost)
+supplies compiled factories. No assembly path or arbitrary type comes from the wire.
 
 ## Adding a worker backend
 
-`MediaHost.Program` only starts `WorkerApplication` and exits the process with its
-result. `WorkerApplication` handles arguments, factory selection, logging, memory
-maintenance and cleanup. `WorkerBackendCatalog` lists the compiled factories by
-ordinal backend ID; looking up an ID does not construct its backend. Factory
-invocation happens only after the owner handshake is validated.
+1. Reference the implementation project from the worker executable.
+2. Add a factory under `MediaHost/Backends` matching `WorkerBackendFactory`. It
+   receives `HostedBackendContext` and `ILoggerFactory` and returns a fresh backend.
+   Initialize resources in `StartAsync`; the backend owns native threading and
+   subscriptions, and the host owns disposal.
+3. Register its stable factory ID in `WorkerBackendCatalog.Factories`.
+4. Register `OutOfProcessMediaBackend` in the extension, supplying that factory ID,
+   the worker executable path, and the shared `MediaWorkerOwner`.
+5. Configure defaults, exclusive groups, source claims, and any owner activation
+   callback in the extension catalog.
 
-To add a backend:
+`Program` only invokes `WorkerApplication`. Neither needs changes for another
+factory. Catalog lookup does not construct a backend; construction waits until
+the owner handshake is validated.
 
-1. Reference its implementation project from the worker executable.
-2. Add a factory under `MediaHost/Backends` matching `WorkerBackendFactory`.
-   It receives `HostedBackendContext` and `ILoggerFactory`, and returns a fresh
-   `IMediaBackend`. Initialize native work in `StartAsync`; the backend owns its
-   native threading, event subscriptions and cleanup. The host owns its disposal.
-3. Add the factory to `WorkerBackendCatalog.Factories` under a stable ID.
-4. Register an `OutOfProcessMediaBackend` in the extension with the same factory
-   ID and worker executable path. Configure provider selection and source claims
-   in the extension's catalog.
-
-Adding a factory does not require changing `Program` or `WorkerApplication`.
-`Backends/GsmtcBackendFactory` demonstrates adapting the generic owner activation
-callback to a backend-specific interface. Factories may ignore capabilities they
-do not need. Each enabled hosted backend still gets its own process.
-
-`Backends/DummyBackendFactory` is a second compiled factory. It creates the
-provider in `MediaControlsExtension.Media.Dummy` without owner activation or
-native dependencies. The extension registers it as `dummy.worker`, disabled by
-default and outside the GSMTC exclusive group. It can run alongside GSMTC in a
-separate worker without changing `Program`, `WorkerApplication`, or the protocol.
-See [Dummy media](dummy-media.md) for its simulated behavior.
-
-Both worker registrations use one options helper for the executable layout and
-logging policy. GSMTC adds its owner activation callback to those common options;
-the dummy factory uses them directly.
+Use [GsmtcBackendFactory](../../src/MediaControlsExtension.MediaHost/Backends/GsmtcBackendFactory.cs)
+for the activation adapter, or [DummyBackendFactory](../../src/MediaControlsExtension.MediaHost/Backends/DummyBackendFactory.cs)
+for a backend without native dependencies. The compiled dummy factory is exposed
+as `dummy.worker` in debug/feature-flag builds, disabled by default and outside the
+GSMTC group. It can run alongside GSMTC. Both registrations share executable-layout
+and logging options. See [Dummy media](dummy-media.md) for behavior.
 
 ## Provider selection and mutual exclusion
 
-The production registrations are:
-
-| ID | Factory | Default | ExclusiveGroup |
+| Registration | Implementation | Default | Exclusive group |
 | --- | --- | --- | --- |
-| `gsmtc` | Existing `GsmtcBackend` | Disabled | `windows-media-sessions` |
-| `gsmtc.worker` | Proxy hosting `GsmtcBackend` | Enabled | `windows-media-sessions` |
+| `gsmtc` | In-process `GsmtcBackend` | Disabled | `windows-media-sessions` |
+| `gsmtc.worker` | Worker proxy, factory ID `gsmtc` | Enabled | `windows-media-sessions` |
 
-`ExclusiveGroup` is optional, ordinal registration metadata. A group allows zero
-or one selected member. It excludes whole providers and is independent of
-application-scoped `ReplacesSources` claims. Disabled, disconnected, and faulted
-states do not automatically select another group member.
+An exclusive group permits zero or one selected member. It switches whole
+providers; [source claims](media-backends.md#source-ownership) replace individual
+application identities. Connection failure never automatically chooses a peer.
 
-Selecting a member deselects its peers in the same desired-state transaction.
-Settings save all affected choices once, roll the entire change back on save
-failure, and publish one change event. Startup validates the complete selection
-before invoking any factory. An explicitly supplied conflicting set is invalid;
-the settings loader must surface a corrupt saved group selection without silently
-choosing in-process GSMTC. When no worker-mode setting exists, the legacy `gsmtc`
-flag is interpreted as Windows-media enablement and transferred to the worker.
-Disabled Windows media stays disabled. Existing explicit hosting-mode choices are
-preserved. Loading does not rewrite settings; the next explicit mode change saves
-both flags through the shared writer.
+Switching modes follows this order:
 
-Missing files and malformed JSON use registration defaults. Each store read
-makes one attempt. I/O and access failures keep providers disabled with a visible
-diagnostic; an I/O failure must not override a saved off choice. Provider settings
-then re-read on their own background task, with exponential delays from 100 ms
-to 5 seconds. Delays hold neither settings lock, and recovery reads occur outside
-the provider settings lock. Successful recovery restores all saved providers,
-validates exclusivity, and reapplies legacy Windows-mode migration. An explicit
-toggle first attempts to restore the saved selection, then changes its group and
-publishes once; an unreadable file fails the toggle promptly. Recovery itself
-does not request a fresh instance of a faulted provider. The store has no recovery
-callbacks, so unrelated reads and saves cannot trigger provider reconciliation
-or inherit its errors. Recovery notifications run outside both locks. Disposal
-cancels retries, and a late read cannot overwrite a newer explicit choice.
-The extension subscribes before reconciling the latest selection to cover
-recovery that finishes during construction.
-Invalid or conflicting flags inside valid settings keep the affected group
-inactive. Load and save share one parser, including duplicate-key validation.
-An explicit save repairs malformed JSON after preserving its original contents
-in a unique `.invalid-*` backup. I/O failures fail the save and roll back selection.
+1. Withdraw outgoing routes and stop admitting new work.
+2. Cancel and drain work, dispose the backend, and confirm worker process exit.
+3. If cleanup cannot be confirmed, keep the group blocked and report the failure.
+4. Recheck the latest selection, apply its source policy, and start the incoming provider.
 
-Runtime reconciliation is serialized within each exclusive group:
+The incoming factory must not run while its predecessor can still operate, even
+if the desired selection temporarily becomes empty. Other groups remain independent.
+Cancellation after acceptance only cancels the caller's wait.
 
-1. Withdraw outgoing routes and stop admitting new work immediately.
-2. Cancel and drain outgoing calls, then await disposal and worker process exit.
-3. If shutdown fails, retain the group as blocked and report a diagnostic.
-4. Recheck the latest desired selection, apply its source policy, and start it.
+`SetEnabledBackendsAsync` applies a complete selection atomically; `SetEnabledAsync`
+uses the same group rules. Startup rejects conflicting selections before factories
+run. Explicit enable or `retryBackendId` retries one faulted provider. Unrelated
+settings and policy changes do not retry it. Complete-selection calls wait for all
+group transitions, including work already in progress.
 
-No incoming factory may run while an outgoing group member can still operate.
-Requests converge on the latest accepted selection. Independent groups/providers
-continue independently. Cancellation after acceptance cancels only the caller's
-wait. A group remains reserved while stopping, even if its desired selection is
-empty. Group enforcement belongs in the core API, not only the settings UI.
+### Settings migration and recovery
 
-The registry and composite enforce this contract directly. `SetEnabledBackendsAsync`
-accepts a complete selection atomically. `SetEnabledAsync` replaces exclusive
-peers through the same implementation. Unchanged faulted providers are not retried
-by unrelated selections or source-policy updates. An explicit enable or the
-complete-selection API's `retryBackendId` requests a fresh instance for that
-provider only. Settings change events carry that intent alongside the latest
-complete selection. Recoverable read failures still accept source-policy updates
-on their existing run; a successful read clears pending retry intent. Complete
-selection calls await all groups, including transitions already in progress,
-whether or not a retry provider was specified.
+Choosing a mode saves all affected flags once, publishes one change event, and
+rolls back the selection if saving fails. Existing explicit mode choices survive
+loading. Without a worker-mode setting, the legacy `gsmtc` flag becomes Windows-media
+enablement for the worker; an old off choice stays off. Loading does not rewrite
+the file. The next explicit mode change saves both flags.
 
-The sources page observes published backend state while it has an ItemsChanged
-subscriber. Without a subscriber it stays pull-based: GetItems and toggle
-invocations refresh published state, including changes to exclusive peers.
-
-## Owner lifetime
-
-A worker belongs to one concrete extension instance and one connection lifetime.
-Instances within the same process have independent owner scopes.
-It must not outlive that owner or reconnect to a replacement extension instance.
-The owner creates a fresh unpredictable pipe name and owner token per launch.
-The worker generates a fresh epoch. Neither a PID nor a backend ID alone identifies
-a connection. Retain native process handles while controlling a process.
-
-Normal disable/shutdown stops retries first, sends shutdown, closes admission,
-cancels work, and permits a bounded cleanup period. The owner then terminates any
-remaining worker and waits for its process handle to signal. A broken pipe is
-terminal to that worker: cancel, attempt bounded cleanup, and exit. A failed
-initial connection or handshake also has a deadline.
-Unconfirmed termination keeps exclusive switching blocked. The extension's
-top-level shutdown logs owner cleanup failures instead of throwing them out of
-Main; this does not turn an unconfirmed exit into a successful teardown.
-
-On Windows, each worker is assigned to an unnamed job configured with
-`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`. The extension holds the only job handle and
-does not make it inheritable. Owner termination therefore terminates its worker,
-including during startup or an unresponsive native call. Normal owner shutdown
-allows cleanup before closing the job. Forced termination does not run cleanup.
-
-The direct launcher assigns the job at process creation with
-`PROC_THREAD_ATTRIBUTE_JOB_LIST`. Creating a suspended process and assigning the
-job in a later call still leaves a suspended-orphan race if the owner dies between
-those calls. Launch fails if lifetime containment cannot be established.
-
-The owner checks shutdown under its lock, creates the process outside the lock,
-then registers it under the lock. If shutdown began during creation, it closes
-the new process's job and rejects registration. Slow native creation cannot
-block another worker or prevent the owner from initiating shutdown. Process-exit
-waits use thread-pool registration on duplicated process handles; each wait owns
-its handle and unregisters on completion or cancellation. Process disposal can
-close the original handle while an outstanding wait still observes process exit.
-
-Only worker processes belong to these jobs. Source application activation stays
-in the extension so launched media applications do not inherit a worker's job.
-The packaged launcher must preserve package identity/capabilities and pass the
-same ownership tests. A COM activation lease alone is not an owner-lifetime guard.
-
-## Protocol version 6
-
-Use a local asynchronous duplex named pipe restricted to the current user and
-elevation level. Verify the peer PID using the pipe handle against the process
-created by the owner; the worker verifies the pipe server against its owner PID.
-Validate protocol version, owner token, and worker epoch. Use a bounded handshake
-and reject messages from another lifetime. This is a private trusted-child
-protocol, not a general local service or an untrusted plugin sandbox.
-
-Control messages use JSON-RPC 2.0 through StreamJsonRpc, with source-generated
-proxies, target metadata and System.Text.Json DTO metadata for NativeAOT.
-Nerdbank.Streams multiplexes the RPC channel and artwork streams over the pipe.
-The RPC channel uses a four-byte big-endian length prefix. `WorkerMessageHandler`
-limits each frame to 16 MiB before allocating incoming payloads and enforces
-serialized writes, queue/write deadlines, duplicate IDs and worker admission.
-StreamJsonRpc owns method dispatch, reply correlation and cancellation messages.
-The reader must remain responsive while startup, commands, artwork, or cleanup
-are pending. No native work executes inline on that reader.
-
-| Message | Contract |
+| Settings condition | Behavior |
 | --- | --- |
-| InitializeAsync / Begin | Validate version, owner token, backend ID, initial policy, activation capability, logging and budgets; return a fresh epoch. Begin starts backend work after the owner installs that epoch. |
-| Snapshot | Complete immutable snapshot; no deltas or native references. |
-| SnapshotFailed | Recoverable read error and applied source-policy revision; keeps the same connection and session identities. |
-| ExecuteAsync | Captured session and binding, operation, semantic command ID and typed result. |
-| CopyArtworkAsync | Exact versioned key and a write-only out-of-band destination stream; returns content metadata and length after copying. |
-| InvalidateAsync | Coalescible observation invalidations in the worker's session namespace. |
-| ApplyPolicyAsync | Complete policy; returns the applied revision, which subsequent snapshots also carry. |
-| ActivateSourceAsync | One reverse RPC tied to an admitted activation command, epoch and binding. |
-| $/cancelRequest | Library cancellation of an admitted operation; admission remains occupied until its terminal reply. Does not undo side effects. |
-| Shutdown | Terminates this connection and backend lifetime. |
-| ReportFaultAsync | Acknowledged diagnostic followed by connection termination; no exception objects on the wire. |
+| Missing file or malformed JSON | Use registration defaults. An explicit save backs up malformed content as `.invalid-*` before repairing it. |
+| Invalid/conflicting flags in valid JSON | Keep the affected group inactive and report the error. Load and save share validation, including duplicate keys. |
+| I/O or access failure | Keep providers disabled with a diagnostic; never replace a saved off choice with defaults. |
+| Explicit toggle while unreadable | Attempt to recover the saved selection first; fail promptly if it remains unreadable. |
 
-Artwork is limited to 32 MiB of encoded image bytes and 64 KiB per stream write,
-with one payload transfer at a time. Up to two backend reads may overlap so a slow
-read does not hold the transfer lane; both peers cap admitted artwork requests at
-two to bound retained image buffers. Each binary stream begins with a four-byte
-big-endian payload length, followed by exactly that many bytes and EOF. A one-way
-pipe lets the worker close its writing side and the owner observe EOF. The owner
-reads concurrently with the RPC, validates the length before allocating, and
-checks EOF and the returned metadata before closing the stream endpoints.
-Invalid lengths, truncated successful transfers, trailing bytes and mismatched
-metadata retire the connection and return unavailable artwork. It also closes the endpoints on
-cancellation or failed reads. Binary stream backpressure does not block the RPC
-channel. Artwork bytes are never encoded as JSON or base64.
+Provider settings retry failed reads in the background, backing off from 100 ms to
+5 seconds. Recovery restores the complete selection, validates groups, and reapplies
+migration without forcing faulted providers to restart. Reads and retry waits do
+not hold settings locks; notifications run outside both locks. Disposal cancels
+retries, and a late read cannot overwrite a newer explicit choice. The production
+binding subscribes before reconciling the latest selection to cover startup recovery.
 
-The formatter uses only generated DTO metadata. A narrow metadata resolver reuses
-StreamJsonRpc's own `RequestId` converter for cancellation messages; it does not
-enable reflection serialization. Changes to contracts must be exercised in the
-NativeAOT hosting suite as well as a managed build.
+Media sources subscribes only while it has ItemsChanged listeners. Otherwise
+`GetItems` and toggle actions refresh state on demand, including exclusive peers.
 
-The extension, worker, hosting library, hosting tests and two RPC experiments set
-the SDK's `DisableTransitiveFrameworkReferences` property in their project files.
-This prevents the threading package's Windows asset from adding WPF to those
-consumers. Other projects keep the SDK default. Direct and SDK framework
-references still apply. The normal NuGet-selected assemblies are used; no
-package fork or DLL substitution is needed.
-The setting is implemented by the SDK's
-[ResolvePackageAssets task](https://github.com/dotnet/sdk/blob/main/src/Tasks/Microsoft.NET.Build.Tasks/ResolvePackageAssets.cs).
+## Keep the worker within its owner's lifetime
 
-The owner records the first available disconnect cause before teardown and
-preserves it in the supervisor's snapshot and logs, including invalidation
-failures. The handler retains fatal read/write errors before canceling transport
-operations. A frame write deadline is reported as a timeout; ordinary caller
-cancellation does not become a connection failure.
-The connection publishes its closed state before canceling requests or disposing
-the RPC endpoint. Request completions can run inline during disposal; policy
-updates must already see the closed connection and absorb its terminal timeout,
-and invalidations must not retry that timeout as an unsent request.
+[MediaWorkerOwner](../../src/MediaControlsExtension.Media.Hosting/MediaWorkerOwner.cs)
+owns workers for one concrete extension instance, including instances sharing a
+process. Every launch uses a fresh unpredictable pipe name and owner token; the
+worker returns a fresh epoch. A PID or backend ID alone cannot identify a lifetime.
 
-Worker operation and snapshot watchdogs close the connection at their negotiated
-deadline, then report the expired operation and budget to the configured worker
-log. A blocked or failing diagnostic sink cannot delay that closure. These hard
-closures do not wait for an RPC fault acknowledgement, so the owner may only
-receive a generic disconnect reason. Worker logging is best effort and requires
-logging settings from the owner.
+On Windows, [OwnedWorkerProcess](../../src/MediaControlsExtension.Media.Hosting/OwnedWorkerProcess.cs)
+creates each worker in an unnamed job with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`.
+The extension holds the only, non-inheritable job handle. Assignment occurs during
+process creation through `PROC_THREAD_ATTRIBUTE_JOB_LIST`, avoiding an orphan window
+between creation and assignment. Launch fails if containment cannot be established.
 
-The worker coalesces backend signals and serializes complete snapshot reads.
-The proxy caches translated snapshots and publishes local invalidations after
-updating state. Its `ReadSnapshotAsync` does not make a blocking IPC round trip.
-Control/artwork requests are independent of observation reads; backend-specific
-scheduling remains owned by the leaf. Bulk transfer and admission must stay bounded.
+Normal shutdown stops retries and admission, cancels work, requests worker shutdown,
+and allows bounded cleanup. If needed, the owner closes the job and waits for
+process exit. A broken pipe or failed handshake is terminal to that worker; it
+must exit rather than reconnect to another owner. Owner death also terminates the
+worker, including during startup or a hung native call. Forced termination cannot
+run cleanup.
 
-Snapshot read exceptions send SnapshotFailure and retry with delays of 500 ms,
-1 second, then 2 seconds, without holding the observation lane. The proxy logs
-the error and reports a read failure, so the composite retains sessions as
-unavailable until a fresh snapshot arrives. It discards errors from an obsolete
-policy. The first exception starts an ObservationTimeout recovery window; a
-successful read resets the window and backoff. If the window expires, the worker
-attempts ReportFaultAsync containing the last read error, then closes the
-connection and applies normal restart limits, even if another read or policy
-call is stuck. The owner acknowledges recording the diagnostic before the worker
-closes the multiplexed transport. Fault delivery has a one-second limit and always closes the
-connection, including when the peer is not reading. If delivery fails, the owner
-can still report a transport error; the earlier recoverable error remains logged.
-Transient failures within the window preserve the worker and identities.
-Hung observations, startup deadlines, transport failures and
-terminal backend faults still close the connection. Owner and worker must be
-published together for protocol v6. There is no v5 compatibility path.
+Failure to confirm process exit fails disposal and blocks exclusive switching.
+Logging or swallowing an exception does not establish successful cleanup. Source
+application activation runs in the extension so media applications never inherit
+a worker job.
 
-The default owner startup budget is thirty seconds, covering launch, handshake,
-initial policy and the first accepted snapshot. InitializeAsync carries the initial policy;
-the owner sends another policy request only if it changed. A policy request queued
-during startup uses the startup token on the owner. Worker request deadlines start
-after backend initialization. The owner negotiates separate positive budgets:
+Process creation happens outside the owner lock, followed by registration under
+it. If shutdown won the race, close the new job and reject registration. Exit waits
+own duplicated process handles and unregister on completion/cancellation, so
+process disposal cannot invalidate an outstanding wait.
+
+## Protocol and request flow
+
+[PipeProtocol](../../src/MediaControlsExtension.Media.Hosting/PipeProtocol.cs) is
+**version 7**. Owner and worker must ship together. Version 7 carries native toggle
+capability and the Unconfirmed command result; older peers are rejected.
+
+The local duplex pipe is restricted to the current user/elevation level. Both
+peers check the pipe's peer PID against the expected owner/child, then validate
+version, owner token, and epoch within the startup deadline. This is a private
+trusted-child protocol, not a plugin sandbox.
+
+StreamJsonRpc handles JSON-RPC dispatch, replies, and cancellation. Nerdbank.Streams
+multiplexes RPC and artwork streams. RPC frames have a four-byte big-endian length
+prefix, validated before payload allocation. No native work runs on the reader.
+Generated proxies and DTO metadata keep the protocol compatible with NativeAOT;
+contract changes need an AOT test run as well as a managed build.
+The worker validates request IDs and method admission. Cancellation reuses the
+library's `RequestId` converter without enabling reflection-based DTO serialization.
+
+### Messages
+
+See [WorkerRpcContracts](../../src/MediaControlsExtension.Media.Hosting/WorkerRpcContracts.cs)
+for exact signatures.
+
+| Message | Purpose |
+| --- | --- |
+| `InitializeAsync`, then `Begin` | Validate identity, factory, initial policy, capabilities, logging, and budgets. Install the returned epoch before starting backend work. |
+| `Snapshot` / `SnapshotFailed` | Publish complete state or a recoverable read failure with its applied policy revision. |
+| `ExecuteAsync` | Execute captured binding, operation, and semantic command ID; return a typed result. |
+| `ApplyPolicyAsync` | Apply a complete source policy and return its acknowledged revision. |
+| `InvalidateAsync` | Coalesce observation requests in the worker's session namespace. |
+| `CopyArtworkAsync` | Copy an exact versioned image to an out-of-band stream and return metadata. |
+| `ActivateSourceAsync` | Reverse callback for one admitted activation command, epoch, and binding. |
+| `$/cancelRequest` | Cancel waiting/work without undoing side effects or immediately releasing admission. |
+| `Shutdown` / `ReportFaultAsync` | End the lifetime; ReportFault acknowledges a diagnostic before termination. |
+
+The worker serializes full snapshot reads and coalesces signals. The proxy caches
+translated snapshots, so its `ReadSnapshotAsync` needs no blocking IPC round trip.
+Commands, policies, and invalidations request observation refreshes; artwork reads
+do not. Commands and artwork remain independent of snapshot reads.
+
+### Timeouts and capacity
+
+Defaults live in [WorkerOptions](../../src/MediaControlsExtension.Media.Hosting/OutOfProcessMediaBackend.cs).
+All budgets must be positive; providers with longer operations must configure them.
 
 | Budget | Default | Covers |
 | --- | --- | --- |
-| RequestTimeout | 5 seconds | Commands, invalidations, and each serialized frame write, including cancellation frames. |
-| ObservationTimeout | 30 seconds | Complete snapshot reads, consecutive snapshot-failure recovery, and artwork requests, allowing GSMTC's native observation timeout to finish first. |
-| PolicyTimeout | 45 seconds | Policy requests, including a preceding snapshot and native binding cleanup. |
+| `StartupTimeout` | 30 s | Launch, handshake, policy, and first accepted snapshot. |
+| `RequestTimeout` | 5 s | Commands, invalidations, and frame queue/write budgets, including cancellation frames. |
+| `ObservationTimeout` | 30 s | Snapshot reads, consecutive read-failure recovery, and artwork. |
+| `PolicyTimeout` | 45 s | Policy changes, including a preceding read and binding cleanup. |
+| `ShutdownTimeout` | 5 s | Graceful process-exit wait; the owner also enforces its own shutdown deadline. |
 
-Both peers apply the negotiated budget for each typed method. The defaults allow a
-full observation plus cleanup within the policy budget.
-Backends with longer operations must configure appropriate budgets explicitly.
-Outside startup, owner requests have separate admission and completion budgets
-of the selected duration. Completion timing starts after the request frame is
-sent. When all 64 request slots are occupied, coalesced invalidations wait for a
-slot before entering admission; a released slot or connection closure wakes the
-waiter. Other requests report unavailable when the queue is full. An admission
-timeout before a request is sent leaves the pipe and admitted peers usable;
-invalidations remain coalesced for retry. Each frame also has a
-bounded writer-queue wait and a fresh RequestTimeout once it acquires the writer;
-queue time cannot shorten the frame's own write budget. A queue timeout alone
-does not close the transport. A completion timeout after sending may have an
-unknown outcome and retires the connection. Connection shutdown or a real
-timeout during a partial write closes the pipe because its frame can no longer
-be completed safely. Worker operation watchdogs remain independent.
+During startup, requests use the startup budget; worker request deadlines begin
+after backend initialization. Afterwards, admission and completion each get the
+selected budget. Completion timing starts after the frame is sent. Writer queueing
+and actual writing also get separate budgets.
 
-Both peers admit at most thirty-two requests. Caller cancellation releases its
-wait immediately, but retains its transport admission until the worker removes
-the request and sends its final reply. Artwork admission also covers stream
-consumption; the worker releases admission before writing the RPC reply. Late
-activation callbacks for canceled or completed requests are ignored. Callbacks
-for active requests still require matching operation, binding and correlation.
-Caller cancellation can stop a frame while it waits for the writer. Once the
-write starts, it finishes under the connection lifetime and negotiated deadlines;
-caller cancellation cannot interrupt it. This applies to owner requests, worker
-activation callbacks. Artwork cancellation closes its separate stream without
-damaging RPC framing. A canceled owner caller returns immediately
-while the frame finishes and transport admission remains held until the terminal
-reply. The worker finishes its frame before acknowledging cancellation,
-preserving framing for unrelated controls and observations.
+| Capacity | Limit |
+| --- | --- |
+| Owner requests, including those waiting for admission | 64 |
+| Admitted RPC requests | 32 on each side |
+| Admitted artwork requests | 2 on each side; includes stream consumption |
+| Concurrent artwork payload transfers | 1; up to 2 backend reads may overlap |
+| RPC frame / encoded artwork / artwork write chunk | 16 MiB / 32 MiB / 64 KiB |
 
-Artwork reads do not force snapshot refreshes. Execute, policy and invalidation
-requests do; backend observation signals remain independent. The proxy reports
-observations, and the composite derives actual topology and provider-state changes.
+When all owner slots are occupied, coalesced invalidations wait for capacity before
+admission; other requests fail as unavailable. An unsent admission/queue timeout
+leaves the connection usable. A completion timeout after sending retires it because
+the outcome may be unknown. A timeout during a partial frame write closes the pipe.
+Worker watchdogs enforce deadlines independently and close before logging, so a
+blocked diagnostic sink cannot extend the lifetime.
 
-## Identity, recovery, and operations
+### Cancellation and artwork
 
-Proxy revisions never decrease or reset during an instance's lifetime. Translate
-worker-local session IDs to fresh proxy-local IDs for every worker epoch. Preserve
-binding generations within an epoch and translate every artwork key, selection
-hint, invalidation, command target, and secondary result consistently. Do not match
-sessions after restart by title or application ID. Old handles become obsolete.
+Caller cancellation returns promptly, but transport admission remains held until
+the terminal reply. Cancellation can stop a frame while queued; after writing
+starts, the frame finishes under connection deadlines. This preserves framing for
+other requests. Late activation callbacks are ignored; active callbacks must match
+the command, correlation, epoch, and binding and use the original command deadline.
 
-On disconnect, immediately publish unavailable state and withdraw routes. Fail
-pending requests, reject old replies, and invalidate old artwork keys. Keep
-`WatchAsync` alive across recoverable failures. The owner may launch a replacement
-with bounded exponential backoff and a restart budget. Thirty continuous seconds
-of connected, available snapshots acknowledging the current policy reset the
-failure count. Read failures and pending policy changes interrupt that interval;
-time spent failing or shutting down cannot replenish the budget. Exhaustion
-faults `WatchAsync`, allowing the composite to mark the provider Faulted and
-recreate it on an explicit enable request.
+Artwork uses a separate one-way binary stream, never JSON/base64. Its four-byte
+big-endian length precedes exactly that many bytes and EOF. The owner reads while
+the RPC runs, checks length before allocation, then checks EOF and returned metadata.
+Invalid lengths, truncated successful transfers, trailing bytes, or mismatched
+metadata retire the connection. Cancellation and failures close stream endpoints;
+artwork backpressure and cancellation do not corrupt RPC framing.
 
-Reapply the latest source policy before initial or replacement discovery. A pipe
-connection alone is not evidence of usable media state; a complete snapshot must
-acknowledge the current policy. An empty connected snapshot is valid. During a
-live policy change, immediately filter excluded routes and preserve unaffected
-sessions, identities and availability. Re-inclusion waits for a fresh worker
-observation and assigns a new identity to a previously excluded session.
+## Recovery and diagnostics
 
-Never replay commands after disconnect, including commands whose replies were
-lost. Native work may have taken effect before cancellation, timeout, or process
-death; success requires an actual matching response. Refresh observed state rather
-than guessing whether a skip/toggle happened. Timeout can retire an unresponsive
-worker, but replacement must wait for the previous process to exit.
+A disconnect immediately withdraws routes, marks state unavailable, fails pending
+requests, and invalidates old artwork. Never replay commands, including those whose
+replies were lost: native work may already have taken effect.
 
-If graceful exit fails, close the worker job and wait again. Recoverable shutdown
-failures are logged without faulting disposal. If process exit still cannot be
-confirmed, fail disposal and keep the exclusive group blocked. A peer must never
-start merely because a teardown exception was swallowed.
+On restart, translate worker-local IDs into fresh proxy-local IDs. Preserve binding
+generations within an epoch and translate hints, artwork, invalidations, commands,
+and secondary results consistently. Proxy revisions never reset. Do not identify
+replacement sessions by title or application ID.
 
-`IMediaSourcePolicyBackend` is part of the hosted contract. Apply exclusions before
-startup, after reconnect, and at the native execution boundary. Keep claims while
-their owner is enabled but disconnected/faulted. VLC and future browser claims
-must target both `gsmtc` and `gsmtc.worker`; do not overload exclusivity metadata
-to change source identity semantics.
+Reapply the latest source policy before accepting discovery. A connection is ready
+only after a complete snapshot acknowledges that policy; an empty snapshot is valid.
+Live exclusions withdraw routes immediately while preserving unaffected sessions.
+Re-inclusion waits for a fresh observation and assigns fresh identity. Claims remain
+in force while their owner is enabled, even if disconnected or faulted.
 
-Production source activation uses a bounded extension callback associated with
-the admitted command and validated worker binding. The extension checks the
-connection and command lifetime before activating a source. Callback support is
-negotiated; do not advertise activation without an implementation. The callback
-uses the original command deadline and runs off the pipe reader. An explicit
-request context associates it with the command; titles are only window hints.
+| Failure | Recovery |
+| --- | --- |
+| Snapshot read exception | Report `SnapshotFailed`; retry after 500 ms, 1 s, then 2 s. Keep sessions unavailable. A successful read resets backoff and the recovery window. |
+| Consecutive read failures exceed `ObservationTimeout` | Attempt `ReportFaultAsync` with the last error, then close. Fault delivery is bounded to one second. |
+| Hung operation, startup timeout, broken transport, or terminal backend fault | Close the connection and retire the worker. Confirm exit before replacement. |
+| Worker restart | Default delay starts at 200 ms, doubles to a 2 s cap, with at most three replacements. |
+| Thirty continuous healthy seconds | Reset the restart budget only while snapshots are connected, available, and acknowledge the current policy. Read failures and pending policy changes interrupt the interval. |
+| Restart budget exhausted | Fault `WatchAsync`; an explicit enable can create a new provider instance. |
 
-## Worker logging
+Recoverable failures keep `WatchAsync` alive. Errors from obsolete policies and
+replies from obsolete epochs cannot change current state. The first disconnect
+cause is preserved in the supervisor snapshot and logs. Mark the connection closed
+before canceling requests or disposing RPC: inline completions must not mistake a
+terminal timeout for an unsent request that can be retried.
 
-Each worker keeps one buffered UTF-8 writer open. A one-second timer flushes trace
-and information messages; warnings and errors flush immediately. Clean
-disposal flushes the final buffer, while forced termination can lose buffered
-low-level messages. Encoded byte counts enforce a 4 MiB file limit without
-per-line size queries or file opens. Reaching the limit or an I/O failure closes
-and disables the writer. Startup retains up to sixteen worker logs, subject to
-files still in use by other workers.
+### Logs and memory
 
-## Memory policy
+Each worker has one buffered UTF-8 log writer. It flushes low-level messages every
+second and warnings/errors immediately. Clean disposal flushes the remainder;
+forced termination can lose buffered messages. A 4 MiB limit or I/O failure disables
+the writer. Startup retains up to sixteen logs, subject to files still in use.
 
-The extension and worker import `eng/MediaMemory.props`, setting
-`System.GC.ConserveMemory=9` in both managed and NativeAOT builds. This favors
-smaller managed heaps over allocation throughput; it does not impose a memory
-limit. Override `MediaGcConserveMemory` at build time for controlled comparisons.
+Both processes import [MediaMemory.props](../../eng/MediaMemory.props), setting
+`System.GC.ConserveMemory=9` for managed and NativeAOT builds. Use the build property
+`MediaGcConserveMemory` for comparisons; this is a GC preference, not a memory cap.
 
-Each process checks its memory every thirty seconds. After at least thirty
-seconds without input in the user's Windows session, it calls `EmptyWorkingSet`
-when both private committed bytes and total working-set bytes exceed its soft
-threshold: 32 MiB for the extension and 16 MiB for the worker. Attempts are at
-least five minutes apart, including failed attempts. Disposing the process-level
-maintenance service cancels its timer immediately.
+[ProcessMemoryMaintenance](../../src/MediaControlsExtension.Media.Hosting/ProcessMemoryMaintenance.cs)
+checks every 30 seconds. After 30 seconds without user input, it can trim the working
+set when private committed bytes and total working set both meet the threshold:
+32 MiB in the extension, 16 MiB in the worker. Attempts are at least five minutes
+apart, including failed trims. Disposal cancels the timer. Input age uses Windows
+`GetTickCount`, with wraparound handling, to share the input timestamp's clock.
 
-This releases resident pages, including shared pages, without discarding live
-state or reducing private committed memory. Later use can fault those pages back
-into RAM. It is a visible-footprint policy, not a hard cap or proof that allocations
-are bounded. Production code does not periodically force full garbage collections.
-Debug diagnostics record trims and counter failures. Input timestamp wraparound
-is supported; future input timestamps are treated as recent activity. The idle
-comparison uses Windows `GetTickCount` directly so both values use the same clock.
-It does not depend on `Environment.TickCount`, whose Windows sleep-time behavior
-[changes in .NET 11](https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/11/environment-tickcount-windows-behavior).
+Trimming releases resident pages; it does not reduce private committed memory or
+discard live state. Later access can fault pages back in. Production code does not
+periodically force a full garbage collection.
 
-## Acceptance
+## Validate a hosting change
 
-The hosting tests run real subprocesses for the transport and lifetime checks. A
-synthetic backend provides deterministic snapshots, commands, artwork, exclusions,
-slow reads, cancellation, startup hangs, and cleanup hangs. An optional inspection
-command reads existing GSMTC sessions without changing playback. The native
-acceptance runner publishes its own controlled session for playback and artwork
-checks. A separate COM client exercises the production page commands and provider
-disposal without automating the WinUI view.
+The [hosting test README](../../tests/MediaControlsExtension.Media.Hosting.Tests/README.md)
+is the command reference for managed/AOT subprocess tests, package checks, controlled
+native playback, and memory/soak tests. Start with:
 
-Required checks:
+```powershell
+./tests/MediaControlsExtension.Media.Hosting.Tests/Run-Tests.ps1
+./tests/MediaControlsExtension.Media.Hosting.Tests/Run-Tests.ps1 -NativeAot
+```
 
-- Snapshot/command/artwork/invalidation round trips and source-policy acknowledgement.
-- Old session targets, artwork, and pending commands cannot affect a replacement worker.
-- Broken pipe exits the worker even while backend work or cleanup ignores cancellation.
-- Normal disposal and forced owner death leave no worker, including during startup.
-- Worker termination leaves its owner alive; recovery creates a new process/epoch.
-- Conflicting initial selections fail before factories run; group replacement waits
-  for outgoing disposal and is blocked by failed cleanup; unrelated providers work.
-- Invalid frames and handshake identity/version mismatches fail within a deadline.
-- NativeAOT x64 validation; ARM64 build evidence is distinct from hardware execution.
-- Packaged owner/worker identity and `globalMediaControl` activation are validated
-  separately from unpackaged transport tests and existing probe evidence.
+Match validation to the change:
 
-The original spike is superseded. Its launch scripts now use the production
-hosting tests. Release acceptance includes
-real GSMTC controls, package activation and hardware-dependent checks.
+- **Transport:** real pipes/processes, round trips, malformed frames, identity/version
+  mismatches, cancellation, capacity, and artwork stream failures.
+- **Lifetime/recovery:** owner death, broken pipe during hung work, startup/cleanup
+  hangs, no orphan worker, fresh replacement identities, and no command replay.
+- **Selection/policy:** core tests for exclusive switching, blocked cleanup,
+  independent providers, and policy acknowledgement before discovery.
+- **Deployment:** packaged owner/worker identity and `globalMediaControl`, production
+  activation/disposal commands, and real GSMTC behavior. ARM64 compilation alone
+  does not establish behavior on ARM64 hardware.
 
-## Platform references
+Synthetic transport tests, controlled native sessions, production COM command
+checks, and interactive WinUI checks provide different evidence. Keep them separate
+when reporting results; sleep/resume and real source-window activation need
+interactive validation.
 
-- [Windows job objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects)
-- [Process creation attributes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute)
-- [Named-pipe peer PID](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getnamedpipeclientprocessid)
-- [PipeOptions.CurrentUserOnly](https://learn.microsoft.com/en-us/dotnet/api/system.io.pipes.pipeoptions)
-- [System.Text.Json source generation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation)
-- [.NET garbage-collector configuration](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector)
-- [EmptyWorkingSet](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-emptyworkingset)
-- [GetLastInputInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getlastinputinfo)
+For transport build changes, retain generated serialization metadata and the
+projects' `DisableTransitiveFrameworkReferences` setting. It prevents a transitive
+Windows threading asset from adding WPF; it does not replace direct/SDK references
+or require substituted package assemblies.

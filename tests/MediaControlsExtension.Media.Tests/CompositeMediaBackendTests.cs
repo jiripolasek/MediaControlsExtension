@@ -9,12 +9,218 @@ using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Media.Tests.Infrastructure;
 using Microsoft.Extensions.Logging.Abstractions;
+using Observation = JPSoftworks.MediaControlsExtension.Media.Gsmtc.GsmtcPlaybackController.PlaybackObservation;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 
 [TestClass]
 public sealed class CompositeMediaBackendTests
 {
+    [TestMethod]
+    [DataRow(true, false, MediaCommandOutcomeStatus.Completed)]
+    [DataRow(true, true, MediaCommandOutcomeStatus.Completed)]
+    [DataRow(false, false, MediaCommandOutcomeStatus.Unsupported)]
+    public async Task AutomaticPauseRevalidatesControlsAfterPendingPlay(
+        bool supportsPause, bool pauseControlLags, MediaCommandOutcomeStatus expectedPauseStatus)
+    {
+        var initial = FakeMediaBackend.CreateSnapshot(1, "Starting", playbackState: MediaPlaybackState.Paused);
+        var initialCapabilities = supportsPause && !pauseControlLags
+            ? MediaCapabilities.Play : MediaCapabilities.Play | MediaCapabilities.Stop;
+        var other = new FakeMediaBackend(initial with
+        {
+            Sessions = [initial.Sessions[0] with { Capabilities = initialCapabilities }],
+        });
+        var target = NewBackend("Target");
+        var controller = new GsmtcPlaybackController();
+        var controls = new GsmtcControlGate(NullLogger.Instance);
+        var otherPlaying = false;
+        var pauseEnabled = supportsPause && !pauseControlLags;
+        var pauseReads = 0;
+        var nativeOperations = new List<MediaOperation>();
+        MediaOperation[]? otherCommandsAtTargetPlay = null;
+        bool? otherPlayingAtTargetPlay = null;
+        Observation ReadPlayback() => Volatile.Read(ref otherPlaying)
+            ? new(MediaPlaybackState.Playing, MediaCapabilities.Play | MediaCapabilities.Stop |
+                (Volatile.Read(ref pauseEnabled) ? MediaCapabilities.Pause : MediaCapabilities.None))
+            : new(MediaPlaybackState.Paused, initialCapabilities);
+        other.CommandHandler = (command, cancellationToken) => controller.ExecuteAsync(command.Operation,
+            _ =>
+            {
+                if (command.Operation == MediaOperation.Pause)
+                {
+                    if (Interlocked.Increment(ref pauseReads) == 2 && supportsPause)
+                    {
+                        Volatile.Write(ref pauseEnabled, true);
+                    }
+                }
+
+                return Task.FromResult(ReadPlayback());
+            },
+            (_, markSending, token) => controls.RunCommandAsync(() => GsmtcPlaybackController.SendRevalidatedAsync(
+                command.Operation, ReadPlayback(), operation =>
+                {
+                    Assert.IsTrue(operation == MediaOperation.Play || (supportsPause && operation == MediaOperation.Pause));
+                    nativeOperations.Add(operation);
+                    Volatile.Write(ref otherPlaying, operation == MediaOperation.Play);
+                    return Task.FromResult(true);
+                }, markSending), command.Operation.ToString(), token), cancellationToken);
+        target.CommandHandler = (_, token) => controls.RunCommandAsync(() =>
+        {
+            otherCommandsAtTargetPlay = other.Commands.Select(static command => command.Operation).ToArray();
+            otherPlayingAtTargetPlay = Volatile.Read(ref otherPlaying);
+            return Task.FromResult(new MediaBackendCommandResult(MediaBackendCommandStatus.Completed, null));
+        }, "Play target", token);
+        other.BlockCommands();
+        await using var service = new MediaService(new CompositeMediaBackend(Registry(other, target)));
+        service.UpdateOptions(new(PauseOtherSessionsOnPlay: true));
+        await service.StartAsync();
+        await WaitUntilAsync(() => Task.FromResult(service.Sessions.Length == 2));
+        var otherSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Starting");
+        var targetSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Target");
+        try
+        {
+            var first = service.TrySubmit(new(MediaCommandTarget.ForSession(otherSession.Id), MediaOperation.Play));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, first.Status);
+            await other.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            var second = service.TrySubmit(new(MediaCommandTarget.ForSession(targetSession.Id), MediaOperation.Play));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, second.Status);
+            Assert.IsFalse(second.Completion!.IsCompleted);
+            other.ReleaseCommands();
+
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await first.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+            var outcome = await second.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, outcome.Status);
+            Assert.AreEqual(otherSession.Id, outcome.PauseOutcomes.Single().SessionId);
+            Assert.AreEqual(expectedPauseStatus, outcome.PauseOutcomes.Single().Status);
+            CollectionAssert.AreEqual(new[] { MediaOperation.Play, MediaOperation.Pause }, otherCommandsAtTargetPlay);
+            Assert.AreEqual(!supportsPause, otherPlayingAtTargetPlay);
+            Assert.AreEqual(initialCapabilities, otherSession.PlaybackInfo.Capabilities);
+            CollectionAssert.AreEqual(supportsPause ? new[] { MediaOperation.Play, MediaOperation.Pause } : [MediaOperation.Play],
+                nativeOperations);
+            Assert.AreEqual(pauseControlLags ? 3 : 2, pauseReads);
+        }
+        finally
+        {
+            other.ReleaseCommands();
+        }
+    }
+
+    [TestMethod]
+    public async Task CapturedSecondaryIntentReachesTheLeafWhileItsSnapshotIsChanging()
+    {
+        var initial = FakeMediaBackend.CreateSnapshot(1, "Other", playbackState: MediaPlaybackState.Playing);
+        initial = initial with { Sessions = [initial.Sessions[0] with { Capabilities = MediaCapabilities.TogglePlayback }] };
+        var other = new FakeMediaBackend(initial);
+        var target = NewBackend("Target");
+        await using var composite = new CompositeMediaBackend(Registry(other, target));
+        await composite.StartAsync(default);
+        var snapshot = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 2);
+        var captured = snapshot.Sessions.Single(static session => session.MediaProperties.Title == "Other");
+        var primary = snapshot.Sessions.Single(static session => session.MediaProperties.Title == "Target");
+        other.SetSnapshot(initial with
+        {
+            Revision = 2,
+            Sessions = [initial.Sessions[0] with { PlaybackState = MediaPlaybackState.Changing }],
+        });
+        await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Any(session =>
+            session.Id == captured.Id && session.PlaybackState == MediaPlaybackState.Changing));
+
+        var result = await composite.ExecuteAsync(new(primary.Id, primary.BindingGeneration, MediaOperation.Play,
+            [new(captured.Id, captured.BindingGeneration)]), default);
+
+        Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
+        Assert.AreEqual(MediaBackendCommandStatus.Completed, result.PauseResults.Single().Status);
+        Assert.AreEqual(MediaOperation.Pause, other.Commands.Single().Operation);
+    }
+
+    [TestMethod]
+    [DataRow(MediaBackendCommandStatus.Unconfirmed, MediaCommandOutcomeStatus.Abandoned)]
+    [DataRow(MediaBackendCommandStatus.Failed, MediaCommandOutcomeStatus.Completed)]
+    public async Task SecondaryPauseUncertaintyInvalidatesOnlyDependentPlayback(
+        MediaBackendCommandStatus pauseStatus, MediaCommandOutcomeStatus deferredStatus)
+    {
+        var other = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Other", playbackState: MediaPlaybackState.Playing))
+        {
+            CommandHandler = (command, _) => Task.FromResult(new MediaBackendCommandResult(
+                command.Operation == MediaOperation.Pause ? pauseStatus : MediaBackendCommandStatus.Completed, null)),
+        };
+        var target = NewBackend("Target");
+        var independentSnapshot = FakeMediaBackend.CreateSnapshot(1, "Independent");
+        var independent = new FakeMediaBackend(independentSnapshot with
+        {
+            Sessions = [independentSnapshot.Sessions[0] with { Capabilities = MediaCapabilities.Play }],
+        });
+        other.BlockCommands();
+        await using var service = new MediaService(new CompositeMediaBackend(Registry(other, target, independent)));
+        service.UpdateOptions(new(PauseOtherSessionsOnPlay: true));
+        await service.StartAsync();
+        await WaitUntilAsync(() => Task.FromResult(service.Sessions.Length == 3));
+        var otherSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Other");
+        var targetSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Target");
+        var independentSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Independent");
+        try
+        {
+            var playTarget = service.TrySubmit(new(MediaCommandTarget.ForSession(targetSession.Id), MediaOperation.Play));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, playTarget.Status);
+            await other.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            service.UpdateOptions(new(PauseOtherSessionsOnPlay: false));
+            var resumeOther = service.TrySubmit(new(MediaCommandTarget.ForSession(otherSession.Id), MediaOperation.Play));
+            var pauseTarget = service.TrySubmit(new(MediaCommandTarget.ForSession(targetSession.Id), MediaOperation.Pause));
+            var playIndependent = service.TrySubmit(new(MediaCommandTarget.ForSession(independentSession.Id), MediaOperation.Play));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, resumeOther.Status);
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, pauseTarget.Status);
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, playIndependent.Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed,
+                (await playIndependent.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+            Assert.IsFalse(resumeOther.Completion!.IsCompleted);
+            Assert.IsFalse(pauseTarget.Completion!.IsCompleted);
+            other.ReleaseCommands();
+
+            var outcome = await playTarget.Completion!.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, outcome.Status);
+            Assert.AreEqual(pauseStatus == MediaBackendCommandStatus.Unconfirmed
+                    ? MediaCommandOutcomeStatus.Unconfirmed : MediaCommandOutcomeStatus.Failed,
+                outcome.PauseOutcomes.Single().Status);
+            Assert.AreEqual(deferredStatus, (await resumeOther.Completion.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed,
+                (await pauseTarget.Completion.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+            if (pauseStatus == MediaBackendCommandStatus.Unconfirmed)
+            {
+                Assert.HasCount(1, other.Commands);
+                Assert.IsFalse(otherSession.PlaybackInfo.IsOptimistic);
+            }
+        }
+        finally
+        {
+            other.ReleaseCommands();
+        }
+    }
+
+    [TestMethod]
+    public async Task AutomaticPauseReachesAPlayerWithOnlyTogglePlayback()
+    {
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, "Toggle player", playbackState: MediaPlaybackState.Playing);
+        var other = new FakeMediaBackend(snapshot with
+        {
+            Sessions = [snapshot.Sessions[0] with { Capabilities = MediaCapabilities.TogglePlayback }],
+        });
+        var target = NewBackend("Target");
+        await using var service = new MediaService(new CompositeMediaBackend(Registry(other, target)));
+        service.UpdateOptions(new(PauseOtherSessionsOnPlay: true));
+        await service.StartAsync();
+        await WaitUntilAsync(() => Task.FromResult(service.Sessions.Length == 2));
+        var targetSession = service.Sessions.Single(static session => session.MediaProperties.Title == "Target");
+
+        var play = service.TrySubmit(new(MediaCommandTarget.ForSession(targetSession.Id), MediaOperation.Play));
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, play.Status);
+        var outcome = await play.Completion!.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, outcome.Status);
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, outcome.PauseOutcomes.Single().Status);
+        Assert.AreEqual(MediaOperation.Pause, other.Commands.Single().Operation);
+        Assert.AreEqual(MediaOperation.Play, target.Commands.Single().Operation);
+    }
+
     [TestMethod]
     public void RegistryRejectsDuplicateAndInvalidRegistrations()
     {
@@ -115,9 +321,9 @@ public sealed class CompositeMediaBackendTests
     [TestMethod]
     public async Task QueuedPlayDoesNotPauseAReboundSecondarySession()
     {
-        var blocker = NewBackend("Blocker");
+        var blocker = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Blocker", playbackState: MediaPlaybackState.Playing));
         var target = NewBackend("Target");
-        var other = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Other", bindingGeneration: 7));
+        var other = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Other", bindingGeneration: 7, playbackState: MediaPlaybackState.Playing));
         blocker.BlockCommands();
         await using var composite = new CompositeMediaBackend(Registry(blocker, target, other));
         await using var service = new MediaService(composite);
@@ -270,11 +476,12 @@ public sealed class CompositeMediaBackendTests
         var unsupported = new FakeMediaBackend(unsupportedSnapshot with
         {
             Sessions = [unsupportedSnapshot.Sessions.Single() with { Capabilities = MediaCapabilities.Play }],
-        });
+        }) { CommandResult = new(MediaBackendCommandStatus.Unsupported, "Cannot pause") };
         await using var composite = new CompositeMediaBackend(Registry(target, other, unsupported));
         await composite.StartAsync(default);
         var snapshot = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 3);
         var targetSession = snapshot.Sessions.Single(static session => session.MediaProperties.Title == "Target");
+        var unsupportedSession = snapshot.Sessions.Single(static session => session.MediaProperties.Title == "Unsupported");
         var result = await composite.ExecuteAsync(new(targetSession.Id, 1, MediaOperation.Play,
             [.. snapshot.Sessions.Select(static session => new MediaBackendSessionTarget(session.Id, session.BindingGeneration))]), default);
         Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
@@ -282,7 +489,9 @@ public sealed class CompositeMediaBackendTests
         Assert.AreEqual(MediaOperation.Pause, other.Commands.Single().Operation);
         Assert.IsEmpty(target.Commands.Single().SessionsToPause);
         Assert.IsEmpty(other.Commands.Single().SessionsToPause);
-        Assert.IsEmpty(unsupported.Commands);
+        Assert.AreEqual(MediaOperation.Pause, unsupported.Commands.Single().Operation);
+        Assert.AreEqual(MediaBackendCommandStatus.Unsupported,
+            result.PauseResults.Single(pause => pause.Target.SessionId == unsupportedSession.Id).Status);
     }
 
     [TestMethod]

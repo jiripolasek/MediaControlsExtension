@@ -10,10 +10,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
 
-internal sealed partial class MediaPauseFailureNotifier : IDisposable
+internal sealed partial class MediaCommandFailureNotifier : IDisposable
 {
     private static readonly Action<ILogger, Exception?> NotificationFailed = LoggerMessage.Define(
-        LogLevel.Warning, new EventId(1, nameof(NotificationFailed)), "Could not show secondary pause feedback.");
+        LogLevel.Warning, new EventId(1, nameof(NotificationFailed)), "Could not show media command feedback.");
 
     private readonly CancellationTokenSource _shutdown = new();
     private readonly CancellationToken _shutdownToken;
@@ -22,7 +22,7 @@ internal sealed partial class MediaPauseFailureNotifier : IDisposable
     private readonly ILogger _logger;
     private int _disposed;
 
-    public MediaPauseFailureNotifier(Func<bool> isEnabled, Action<string> notify, ILogger? logger = null)
+    public MediaCommandFailureNotifier(Func<bool> isEnabled, Action<string> notify, ILogger? logger = null)
     {
         this._isEnabled = isEnabled;
         this._notify = notify;
@@ -41,7 +41,7 @@ internal sealed partial class MediaPauseFailureNotifier : IDisposable
         {
             var outcome = await completion.WaitAsync(this._shutdownToken).ConfigureAwait(false);
             if (Volatile.Read(ref this._disposed) == 0 && this._isEnabled() &&
-                MediaCommandFeedback.GetPauseWarning(outcome) is { } message)
+                MediaCommandFeedback.GetWarning(outcome) is { } message)
             {
                 this._notify(message);
             }

@@ -47,7 +47,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         _ = this._sourcePresentation.UpdateAsync(session.MediaProperties.Source);
     }
 
-    public event EventHandler? Changed;
+    public event EventHandler<MediaSessionChangedEventArgs>? Changed;
 
     public MediaSession Session { get; }
 
@@ -140,7 +140,7 @@ internal sealed partial class MediaSessionViewModel : IDisposable
             }
         }
 
-        this.RaiseChanged();
+        this.RaiseChanged(args.Changes);
     }
 
     private void SourcePresentationOnChanged(object? sender, EventArgs args)
@@ -250,13 +250,14 @@ internal sealed partial class MediaSessionViewModel : IDisposable
         this._artworkCancellation = null;
     }
 
-    private void RaiseChanged()
+    private void RaiseChanged(MediaSessionChanges changes = MediaSessionChanges.MediaProperties)
     {
         if (!this._disposed)
         {
             DiagnosticEvent.Raise(
                 this,
                 this.Changed,
+                new MediaSessionChangedEventArgs(this.Session.Revision, changes),
                 $"MediaSessionViewModel[{this.Session.Id.Value}].Changed",
                 this._logger);
         }

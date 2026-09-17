@@ -90,6 +90,7 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
                 MediaTimelinePropertiesSnapshot.Empty, this._playback,
                 MediaCapabilities.Play | MediaCapabilities.Pause | MediaCapabilities.Stop | MediaCapabilities.SkipNext |
                 MediaCapabilities.SkipPrevious |
+                (behavior == "unconfirmed-playback" ? MediaCapabilities.TogglePlayback : MediaCapabilities.None) |
                 (context?.CanActivateSource == true ? MediaCapabilities.ActivateSource : MediaCapabilities.None));
             return Task.FromResult(
                 new MediaBackendSnapshot(++this._revision, excluded ? [] : [session],
@@ -175,6 +176,11 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
         }
 
         this.Signal();
+        if (behavior == "unconfirmed-playback" && command.Operation == MediaOperation.Play)
+        {
+            return Task.FromResult(new MediaBackendCommandResult(MediaBackendCommandStatus.Unconfirmed, "Playback could not be confirmed."));
+        }
+
         if (command.Operation == MediaOperation.SkipNext && behavior == "hang-command")
         {
             return new TaskCompletionSource<MediaBackendCommandResult>().Task;

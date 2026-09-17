@@ -212,7 +212,7 @@ internal static class Program
             "slow-start" or "slow-command" or "slow-policy" or "slow-cancel" or "quiet-artwork" or
             "transient-read-failure" or "startup-read-failure" or "persistent-read-failure" or "recurring-read-failure"
             or
-            "short-read-failure" or "invalidation-failure" => new SyntheticBackend(backendId, context),
+            "short-read-failure" or "invalidation-failure" or "unconfirmed-playback" => new SyntheticBackend(backendId, context),
         _ => throw new ArgumentException("Unknown compiled backend factory.", nameof(backendId))
     };
 

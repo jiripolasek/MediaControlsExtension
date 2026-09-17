@@ -14,6 +14,28 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class MediaSessionSelectionTests
 {
     [TestMethod]
+    [DataRow(MediaOperation.SwitchNextSession)]
+    [DataRow(MediaOperation.SwitchPreviousSession)]
+    public async Task CyclingIncludesPlayersWithOnlyTogglePlayback(MediaOperation operation)
+    {
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, 1, (1, "Current"), (2, "Toggle player"));
+        snapshot = snapshot with
+        {
+            Sessions = [snapshot.Sessions[0], snapshot.Sessions[1] with { Capabilities = MediaCapabilities.TogglePlayback }],
+        };
+        var backend = new FakeMediaBackend(snapshot);
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+
+        var submission = Submit(service, MediaCommandTarget.ForSession(new(1)), operation);
+
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await submission.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+        Assert.AreEqual(new MediaSessionId(2), service.CurrentSession?.Id);
+        Assert.AreEqual(new MediaBackendSessionId(2), backend.Commands.Single().SessionId);
+        Assert.AreEqual(MediaOperation.Play, backend.Commands.Single().Operation);
+    }
+
+    [TestMethod]
     public async Task SelectedProviderSurvivesUnrelatedRefreshesAndKeepsCommandRouting()
     {
         var first = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "First", playbackState: MediaPlaybackState.Playing));
@@ -193,7 +215,7 @@ public sealed class MediaSessionSelectionTests
     }
 
     [TestMethod]
-    public async Task RejectedPlayAndTargetedPauseDoNotSelectTheTarget()
+    public async Task RejectedPlayAndTargetedStopDoNotSelectTheTarget()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, 1, (1, "Current"), (2, "Other")));
         backend.BlockCommands();
@@ -204,7 +226,7 @@ public sealed class MediaSessionSelectionTests
             var target = MediaCommandTarget.ForSession(new(2));
             Submit(service, target, MediaOperation.SkipNext);
             await backend.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
-            Submit(service, target, MediaOperation.Pause);
+            Submit(service, target, MediaOperation.Stop);
             Assert.AreEqual(MediaCommandSubmissionStatus.Busy, service.TrySubmit(new(target, MediaOperation.Play)).Status);
             Assert.AreEqual(new MediaSessionId(1), service.CurrentSession?.Id);
         }

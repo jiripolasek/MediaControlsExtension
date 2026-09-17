@@ -253,13 +253,13 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         this.ScheduleUpdate();
     }
 
-    private void CurrentSessionOnChanged(object? sender, EventArgs args)
+    private void CurrentSessionOnChanged(object? sender, MediaSessionChangedEventArgs args)
     {
         lock (this._currentSessionLock)
         {
             if (!this._disposed && ReferenceEquals(sender, this._currentSession))
             {
-                this._updateMediaInfo.Invoke();
+                this._updateMediaInfo.Invoke((args.Changes & (MediaSessionChanges.Availability | MediaSessionChanges.Rebound)) != 0);
             }
         }
     }

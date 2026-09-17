@@ -18,7 +18,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
     private readonly ILogger _logger;
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly MediaSessionId? _sessionId;
-    private readonly OptimisticPlaybackCommand _playPauseAction;
+    private OptimisticPlaybackCommand _playPauseAction;
     // Separate content blocks are always stacked vertically. FormContent keeps the
     // artwork and metadata in one Adaptive Card so they can share a column layout.
     // CmdPal's current Adaptive Cards renderer has no width breakpoint contract, so
@@ -26,7 +26,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
     private readonly FormContent _metadata = new();
     private readonly IContent[] _content;
     private readonly IContextItem _previousCommand;
-    private readonly IContextItem _playPauseCommand;
+    private IContextItem _playPauseCommand;
     private readonly IContextItem _nextCommand;
     private readonly IContextItem _shuffleCommand;
     private readonly IContextItem _repeatCommand;
@@ -104,7 +104,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             iconService,
             IconSurface.CommandPalette,
             loggerFactory);
-        playPauseCommand.UpdatePresentation(session);
+        playPauseCommand = playPauseCommand.WithPresentation(session);
         return new(
             mediaService,
             viewModels,
@@ -262,7 +262,13 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             return;
         }
 
-        this._playPauseAction.UpdatePresentation(viewModel.Session);
+        var playPauseAction = this._playPauseAction.WithPresentation(viewModel.Session);
+        var playbackActionChanged = !ReferenceEquals(this._playPauseAction, playPauseAction);
+        if (playbackActionChanged)
+        {
+            this._playPauseAction = playPauseAction;
+            this._playPauseCommand = new CommandContextItem(playPauseAction) { RequestedShortcut = Chords.PlayPause, Icon = Icons.PlayPause };
+        }
         var snapshot = MediaMetadataSnapshot.FromViewModel(viewModel);
         if (this._snapshot != snapshot)
         {
@@ -272,7 +278,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         }
 
         var commandAvailability = MediaCommandAvailability.FromSnapshot(snapshot);
-        if (this._commandAvailability != commandAvailability)
+        if (playbackActionChanged || this._commandAvailability != commandAvailability)
         {
             this._commandAvailability = commandAvailability;
             this.Commands = this.BuildCommands(commandAvailability);

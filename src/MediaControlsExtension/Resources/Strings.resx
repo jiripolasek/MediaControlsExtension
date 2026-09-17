@@ -853,4 +853,10 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <value>Three simulated players with random tracks and artwork. No audio is played.</value>
     <comment>Description of the dummy media provider.</comment>
   </data>
+  <data name="Toast_PlaybackUnconfirmed" xml:space="preserve">
+    <value>Playback could not be confirmed.</value>
+  </data>
+  <data name="Toast_PlaybackAbandoned" xml:space="preserve">
+    <value>The playback request was canceled because an earlier change could not be confirmed.</value>
+  </data>
 </root>
