@@ -26,9 +26,11 @@ the provider releases its COM connection without closing iTunes or changing play
 - Exports the current artwork through a temporary file created by iTunes, reads it
   into memory, and removes the file immediately. One image is cached at a time and
   track changes invalidate the old artwork key.
-- Runs all iTunes COM access on a dedicated dispatcher thread. The COM calls and
-  event sink use direct, Native AOT-compatible interop rather than runtime-generated
-  COM wrappers.
+- Runs in a dedicated MediaHost worker process. Within that worker, all iTunes COM
+  access stays on its own dispatcher thread. The COM calls and event sink use direct,
+  Native AOT-compatible interop rather than runtime-generated COM wrappers. A native
+  crash or an unresponsive COM call can therefore be terminated and recovered without
+  taking down the extension process.
 - Reports the native application identity `Apple.iTunes` and uses the discovered
   `iTunes.exe` path when available. This lets the extension retain normal player
   identity and application-switching behavior.

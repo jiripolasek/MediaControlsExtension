@@ -53,7 +53,6 @@
 		<ProjectReference Include="..\MediaControlsExtension.MediaHost\JPSoftworks.MediaControlsExtension.MediaHost.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
-		<ProjectReference Include="..\MediaControlsExtension.Media.ITunes\JPSoftworks.MediaControlsExtension.Media.ITunes.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>

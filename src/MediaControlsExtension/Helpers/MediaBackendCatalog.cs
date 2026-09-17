@@ -8,7 +8,6 @@ using System.Collections.Immutable;
 using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Hosting;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
-using JPSoftworks.MediaControlsExtension.Media.ITunes;
 using JPSoftworks.MediaControlsExtension.Media.Vlc;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
@@ -93,7 +92,7 @@ internal static class MediaBackendCatalog
             "itunes",
             Strings.ResourceManager.GetString("Settings_Backend_ITunes_Title", Strings.Culture)!,
             Strings.ResourceManager.GetString("Settings_Backend_ITunes_Description", Strings.Culture)!,
-            loggerFactory => new ITunesBackend(loggerFactory.CreateLogger<ITunesBackend>()),
+            loggerFactory => new OutOfProcessMediaBackend(CreateWorkerOptions("itunes"), owner, loggerFactory),
             EnabledByDefault: true)
         {
             ReplacesSources =

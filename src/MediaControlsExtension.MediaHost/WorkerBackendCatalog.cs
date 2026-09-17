@@ -8,6 +8,7 @@ internal static class WorkerBackendCatalog
         new Dictionary<string, WorkerBackendFactory>(StringComparer.Ordinal)
         {
             ["gsmtc"] = GsmtcBackendFactory.Create,
+            ["itunes"] = ITunesBackendFactory.Create,
             ["dummy"] = DummyBackendFactory.Create,
         };
 }
