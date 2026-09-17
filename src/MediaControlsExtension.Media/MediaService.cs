@@ -20,7 +20,6 @@ namespace JPSoftworks.MediaControlsExtension.Media;
 public sealed class MediaService : IMediaService
 {
     private static readonly TimeSpan NavigationCommandInterval = TimeSpan.FromMilliseconds(200);
-    private static readonly TimeSpan PlaybackCommandInterval = TimeSpan.FromMilliseconds(200);
     private static readonly TimeSpan CommandSettleRefreshDelay = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan PlaybackPredictionLifetime = TimeSpan.FromSeconds(10);
 
@@ -37,7 +36,6 @@ public sealed class MediaService : IMediaService
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Lock _lifecycleLock = new();
     private readonly Dictionary<MediaSessionId, long> _lastNavigationCommandTimestamps = [];
-    private readonly Dictionary<MediaSessionId, long> _lastPlaybackCommandTimestamps = [];
     private readonly ILogger _logger;
     private readonly MediaNotificationHub _notificationHub;
     private readonly MediaSessionCatalog _sessionCatalog = new();
@@ -236,11 +234,11 @@ public sealed class MediaService : IMediaService
         var rejectionStatus = MediaCommandSubmissionStatus.Accepted;
         lock (this._commandAdmissionLock)
         {
-            rejectionStatus = this._stateStore.TryResolveCommand(command, out resolvedCommand);
+            rejectionStatus = this._stateStore.TryResolveCommand(
+                command, out resolvedCommand, this._commandScheduler.GetOutstandingPlaybackTargets());
             if (rejectionStatus == MediaCommandSubmissionStatus.Accepted)
             {
                 var isNavigationCommand = IsNavigationCommand(resolvedCommand.ResolvedOperation);
-                var isPlaybackCommand = IsPlaybackInputCommand(resolvedCommand.RequestedOperation);
                 var admissionTimestamp = this._timeProvider.GetTimestamp();
                 if (isNavigationCommand)
                 {
@@ -249,14 +247,6 @@ public sealed class MediaService : IMediaService
                         resolvedCommand.SessionId,
                         admissionTimestamp,
                         NavigationCommandInterval);
-                }
-                else if (isPlaybackCommand)
-                {
-                    wasThrottled = WasRecentlyAdmitted(
-                        this._lastPlaybackCommandTimestamps,
-                        resolvedCommand.SessionId,
-                        admissionTimestamp,
-                        PlaybackCommandInterval);
                 }
 
                 if (!wasThrottled)
@@ -274,11 +264,6 @@ public sealed class MediaService : IMediaService
                         if (isNavigationCommand)
                         {
                             this._lastNavigationCommandTimestamps[resolvedCommand.SessionId] =
-                                admissionTimestamp;
-                        }
-                        else if (isPlaybackCommand)
-                        {
-                            this._lastPlaybackCommandTimestamps[resolvedCommand.SessionId] =
                                 admissionTimestamp;
                         }
 
@@ -320,7 +305,7 @@ public sealed class MediaService : IMediaService
         work.AllowExecution();
         if (IsPlaybackInputCommand(resolvedCommand.ResolvedOperation))
         {
-            _ = this.ExpirePredictionAsync(resolvedCommand.SessionId, operationId);
+            _ = this.ExpirePredictionAsync(work);
         }
 
         MediaLog.CommandAccepted(
@@ -406,10 +391,33 @@ public sealed class MediaService : IMediaService
 
         var outcomeStatus = MapOutcomeStatus(result.Status);
         var succeeded = outcomeStatus == MediaCommandOutcomeStatus.Completed;
-        var updatedSnapshot = this._stateStore.CompleteCommand(
-            command,
-            work.OperationId,
-            succeeded);
+        MediaServiceSnapshot updatedSnapshot;
+        lock (this._commandAdmissionLock)
+        {
+            HashSet<MediaBackendSessionTarget>? unconfirmedTargets = outcomeStatus == MediaCommandOutcomeStatus.Unconfirmed
+                ? [new(command.BackendSessionId, command.BindingGeneration)]
+                : null;
+            foreach (var pause in result.PauseResults)
+            {
+                if (pause.Status == MediaBackendCommandStatus.Unconfirmed)
+                {
+                    (unconfirmedTargets ??= []).Add(pause.Target);
+                }
+            }
+
+            if (unconfirmedTargets is not null)
+            {
+                foreach (var pending in this._commandScheduler.RemovePendingPlayback(unconfirmedTargets))
+                {
+                    this._stateStore.CompleteCommand(pending.Command, pending.OperationId, succeeded: false);
+                    pending.Complete(new(pending.OperationId, MediaCommandOutcomeStatus.Abandoned, pending.Command.SessionId,
+                        "Playback was abandoned because its preceding transition could not be confirmed."));
+                }
+            }
+
+            updatedSnapshot = this._stateStore.CompleteCommand(command, work.OperationId, succeeded);
+        }
+
         this.PublishState(updatedSnapshot);
         work.Complete(new(
             work.OperationId,
@@ -450,6 +458,7 @@ public sealed class MediaService : IMediaService
         MediaBackendCommandStatus.Unavailable => MediaCommandOutcomeStatus.Unavailable,
         MediaBackendCommandStatus.Unsupported => MediaCommandOutcomeStatus.Unsupported,
         MediaBackendCommandStatus.SessionGone => MediaCommandOutcomeStatus.SessionGone,
+        MediaBackendCommandStatus.Unconfirmed => MediaCommandOutcomeStatus.Unconfirmed,
         _ => MediaCommandOutcomeStatus.Failed,
     };
 
@@ -832,22 +841,25 @@ public sealed class MediaService : IMediaService
         this.RequestRefresh(MediaRefreshReason.CommandSettle);
     }
 
-    private async Task ExpirePredictionAsync(
-        MediaSessionId sessionId,
-        MediaOperationId operationId)
+    private async Task ExpirePredictionAsync(CommandWork work)
     {
+        var cancellationToken = this._disposeCts.Token;
         try
         {
-            await Task.Delay(
-                this._playbackPredictionLifetime,
-                this._disposeCts.Token).ConfigureAwait(false);
+            var outcome = await work.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (outcome.Status != MediaCommandOutcomeStatus.Completed)
+            {
+                return;
+            }
+
+            await Task.Delay(this._playbackPredictionLifetime, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (this._disposeCts.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             return;
         }
 
-        if (this._stateStore.TryExpirePrediction(sessionId, operationId, out var snapshot))
+        if (this._stateStore.TryExpirePrediction(work.Command.SessionId, work.OperationId, out var snapshot))
         {
             this.PublishState(snapshot);
             this.RequestRefresh(MediaRefreshReason.PredictionExpired);

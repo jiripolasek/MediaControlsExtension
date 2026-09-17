@@ -18,6 +18,7 @@ public enum MediaOperation
     /// <summary>Stops playback without changing the selected session.</summary>
     Stop,
     /// <summary>Resolves to the target's current primary playback operation at admission.</summary>
+    /// <remarks>For relative shortcuts; controls presenting a specific action should submit Play, Pause, or Stop.</remarks>
     TogglePlayback,
     /// <summary>Advances to the next media item.</summary>
     SkipNext,
@@ -103,6 +104,12 @@ public enum MediaCommandOutcomeStatus
     SessionGone,
     /// <summary>The service stopped before reporting completion; native work may still finish.</summary>
     Canceled,
+    /// <summary>A queued playback request was replaced by a newer request before execution.</summary>
+    Superseded,
+    /// <summary>Playback could not be confirmed; the command may still take effect.</summary>
+    Unconfirmed,
+    /// <summary>A queued playback request was not sent because a preceding transition could not be confirmed.</summary>
+    Abandoned,
 }
 
 /// <summary>Completion of an accepted command, retaining its original identity after session changes.</summary>

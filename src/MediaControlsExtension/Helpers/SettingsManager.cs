@@ -334,11 +334,3 @@ internal enum GlobalCommandsMode
     Disabled = 0,
     Enabled = 2
 }
-
-internal enum DockCurrentMediaActionMode
-{
-    Default = 0,
-    SwitchToPlayer = 1,
-    OpenMediaControls = 2,
-    OpenMediaMetadata = 3
-}

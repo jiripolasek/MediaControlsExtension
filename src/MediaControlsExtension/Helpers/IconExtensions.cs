@@ -30,7 +30,7 @@ internal static class IconExtensions
         return true;
     }
 
-    private static bool HasSameIcon(IIconInfo? left, IIconInfo? right)
+    internal static bool HasSameIcon(IIconInfo? left, IIconInfo? right)
     {
         if (ReferenceEquals(left, right))
         {

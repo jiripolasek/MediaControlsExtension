@@ -36,6 +36,21 @@ internal abstract class MediaSessionOp
         }
 
         var outcome = await submission.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (outcome.Status == MediaCommandOutcomeStatus.Superseded)
+        {
+            return null;
+        }
+
+        if (outcome.Status != MediaCommandOutcomeStatus.Completed && RequiresRestart(mediaService))
+        {
+            return $"\U0001F6AB {Strings.Toast_MediaControlsUnavailable}";
+        }
+
+        if (outcome.Status is MediaCommandOutcomeStatus.Unconfirmed or MediaCommandOutcomeStatus.Abandoned)
+        {
+            return MediaCommandFeedback.GetWarning(outcome);
+        }
+
         if (outcome.Status == MediaCommandOutcomeStatus.Completed)
         {
             var message = await this.GetSuccessMessageAsync(
@@ -45,9 +60,7 @@ internal abstract class MediaSessionOp
             return MediaCommandFeedback.AppendPauseWarning(message, outcome);
         }
 
-        return RequiresRestart(mediaService)
-            ? $"🚫 {Strings.Toast_MediaControlsUnavailable}"
-            : this.GetFailureMessage(outcome.Status);
+        return this.GetFailureMessage(outcome.Status);
     }
 
     protected abstract ValueTask<string> GetSuccessMessageAsync(
@@ -59,10 +72,9 @@ internal abstract class MediaSessionOp
     {
         return status switch
         {
-            MediaCommandSubmissionStatus.SessionGone or
-            MediaCommandOutcomeStatus.SessionGone => $"😢 {Strings.Toast_NoCurrentSession}",
-            MediaCommandSubmissionStatus.Unsupported or
-            MediaCommandOutcomeStatus.Unsupported => $"🚫 {Strings.Toast_NothingHappened}",
+            MediaCommandOutcomeStatus outcomeStatus => MediaCommandFeedback.GetFailureMessage(outcomeStatus),
+            MediaCommandSubmissionStatus.SessionGone => $"\U0001F622 {Strings.Toast_NoCurrentSession}",
+            MediaCommandSubmissionStatus.Unsupported => $"\U0001F6AB {Strings.Toast_NothingHappened}",
             _ => $"😢 {Strings.Toast_NothingHappened}",
         };
     }

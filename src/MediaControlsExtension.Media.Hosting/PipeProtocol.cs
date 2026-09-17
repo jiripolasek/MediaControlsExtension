@@ -7,7 +7,7 @@ namespace JPSoftworks.MediaControlsExtension.Media.Hosting;
 
 internal static partial class PipeProtocol
 {
-    internal const int Version = 6;
+    internal const int Version = 7;
     internal const int MaximumFrameBytes = 16 * 1024 * 1024;
     internal const int MaximumArtworkBytes = 32 * 1024 * 1024;
     internal const int MaximumChunkBytes = 64 * 1024;

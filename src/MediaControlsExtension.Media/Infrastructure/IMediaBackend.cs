@@ -46,6 +46,8 @@ public enum MediaBackendCommandStatus
     Unsupported,
     /// <summary>The captured session binding is missing, unavailable, excluded, or replaced.</summary>
     SessionGone,
+    /// <summary>A sent playback command could not be confirmed; do not replay dependent playback.</summary>
+    Unconfirmed,
 }
 
 /// <summary>Cached observations to invalidate before a later snapshot read.</summary>

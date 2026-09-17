@@ -7,6 +7,13 @@
     <NuGetAuditMode>direct</NuGetAuditMode>
     <PlatformTarget>$(Platform)</PlatformTarget>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and '$(MediaWorkerBuildKey)' != ''">
+    <!-- Keep the worker publish graph separate from regular solution builds. -->
+    <BaseIntermediateOutputPath>obj\MediaWorker\$(MediaWorkerBuildKey)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\MediaWorker\$(MediaWorkerBuildKey)\</BaseOutputPath>
+    <!-- Exclude regular outputs as well as the isolated paths. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
   <Import
     Project="$(MSBuildThisFileDirectory)eng\CmdPal.Extension.props"
     Condition="'$(CmdPalExtensionProject)' == '' and Exists('$(MSBuildThisFileDirectory)eng\CmdPal.Extension.props')" />

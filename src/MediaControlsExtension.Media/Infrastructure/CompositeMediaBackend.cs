@@ -1292,12 +1292,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
             return new(target, failure, "The secondary session is unavailable or has been replaced.");
         }
 
-        if (!use.Local.Capabilities.HasFlag(MediaCapabilities.Pause))
-        {
-            use.Dispose();
-            return new(target, MediaBackendCommandStatus.Unsupported, "The secondary session does not support pause.");
-        }
-
+        // A captured pending Play can outlive stale Pause flags; the leaf revalidates.
         var result = await this.ExecuteWithUseAsync(use, MediaOperation.Pause, cancellationToken).ConfigureAwait(false);
         if (result.Status != MediaBackendCommandStatus.Completed)
         {

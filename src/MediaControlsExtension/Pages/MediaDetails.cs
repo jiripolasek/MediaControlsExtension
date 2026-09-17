@@ -9,6 +9,7 @@ namespace JPSoftworks.MediaControlsExtension.Pages;
 internal sealed class MediaDetails
 {
     private readonly MediaDetailsState _state;
+    private readonly ICommand _playPauseCommand;
 
     public IDetails Details { get; }
 
@@ -26,6 +27,7 @@ internal sealed class MediaDetails
         ArgumentNullException.ThrowIfNull(switchToApplicationCommand);
         ArgumentNullException.ThrowIfNull(viewModel);
 
+        this._playPauseCommand = playPauseCommand;
         var artwork = viewModel.Artwork;
         this._state = MediaDetailsState.FromViewModel(viewModel, artwork?.Hash);
         var commands = new DetailsCommands
@@ -63,10 +65,11 @@ internal sealed class MediaDetails
         };
     }
 
-    public bool Represents(MediaSessionViewModel viewModel)
+    public bool Represents(MediaSessionViewModel viewModel, ICommand playPauseCommand)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        return this._state == MediaDetailsState.FromViewModel(viewModel);
+        return ReferenceEquals(this._playPauseCommand, playPauseCommand) &&
+               this._state == MediaDetailsState.FromViewModel(viewModel);
     }
 
     private static DetailsElement Detail(string key, string? value)

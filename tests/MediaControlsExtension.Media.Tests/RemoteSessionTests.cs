@@ -56,7 +56,7 @@ public sealed class RemoteSessionTests
         snapshot = snapshot with
         {
             Sessions = [snapshot.Sessions[0] with { Origin = new("first", primaryLocal) },
-                snapshot.Sessions[1] with { Origin = new("second", secondaryLocal) }],
+                snapshot.Sessions[1] with { Origin = new("second", secondaryLocal), PlaybackState = MediaPlaybackState.Playing }],
         };
         var store = new MediaStateStore();
         store.ApplyBackendSnapshot(snapshot);

@@ -415,7 +415,7 @@ public sealed class MediaServiceConcurrencyTests
     }
 
     [TestMethod]
-    public async Task SessionAllowsOneActiveAndOnePendingCommand()
+    public async Task SessionAllowsOneActiveAndOnePendingNonPlaybackCommand()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
         backend.BlockCommands();
@@ -423,7 +423,7 @@ public sealed class MediaServiceConcurrencyTests
         await using var service = new MediaService(backend, timeProvider: timeProvider);
         await service.StartAsync();
 
-        var command = new MediaCommand(MediaCommandTarget.CurrentSession, MediaOperation.Play);
+        var command = new MediaCommand(MediaCommandTarget.CurrentSession, MediaOperation.SkipNext);
         var active = service.TrySubmit(command);
         Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, active.Status);
         await backend.CommandStarted;
@@ -441,7 +441,86 @@ public sealed class MediaServiceConcurrencyTests
     }
 
     [TestMethod]
-    public async Task PlaybackAdmissionThrottlesRepeatedInputAndUsesOptimisticToggleState()
+    public async Task QueuedResumeSurvivesAnOldPlayingSnapshotAndKeepsTheLatestIntent()
+    {
+        var initial = FakeMediaBackend.CreateSnapshot(1, "Initial", playbackState: MediaPlaybackState.Playing);
+        initial = initial with { Sessions = [initial.Sessions[0] with
+        {
+            Capabilities = MediaCapabilities.Pause | MediaCapabilities.Stop | MediaCapabilities.TogglePlayback,
+        }] };
+        var backend = new FakeMediaBackend(initial);
+        backend.BlockCommands();
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+        try
+        {
+            var toggle = new MediaCommand(MediaCommandTarget.CurrentSession, MediaOperation.TogglePlayback);
+            var pause = service.TrySubmit(toggle);
+            await backend.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            var resume = service.TrySubmit(toggle);
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, resume.Status);
+            backend.SetSnapshot(initial with { Revision = 2, Sessions = [initial.Sessions[0] with
+            {
+                MediaProperties = initial.Sessions[0].MediaProperties with { Title = "Still playing" },
+            }] });
+            await WaitUntilAsync(() => service.CurrentSession?.MediaProperties.Title == "Still playing");
+            Assert.IsTrue(service.CurrentSession?.PlaybackInfo.IsOptimistic);
+
+            var replacedPause = service.TrySubmit(toggle);
+            var latestResume = service.TrySubmit(toggle);
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, replacedPause.Status);
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, latestResume.Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Superseded, (await resume.Completion!).Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Superseded, (await replacedPause.Completion!).Status);
+            Assert.AreEqual(MediaOperation.Pause, service.CurrentSession?.PlaybackInfo.PrimaryOperation);
+            Assert.HasCount(1, backend.Commands);
+
+            backend.ReleaseCommands();
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await pause.Completion!).Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await latestResume.Completion!).Status);
+            CollectionAssert.AreEqual(new[] { MediaOperation.Pause, MediaOperation.Play }, backend.Commands.Select(static c => c.Operation).ToArray());
+        }
+        finally
+        {
+            backend.ReleaseCommands();
+        }
+    }
+
+    [TestMethod]
+    public async Task UnconfirmedTransitionDropsDeferredPlaybackAndClearsItsPrediction()
+    {
+        var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial", playbackState: MediaPlaybackState.Playing))
+        {
+            CommandResult = new(MediaBackendCommandStatus.Unconfirmed, "No confirmation"),
+        };
+        backend.BlockCommands();
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+        try
+        {
+            var pause = service.TrySubmit(new(MediaCommandTarget.CurrentSession, MediaOperation.Pause));
+            await backend.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            var resume = service.TrySubmit(new(MediaCommandTarget.CurrentSession, MediaOperation.Play));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, resume.Status);
+            backend.ReleaseCommands();
+            Assert.AreEqual(MediaCommandOutcomeStatus.Unconfirmed, (await pause.Completion!).Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Abandoned, (await resume.Completion!).Status);
+            Assert.IsFalse(service.CurrentSession?.PlaybackInfo.IsOptimistic);
+            Assert.HasCount(1, backend.Commands);
+
+            backend.CommandResult = new(MediaBackendCommandStatus.Completed, null);
+            var fresh = service.TrySubmit(new(MediaCommandTarget.CurrentSession, MediaOperation.Pause));
+            Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, fresh.Status);
+            Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await fresh.Completion!).Status);
+        }
+        finally
+        {
+            backend.ReleaseCommands();
+        }
+    }
+
+    [TestMethod]
+    public async Task PlaybackAdmissionUsesOptimisticToggleStateWithoutAnInputCooldown()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Initial"));
         var timeProvider = new ManualTimeProvider();
@@ -458,13 +537,6 @@ public sealed class MediaServiceConcurrencyTests
             service.CurrentSession?.PlaybackInfo.EffectiveState);
         Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await play.Completion!).Status);
 
-        var throttled = service.TrySubmit(command);
-        Assert.AreEqual(MediaCommandSubmissionStatus.Busy, throttled.Status);
-        Assert.AreEqual(
-            MediaPlaybackState.Playing,
-            service.CurrentSession?.PlaybackInfo.EffectiveState);
-
-        timeProvider.Advance(TimeSpan.FromMilliseconds(200));
         var pause = service.TrySubmit(command);
         Assert.AreEqual(MediaCommandSubmissionStatus.Accepted, pause.Status);
         Assert.AreEqual(

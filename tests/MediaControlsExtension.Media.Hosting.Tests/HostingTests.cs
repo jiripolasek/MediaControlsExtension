@@ -20,6 +20,7 @@ internal static class HostingTests
         var tests = new (string Name, Func<Task> Run)[]
         {
             ("Backend contract round trip", ContractRoundTripAsync),
+            ("Playback confirmation contract round trip", PlaybackConfirmationRoundTripAsync),
             ("Plain backend acknowledges an empty source policy", PlainBackendAsync),
             ("Late artwork is rejected", LateArtworkAsync),
             ("Worker crash fences identities and never replays commands", RecoveryAsync),
@@ -127,6 +128,17 @@ internal static class HostingTests
 
             await Task.Delay(20).ConfigureAwait(false);
         }
+    }
+
+    private static async Task PlaybackConfirmationRoundTripAsync()
+    {
+        await using var backend = new OutOfProcessMediaBackend(Program.Options("unconfirmed-playback"));
+        await backend.StartAsync(CancellationToken.None).ConfigureAwait(false);
+        var snapshot = await WaitForSnapshotAsync(backend).ConfigureAwait(false);
+        Check(snapshot.Sessions[0].Capabilities.HasFlag(MediaCapabilities.TogglePlayback), "Toggle capability was lost in transit.");
+        var result = await backend.ExecuteAsync(Command(snapshot, MediaOperation.Play), CancellationToken.None).ConfigureAwait(false);
+        Check(result.Status == MediaBackendCommandStatus.Unconfirmed && result.DiagnosticMessage == "Playback could not be confirmed.",
+            "Unconfirmed playback result was lost in transit.");
     }
 
     private static async Task ContractRoundTripAsync()

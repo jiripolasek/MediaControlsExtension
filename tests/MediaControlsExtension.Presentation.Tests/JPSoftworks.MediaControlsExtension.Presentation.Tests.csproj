@@ -15,24 +15,63 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
     <ProjectReference Include="..\..\src\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
-    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaSourcesPage.cs" Link="Pages\MediaSourcesPage.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaBackendConfigurationPage.cs" Link="Pages\MediaBackendConfigurationPage.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsStore.cs" Link="Helpers\SettingsStore.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Microsoft.CommandPalette.Extensions" />
+    <Using Include="Microsoft.CommandPalette.Extensions.Toolkit" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="JPSoftworks.MediaControlsExtension.Helpers" />
+    <Using Include="JPSoftworks.MediaControlsExtension.Media" />
+    <Using Include="JPSoftworks.MediaControlsExtension.Model" />
+    <Using Include="JPSoftworks.MediaControlsExtension.Resources" />
+    <Using Include="JPSoftworks.MediaControlsExtension.Services" />
+    <Using Include="JPSoftworks.MediaControlsExtension.ViewModels" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\MediaControlsExtension\Icons.cs" Link="Icons.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\AsyncInvokableCommand.cs" Link="Commands\AsyncInvokableCommand.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\MediaSessionOp.cs" Link="Commands\MediaSessionOp.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\PlayPauseMop.cs" Link="Commands\PlayPauseMop.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\OptimisticPlaybackCommand.cs" Link="Commands\OptimisticPlaybackCommand.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\PlaybackActionPolicy.cs" Link="Commands\PlaybackActionPolicy.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Diagnostics\DiagnosticEvent.cs" Link="Diagnostics\DiagnosticEvent.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Diagnostics\ExtensionOperationDiagnostics.cs" Link="Diagnostics\ExtensionOperationDiagnostics.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\DesktopAppInfo.cs" Link="Helpers\DesktopAppInfo.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\IconExtensions.cs" Link="Helpers\IconExtensions.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\ISettingsManager.cs" Link="Helpers\ISettingsManager.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaBackendSettings.cs" Link="Helpers\MediaBackendSettings.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaBackendSettingsBinding.cs" Link="Helpers\MediaBackendSettingsBinding.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\WindowsMediaBackendDefaults.cs" Link="Helpers\WindowsMediaBackendDefaults.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaCommandFailureNotifier.cs" Link="Helpers\MediaCommandFailureNotifier.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaCommandFeedback.cs" Link="Helpers\MediaCommandFeedback.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaPauseFailureNotifier.cs" Link="Helpers\MediaPauseFailureNotifier.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcPasswordSetting.cs" Link="Helpers\VlcPasswordSetting.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcConnectionSettings.cs" Link="Helpers\VlcConnectionSettings.cs" />
-    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcSettings.cs" Link="Helpers\VlcSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaCommandResultFactory.cs" Link="Helpers\MediaCommandResultFactory.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\MediaMetadataFormatting.cs" Link="Helpers\MediaMetadataFormatting.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsGroupHeader.cs" Link="Helpers\SettingsGroupHeader.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\SettingsStore.cs" Link="Helpers\SettingsStore.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\StringBuilderExtensions.cs" Link="Helpers\StringBuilderExtensions.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Helpers\TextBlockSetting.cs" Link="Helpers\TextBlockSetting.cs" />
-    <Using Include="Microsoft.CommandPalette.Extensions.Toolkit" />
-    <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\MediaSessionOp.cs" Link="Commands\MediaSessionOp.cs" />
-    <Using Include="JPSoftworks.MediaControlsExtension.Helpers" />
-    <Using Include="JPSoftworks.MediaControlsExtension.Resources" />
-    <Compile Include="..\..\src\MediaControlsExtension\Resources\Strings.Designer.cs" Link="Resources\Strings.Designer.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\ThrottledAction.cs" Link="Helpers\ThrottledAction.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\ThumbnailLoader.cs" Link="Helpers\ThumbnailLoader.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcConnectionSettings.cs" Link="Helpers\VlcConnectionSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcPasswordSetting.cs" Link="Helpers\VlcPasswordSetting.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\VlcSettings.cs" Link="Helpers\VlcSettings.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\WindowsMediaBackendDefaults.cs" Link="Helpers\WindowsMediaBackendDefaults.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Model\PlaybackIntent.cs" Link="Model\PlaybackIntent.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Model\ThumbnailInfo.cs" Link="Model\ThumbnailInfo.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaBackendConfigurationPage.cs" Link="Pages\MediaBackendConfigurationPage.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaDetails.cs" Link="Pages\MediaDetails.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaSourcesPage.cs" Link="Pages\MediaSourcesPage.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Services\ExtensionLog.cs" Link="Services\ExtensionLog.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Services\IIconService.cs" Link="Services\IIconService.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSessionViewModel.cs" Link="ViewModels\MediaSessionViewModel.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSourcePresentation.cs" Link="ViewModels\MediaSourcePresentation.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\MediaControlsExtension.Media.Tests\Infrastructure\FakeMediaBackend.cs" Link="Infrastructure\FakeMediaBackend.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Resources\Strings.Designer.cs" Link="Resources\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="..\..\src\MediaControlsExtension\Resources\Strings.resx" Link="Resources\Strings.resx"
                       LogicalName="JPSoftworks.MediaControlsExtension.Resources.Strings.resources" />
   </ItemGroup>

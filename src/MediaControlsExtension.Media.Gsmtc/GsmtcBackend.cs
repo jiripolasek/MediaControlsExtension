@@ -402,49 +402,83 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
                     : new(MediaBackendCommandStatus.Failed, "The source application could not be activated.");
             }
 
-            var nativeOperationName = $"Command:{command.Operation}";
-            var call = this.BeginNativeCall(target, nativeOperationName);
-            var success = await this._controlGate.RunCommandAsync(
-                async () =>
-                {
-
-                    using var targetUse = target.TryEnterNativeUse()
-                        ?? throw new GsmtcSessionRetiredException();
-                    foreach (var other in sessionsToPause)
+            async Task<bool> SendAsync(MediaOperation? operation, Action markSending, CancellationToken token)
+            {
+                var nativeOperationName = $"Command:{command.Operation}";
+                var call = this.BeginNativeCall(target, nativeOperationName);
+                var success = await this._controlGate.RunCommandAsync(
+                    async () =>
                     {
-                        using var otherUse = other.TryEnterNativeUse();
-                        if (otherUse is null)
+                        using var targetUse = target.TryEnterNativeUse()
+                            ?? throw new GsmtcSessionRetiredException();
+                        if (target.IsMissing)
                         {
-                            continue;
+                            throw new GsmtcSessionRetiredException();
                         }
 
-                        try
+                        foreach (var other in sessionsToPause)
                         {
-                            if (await other.Session.TryPauseAsync())
+                            token.ThrowIfCancellationRequested();
+                            using var otherUse = other.TryEnterNativeUse();
+                            if (otherUse is null)
                             {
-                                other.Invalidate(SessionObservationChanges.Playback);
+                                continue;
+                            }
+
+                            markSending();
+                            try
+                            {
+                                if (await other.Session.TryPauseAsync())
+                                {
+                                    other.Invalidate(SessionObservationChanges.Playback);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                GsmtcLog.PauseOtherSessionFailed(this._logger, other.ApplicationId, ex);
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            GsmtcLog.PauseOtherSessionFailed(this._logger, other.ApplicationId, ex);
-                        }
-                    }
 
-                    return await ExecuteOperationAsync(
-                        target.Session,
-                        command.Operation,
-                        targetUse).ConfigureAwait(false);
-                },
-                command.Operation.ToString(),
-                cancellationToken).ConfigureAwait(false);
-            this.CompleteNativeCall(target, nativeOperationName, call);
-            if (success)
-            {
-                target.Invalidate(ChangesForOperation(command.Operation));
+                        token.ThrowIfCancellationRequested();
+                        if (command.Operation is MediaOperation.Play or MediaOperation.Pause)
+                        {
+                            return await GsmtcPlaybackController.SendRevalidatedAsync(
+                                command.Operation,
+                                this.ReadPlayback(target, targetUse, PlaybackReadLane.Command),
+                                nativeOperation => ExecuteOperationAsync(target.Session, nativeOperation, targetUse),
+                                markSending).ConfigureAwait(false);
+                        }
+
+                        markSending();
+                        return await ExecuteOperationAsync(
+                            target.Session,
+                            operation!.Value,
+                            targetUse).ConfigureAwait(false);
+                    },
+                    command.Operation.ToString(),
+                    token).ConfigureAwait(false);
+                this.CompleteNativeCall(target, nativeOperationName, call);
+                if (success)
+                {
+                    target.Invalidate(ChangesForOperation(command.Operation));
+                }
+
+                return success;
             }
 
-            return success
+            if (command.Operation is MediaOperation.Play or MediaOperation.Pause)
+            {
+                var result = await target.PlaybackController.ExecuteAsync(
+                    command.Operation,
+                    token => this.ReadPlaybackAsync(target, token),
+                    SendAsync,
+                    cancellationToken).ConfigureAwait(false);
+                target.Invalidate(SessionObservationChanges.Playback);
+                this.SignalStateChanged(MediaBackendSignal.ObservationsChanged);
+                return result;
+            }
+
+            return await SendAsync(command.Operation, static () => { }, cancellationToken).ConfigureAwait(false)
                 ? new(MediaBackendCommandStatus.Completed, null)
                 : new(MediaBackendCommandStatus.Failed, "GSMTC rejected the requested operation.");
         }
@@ -480,6 +514,50 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         {
             return new(MediaBackendCommandStatus.Failed, ex.Message);
         }
+    }
+
+    private Task<GsmtcPlaybackController.PlaybackObservation> ReadPlaybackAsync(
+        SessionBinding binding,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var nativeUse = binding.TryEnterNativeUse() ?? throw new GsmtcSessionRetiredException();
+        if (binding.IsMissing)
+        {
+            throw new GsmtcSessionRetiredException();
+        }
+
+        return Task.FromResult(this.ReadPlayback(binding, nativeUse, PlaybackReadLane.Transition));
+    }
+
+    private enum PlaybackReadLane { Snapshot, Command, Transition }
+
+    private GsmtcPlaybackController.PlaybackObservation ReadPlayback(
+        SessionBinding binding, GsmtcSessionNativeLifetime.NativeUse nativeUse, PlaybackReadLane lane)
+    {
+        var operationName = lane == PlaybackReadLane.Snapshot ? "GetPlaybackInfo" : "ConfirmPlayback";
+        var call = this.BeginNativeCall(binding, operationName);
+        var playbackInfo = binding.Session.GetPlaybackInfo();
+        var controls = playbackInfo?.Controls;
+        var observed = new GsmtcPlaybackController.PlaybackObservation(
+            MapPlaybackState(playbackInfo?.PlaybackStatus), MapCapabilities(controls));
+        switch (lane)
+        {
+            case PlaybackReadLane.Snapshot:
+                nativeUse.CommitPlaybackObjects(playbackInfo, controls);
+                break;
+            case PlaybackReadLane.Command:
+                nativeUse.CommitCommandPlaybackObjects(playbackInfo, controls);
+                break;
+            case PlaybackReadLane.Transition:
+                nativeUse.CommitTransitionPlaybackObjects(playbackInfo, controls);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(lane), lane, null);
+        }
+
+        this.CompleteNativeCall(binding, operationName, call);
+        return observed;
     }
 
     /// <inheritdoc />
@@ -703,13 +781,9 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         {
             try
             {
-                var call = this.BeginNativeCall(binding, "GetPlaybackInfo");
-                var playbackInfo = binding.Session.GetPlaybackInfo();
-                var playbackControls = playbackInfo?.Controls;
-                playbackState = MapPlaybackState(playbackInfo?.PlaybackStatus);
-                capabilities = MapCapabilities(playbackControls);
-                nativeUse.CommitPlaybackObjects(playbackInfo, playbackControls);
-                this.CompleteNativeCall(binding, "GetPlaybackInfo", call);
+                var playback = this.ReadPlayback(binding, nativeUse, PlaybackReadLane.Snapshot);
+                playbackState = playback.State;
+                capabilities = playback.Capabilities;
             }
             catch (Exception ex) when (CanRetainObservationPart(ex))
             {
@@ -892,6 +966,11 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
             capabilities |= MediaCapabilities.Pause;
         }
 
+        if (controls?.IsPlayPauseToggleEnabled == true)
+        {
+            capabilities |= MediaCapabilities.TogglePlayback;
+        }
+
         if (controls?.IsStopEnabled == true)
         {
             capabilities |= MediaCapabilities.Stop;
@@ -1014,6 +1093,7 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         {
             MediaOperation.Play => await session.TryPlayAsync(),
             MediaOperation.Pause => await session.TryPauseAsync(),
+            MediaOperation.TogglePlayback => await session.TryTogglePlayPauseAsync(),
             MediaOperation.Stop => await session.TryStopAsync(),
             MediaOperation.SkipNext => await session.TrySkipNextAsync(),
             MediaOperation.SkipPrevious => await session.TrySkipPreviousAsync(),
@@ -1618,6 +1698,8 @@ public sealed class GsmtcBackend : IMediaSourcePolicyBackend
         public string ApplicationId { get; } = applicationId;
 
         public GlobalSystemMediaTransportControlsSession Session { get; } = session;
+
+        public GsmtcPlaybackController PlaybackController { get; } = new(owner._logger);
 
         public GsmtcSessionNativeLifetime.NativeUse? TryEnterNativeUse()
         {
