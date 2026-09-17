@@ -20,4 +20,34 @@ internal static partial class GsmtcUnbiasedClock
             ? TimeSpan.FromTicks((long)interruptTime)
             : TimeSpan.FromMilliseconds(Environment.TickCount64);
     }
+
+    public static Task DelayUntilTimeoutAsync(
+        TimeSpan timeout,
+        TimeSpan resumeGraceDelay,
+        CancellationToken cancellationToken)
+    {
+        return DelayUntilTimeoutAsync(timeout, resumeGraceDelay, GetTime, Task.Delay, cancellationToken);
+    }
+
+    internal static async Task DelayUntilTimeoutAsync(
+        TimeSpan timeout,
+        TimeSpan resumeGraceDelay,
+        Func<TimeSpan> getTime,
+        Func<TimeSpan, CancellationToken, Task> delay,
+        CancellationToken cancellationToken)
+    {
+        var started = getTime();
+        while (true)
+        {
+            var remaining = timeout - (getTime() - started);
+            if (remaining <= TimeSpan.Zero)
+            {
+                break;
+            }
+
+            await delay(remaining, cancellationToken).ConfigureAwait(false);
+        }
+
+        await delay(resumeGraceDelay, cancellationToken).ConfigureAwait(false);
+    }
 }

@@ -23,15 +23,17 @@ public sealed class PlaybackStateRegressionTests
         var backend = new FakeMediaBackend(snapshot);
         backend.BlockCommands();
         var controller = new GsmtcPlaybackController();
+        var observations = new GsmtcPlaybackObservations(new Lock());
         var controls = new GsmtcControlGate(NullLogger.Instance);
         var state = MediaPlaybackState.Playing;
         var nativeOperations = new List<MediaOperation>();
         GsmtcPlaybackController.PlaybackObservation Observe() =>
             new(state, state == MediaPlaybackState.Playing ? MediaCapabilities.Pause : MediaCapabilities.Play);
         backend.CommandHandler = (command, cancellationToken) => controller.ExecuteAsync(command.Operation,
-            _ => Task.FromResult(Observe()),
-            (_, markSending, token) => controls.RunCommandAsync(() =>
-                GsmtcPlaybackController.SendRevalidatedAsync(command.Operation, Observe(), operation =>
+            observations,
+            () => Task.FromResult(Observe()),
+            (markSending, token) => controls.RunCommandAsync(() =>
+                GsmtcPlaybackController.SendRevalidatedAsync(command.Operation, observations, observations.ReadCommand(Observe), operation =>
                 {
                     nativeOperations.Add(operation);
                     state = operation == MediaOperation.Pause ? MediaPlaybackState.Stopped : MediaPlaybackState.Playing;
@@ -41,6 +43,7 @@ public sealed class PlaybackStateRegressionTests
                         Sessions = [snapshot.Sessions[0] with { PlaybackState = state, Capabilities = Observe().Capabilities }],
                     };
                     backend.SetSnapshot(snapshot);
+                    observations.Invalidate();
                     return Task.FromResult(true);
                 }, markSending), "Playback", token), cancellationToken);
         await using var service = new MediaService(backend);

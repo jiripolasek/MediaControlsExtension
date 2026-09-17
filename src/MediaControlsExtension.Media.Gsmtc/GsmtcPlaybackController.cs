@@ -4,38 +4,37 @@
 //
 // ------------------------------------------------------------
 
+using System.Diagnostics;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using Sample = JPSoftworks.MediaControlsExtension.Media.Gsmtc.GsmtcPlaybackObservations.Sample;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 
 /// <summary>Confirms one playback transition per binding within a shared deadline.</summary>
 internal sealed class GsmtcPlaybackController
 {
+    private static readonly TimeSpan ConsecutiveObservationInterval = TimeSpan.FromMilliseconds(50);
     private readonly TimeSpan _transitionTimeout;
-    private readonly TimeSpan _pollInterval;
-    private readonly GsmtcObservationGate _observations;
+    private readonly TimeSpan _fallbackDelay;
     private int _active;
 
-    public GsmtcPlaybackController(ILogger? logger = null)
-        : this(TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(50), logger)
+    public GsmtcPlaybackController()
+        : this(TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(500))
     {
     }
 
-    internal GsmtcPlaybackController(TimeSpan transitionTimeout, TimeSpan pollInterval, ILogger? logger = null)
+    internal GsmtcPlaybackController(TimeSpan transitionTimeout, TimeSpan fallbackDelay)
     {
         this._transitionTimeout = transitionTimeout;
-        this._pollInterval = pollInterval;
-        this._observations = new(logger ?? NullLogger.Instance, transitionTimeout, TimeSpan.Zero);
+        this._fallbackDelay = fallbackDelay;
     }
 
-    /// <summary>Sends an absolute intent once, then waits for bounded playback confirmation.</summary>
-    /// <remarks>The send operation is a readiness hint; revalidate it and mark native mutations before starting them.</remarks>
+    /// <summary>Revalidates an absolute intent once, then shares event observations with snapshots.</summary>
     public async Task<MediaBackendCommandResult> ExecuteAsync(
         MediaOperation operation,
-        Func<CancellationToken, Task<PlaybackObservation>> readAsync,
-        Func<MediaOperation?, Action, CancellationToken, Task<bool>> sendAsync,
+        GsmtcPlaybackObservations observations,
+        Func<Task<PlaybackObservation>> readAsync,
+        Func<Action, CancellationToken, Task<PlaybackSendResult>> sendAsync,
         CancellationToken cancellationToken)
     {
         if (Interlocked.CompareExchange(ref this._active, 1, 0) != 0)
@@ -47,72 +46,152 @@ internal sealed class GsmtcPlaybackController
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(this._transitionTimeout);
         var token = deadline.Token;
+        var fallbackStartedAt = Stopwatch.GetTimestamp();
         var sendState = 0;
-        void MarkSending()
-        {
-            token.ThrowIfCancellationRequested();
-            if (Interlocked.CompareExchange(ref sendState, 1, 0) == 2)
-            {
-                throw new OperationCanceledException(token);
-            }
-        }
 
         try
         {
-            var stopOnlyObserved = false;
-            var stoppedObserved = false;
+            var fallbackUsed = false;
+            var specialReadVersion = -1L;
             var awaitingConfirmation = false;
+            var shouldSend = true;
+            var cursor = 0L;
+            Sample? firstStopOnly = null;
+            Sample? firstStopped = null;
             while (true)
             {
-                var observed = await this.ReadAsync(readAsync, token).ConfigureAwait(false);
-                if (awaitingConfirmation)
+                token.ThrowIfCancellationRequested();
+                Sample observed;
+                if (shouldSend)
                 {
-                    var stopped = operation == MediaOperation.Pause && observed.State == MediaPlaybackState.Stopped;
-                    if (observed.State == desired || (stopped && stoppedObserved))
+                    var result = await AwaitAsync(
+                        observations.WithCommandReadAsync(() => sendAsync(MarkSending, token), token), token).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
+                    observations.EnsureActive();
+                    shouldSend = false;
+                    observed = result.Observation;
+                    cursor = result.DecisionSequence;
+                    if (result.Status == PlaybackSendStatus.Rejected)
                     {
-                        return new(MediaBackendCommandStatus.Completed, null);
+                        return new(MediaBackendCommandStatus.Failed, "GSMTC rejected the requested operation.");
                     }
 
-                    if (Volatile.Read(ref sendState) != 0 || stopped)
+                    if (result.Status == PlaybackSendStatus.Sent)
                     {
-                        stoppedObserved = stopped;
-                        await Task.Delay(this._pollInterval, token).ConfigureAwait(false);
+                        fallbackStartedAt = Stopwatch.GetTimestamp();
+                        awaitingConfirmation = true;
+                        firstStopOnly = null;
                         continue;
                     }
 
-                    awaitingConfirmation = false;
-                    stoppedObserved = false;
-                }
-
-                var stopOnly = IsStopOnlyPause(operation, observed);
-                if (stopOnly && stopOnlyObserved)
-                {
-                    throw new StopOnlyPlaybackException();
-                }
-
-                stopOnlyObserved = stopOnly;
-                if (!TryResolveNativeOperation(operation, observed, out var nativeOperation))
-                {
-                    await Task.Delay(this._pollInterval, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                try
-                {
-                    if (!await AwaitAsync(sendAsync(nativeOperation, MarkSending, token), token).ConfigureAwait(false))
+                    if (result.Status == PlaybackSendStatus.AlreadySatisfied)
                     {
-                        return Volatile.Read(ref sendState) == 1
-                            ? new(MediaBackendCommandStatus.Failed, "GSMTC rejected the requested operation.")
-                            : new(MediaBackendCommandStatus.Unavailable, "Playback changed before the requested operation could be sent.");
+                        if (observed.Value.State != MediaPlaybackState.Stopped)
+                        {
+                            return new(MediaBackendCommandStatus.Completed, null);
+                        }
+
+                        fallbackStartedAt = Stopwatch.GetTimestamp();
+                        awaitingConfirmation = true;
+                        firstStopOnly = null;
+                        continue;
                     }
 
-                    awaitingConfirmation = true;
+                    if (Volatile.Read(ref sendState) == 1)
+                    {
+                        return new(MediaBackendCommandStatus.Unconfirmed, "Playback changed after a native mutation started.");
+                    }
                 }
-                catch (StopOnlyPlaybackException) when (Volatile.Read(ref sendState) == 0)
+                else
                 {
-                    // Recheck after releasing the control gate; no native mutation has started.
-                    stopOnlyObserved = true;
-                    await Task.Delay(this._pollInterval, token).ConfigureAwait(false);
+                    var special = firstStopOnly ?? firstStopped;
+                    var specialDelay = special is { } first && first.ChangeVersion != specialReadVersion
+                        ? RemainingDelay(ConsecutiveObservationInterval, first.CompletedAt)
+                        : Timeout.InfiniteTimeSpan;
+                    var fallbackDelay = fallbackUsed ? Timeout.InfiniteTimeSpan : RemainingDelay(this._fallbackDelay, fallbackStartedAt);
+                    var useSpecial = specialDelay != Timeout.InfiniteTimeSpan &&
+                                     (fallbackDelay == Timeout.InfiniteTimeSpan || specialDelay <= fallbackDelay);
+                    var delay = useSpecial ? specialDelay : fallbackDelay;
+                    var next = await WaitForObservationAsync(observations, cursor, readAsync, delay, token).ConfigureAwait(false);
+                    if (next is { } published)
+                    {
+                        observed = published;
+                    }
+                    else if (useSpecial)
+                    {
+                        specialReadVersion = special!.Value.ChangeVersion;
+                        var notBefore = special.Value.CompletedAt + (long)(ConsecutiveObservationInterval.TotalSeconds * Stopwatch.Frequency);
+                        observed = await observations.ReadFreshAsync(readAsync, cursor, notBefore, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        fallbackUsed = true;
+                        if (!awaitingConfirmation && firstStopOnly is null)
+                        {
+                            shouldSend = true;
+                            continue;
+                        }
+
+                        observed = await observations.ReadFreshAsync(readAsync, cursor, 0, token).ConfigureAwait(false);
+                    }
+
+                    token.ThrowIfCancellationRequested();
+                    observations.EnsureActive();
+                    cursor = observed.Sequence;
+                    if (awaitingConfirmation)
+                    {
+                        if (observed.Value.State == desired)
+                        {
+                            return new(MediaBackendCommandStatus.Completed, null);
+                        }
+
+                        if (operation == MediaOperation.Pause && observed.Value.State == MediaPlaybackState.Stopped)
+                        {
+                            if (IsConsecutive(firstStopped, observed, stopped: true))
+                            {
+                                return new(MediaBackendCommandStatus.Completed, null);
+                            }
+
+                            firstStopped = FirstInRun(firstStopped, observed, stopped: true);
+                            continue;
+                        }
+
+                        firstStopped = null;
+                        if (Volatile.Read(ref sendState) != 0)
+                        {
+                            continue;
+                        }
+
+                        awaitingConfirmation = false;
+                    }
+
+                    if (TryResolveNativeOperation(operation, observed.Value, out _))
+                    {
+                        if (next is null && fallbackUsed)
+                        {
+                            continue;
+                        }
+
+                        // A forced readiness observation spends the remaining fallback on revalidation.
+                        fallbackUsed |= next is null;
+                        shouldSend = true;
+                        firstStopOnly = null;
+                        continue;
+                    }
+                }
+
+                if (IsStopOnlyPause(operation, observed.Value))
+                {
+                    if (IsConsecutive(firstStopOnly, observed, stopped: false))
+                    {
+                        return new(MediaBackendCommandStatus.Unsupported, "The playing session supports Stop but not Pause.");
+                    }
+
+                    firstStopOnly = FirstInRun(firstStopOnly, observed, stopped: false);
+                }
+                else
+                {
+                    firstStopOnly = null;
                 }
             }
         }
@@ -123,58 +202,106 @@ internal sealed class GsmtcPlaybackController
                 wasSent ? "Playback did not reach the requested state before the transition deadline."
                     : "Playback was not ready before the transition deadline; no command was sent.");
         }
+        catch (GsmtcSessionRetiredException ex)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return new(MediaBackendCommandStatus.SessionGone, ex.Message);
+        }
         catch (Exception ex) when (Volatile.Read(ref sendState) == 1 && ex is not OperationCanceledException &&
-                                   ex is not GsmtcSessionRetiredException && !GsmtcErrors.IndicatesStaleSession(ex))
+                                   !GsmtcErrors.IndicatesStaleSession(ex))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return new(MediaBackendCommandStatus.Unconfirmed, ex.Message);
-        }
-        catch (GsmtcObservationBlockedException ex)
-        {
-            return new(MediaBackendCommandStatus.Unavailable, ex.Message);
-        }
-        catch (NotSupportedException ex)
-        {
-            return new(MediaBackendCommandStatus.Unsupported, ex.Message);
         }
         finally
         {
             Interlocked.CompareExchange(ref sendState, 2, 0);
             Volatile.Write(ref this._active, 0);
         }
+
+        void MarkSending()
+        {
+            token.ThrowIfCancellationRequested();
+            if (Interlocked.CompareExchange(ref sendState, 1, 0) == 2)
+            {
+                throw new OperationCanceledException(token);
+            }
+        }
     }
 
-    private Task<PlaybackObservation> ReadAsync(
-        Func<CancellationToken, Task<PlaybackObservation>> readAsync, CancellationToken cancellationToken) =>
-        AwaitAsync(this._observations.RunAsync(() => readAsync(cancellationToken), "ConfirmPlayback", cancellationToken), cancellationToken);
+    private static TimeSpan RemainingDelay(TimeSpan interval, long startedAt)
+    {
+        var remaining = interval - Stopwatch.GetElapsedTime(startedAt);
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+    }
+
+    private static Sample FirstInRun(Sample? first, Sample observed, bool stopped) =>
+        first is { } previous && (stopped ? previous.StoppedRun == observed.StoppedRun : previous.StopOnlyRun == observed.StopOnlyRun)
+            ? previous : observed;
+
+    private static bool IsConsecutive(Sample? first, Sample observed, bool stopped) =>
+        first is { } previous && previous.Sequence != observed.Sequence &&
+        (stopped ? previous.StoppedRun == observed.StoppedRun : previous.StopOnlyRun == observed.StopOnlyRun) &&
+        Stopwatch.GetElapsedTime(previous.CompletedAt, observed.StartedAt) >= ConsecutiveObservationInterval;
+
+    private static async Task<Sample?> WaitForObservationAsync(
+        GsmtcPlaybackObservations observations, long cursor, Func<Task<PlaybackObservation>> readAsync,
+        TimeSpan delay, CancellationToken cancellationToken)
+    {
+        using var wait = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var next = observations.WaitForObservationAsync(cursor, readAsync, wait.Token);
+        if (delay == Timeout.InfiniteTimeSpan)
+        {
+            return await next.ConfigureAwait(false);
+        }
+
+        var timer = Task.Delay(delay > TimeSpan.Zero ? delay : TimeSpan.Zero, wait.Token);
+        try
+        {
+            await Task.WhenAny(next, timer).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return next.IsCompleted ? await next.ConfigureAwait(false) : null;
+        }
+        finally
+        {
+            wait.Cancel();
+            await ((Task)next).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+    }
 
     /// <summary>Revalidates playback state and controls under the native control gate.</summary>
-    internal static Task<bool> SendRevalidatedAsync(
+    internal static async Task<PlaybackSendResult> SendRevalidatedAsync(
         MediaOperation intent,
-        PlaybackObservation observed,
+        GsmtcPlaybackObservations observations,
+        Sample observed,
         Func<MediaOperation, Task<bool>> sendAsync,
         Action markSending)
     {
-        if (IsStopOnlyPause(intent, observed))
+        var sequence = observations.CaptureSequence();
+        if (IsStopOnlyPause(intent, observed.Value))
         {
-            throw new StopOnlyPlaybackException();
+            return new(PlaybackSendStatus.StopOnly, observed, sequence);
         }
 
-        if (!TryResolveNativeOperation(intent, observed, out var operation))
+        if (!TryResolveNativeOperation(intent, observed.Value, out var operation))
         {
-            return Task.FromResult(false);
+            return new(PlaybackSendStatus.NotReady, observed, sequence);
         }
 
         if (operation is null)
         {
-            return Task.FromResult(true);
+            return new(PlaybackSendStatus.AlreadySatisfied, observed, sequence);
         }
 
         markSending();
-        return sendAsync(operation.Value);
+        var accepted = await sendAsync(operation.Value).ConfigureAwait(false);
+        return new(accepted ? PlaybackSendStatus.Sent : PlaybackSendStatus.Rejected, observed, sequence);
     }
 
     private static bool TryResolveNativeOperation(
-        MediaOperation intent, PlaybackObservation observed, out MediaOperation? operation)
+        MediaOperation intent,
+        PlaybackObservation observed,
+        out MediaOperation? operation)
     {
         operation = null;
         if (intent == MediaOperation.Pause && observed.State == MediaPlaybackState.Stopped)
@@ -205,7 +332,7 @@ internal sealed class GsmtcPlaybackController
         return false;
     }
 
-    private static bool IsStopOnlyPause(MediaOperation intent, PlaybackObservation observed) =>
+    internal static bool IsStopOnlyPause(MediaOperation intent, PlaybackObservation observed) =>
         intent == MediaOperation.Pause && observed.State == MediaPlaybackState.Playing &&
         observed.Capabilities.HasFlag(MediaCapabilities.Stop) &&
         !observed.Capabilities.HasFlag(MediaCapabilities.Pause) &&
@@ -229,7 +356,9 @@ internal sealed class GsmtcPlaybackController
     private static async Task ObserveCompletionAsync(Task task) =>
         await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
-    private sealed class StopOnlyPlaybackException() : NotSupportedException("The playing session supports Stop but not Pause.");
+    internal enum PlaybackSendStatus { Sent, AlreadySatisfied, NotReady, StopOnly, Rejected }
+
+    internal readonly record struct PlaybackSendResult(PlaybackSendStatus Status, Sample Observation, long DecisionSequence);
 
     internal readonly record struct PlaybackObservation(MediaPlaybackState State, MediaCapabilities Capabilities);
 }
