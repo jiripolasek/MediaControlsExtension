@@ -13,6 +13,42 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class GsmtcObservationGateTests
 {
     [TestMethod]
+    public async Task TimeoutCountsOnlyUnbiasedTimeAndKeepsTheResumeGrace()
+    {
+        var delays = System.Threading.Channels.Channel.CreateUnbounded<(TimeSpan Duration, TaskCompletionSource Completion)>();
+        var ticks = 0L;
+        using var cancellation = new CancellationTokenSource();
+        var timeout = GsmtcUnbiasedClock.DelayUntilTimeoutAsync(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2),
+            () => TimeSpan.FromTicks(Interlocked.Read(ref ticks)), (duration, token) =>
+            {
+                var completion = PlaybackTestSession.Signal();
+                delays.Writer.TryWrite((duration, completion));
+                return completion.Task.WaitAsync(token);
+            }, cancellation.Token);
+        try
+        {
+            var first = await delays.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.AreEqual(TimeSpan.FromSeconds(1), first.Duration);
+            Interlocked.Exchange(ref ticks, TimeSpan.FromMilliseconds(250).Ticks);
+            first.Completion.TrySetResult();
+            var resumed = await delays.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.AreEqual(TimeSpan.FromMilliseconds(750), resumed.Duration);
+            Assert.IsFalse(timeout.IsCompleted);
+            Interlocked.Exchange(ref ticks, TimeSpan.FromSeconds(1).Ticks);
+            resumed.Completion.TrySetResult();
+            var grace = await delays.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.AreEqual(TimeSpan.FromSeconds(2), grace.Duration);
+            Assert.IsFalse(timeout.IsCompleted);
+            grace.Completion.TrySetResult();
+            await timeout;
+        }
+        finally
+        {
+            cancellation.Cancel();
+        }
+    }
+
+    [TestMethod]
     public async Task TimedOutObservationReleasesExistingWaitersAndRecovers()
     {
         var gate = new GsmtcObservationGate(

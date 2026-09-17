@@ -60,6 +60,7 @@ public interface IMediaService : IDisposable, IAsyncDisposable
     /// <returns>Admission status and, only when accepted, an operation ID and completion task.</returns>
     /// <remarks>
     /// Commands sharing captured bindings are ordered; independent targets can progress concurrently.
+    /// New playback intent can supersede queued playback for the same binding before execution.
     /// Acceptance is not execution success. Accepted Play selects its target; failure keeps that selection.
     /// </remarks>
     MediaCommandSubmission TrySubmit(MediaCommand command);

@@ -11,20 +11,20 @@ namespace JPSoftworks.MediaControlsExtension.Helpers;
 
 internal sealed partial class MediaCommandResultFactory(ISettingsManager settingsManager, ILoggerFactory loggerFactory) : IDisposable
 {
-    private readonly MediaPauseFailureNotifier _pauseFailureNotifier = new(
+    private readonly MediaCommandFailureNotifier _failureNotifier = new(
         () => settingsManager.ShowToastMessages,
         static message => new ToastStatusMessage(new StatusMessage { Message = message, State = MessageState.Warning }).Show(),
-        loggerFactory.CreateLogger<MediaPauseFailureNotifier>());
+        loggerFactory.CreateLogger<MediaCommandFailureNotifier>());
 
-    public void ObservePauseFailures(MediaCommandSubmission submission)
+    public void ObserveFailures(MediaCommandSubmission submission)
     {
         if (submission.Completion is { } completion)
         {
-            _ = this._pauseFailureNotifier.ObserveAsync(completion);
+            _ = this._failureNotifier.ObserveAsync(completion);
         }
     }
 
-    public void Dispose() => this._pauseFailureNotifier.Dispose();
+    public void Dispose() => this._failureNotifier.Dispose();
 
     public ICommandResult Create(string? message)
     {

@@ -39,15 +39,26 @@ internal sealed partial class ThrottledAction : IDisposable
         this._timer.Elapsed += this.TimerOnElapsed;
     }
 
-    public void Invoke()
+    public void Invoke(bool immediately = false)
     {
         lock (this._lock)
         {
             ObjectDisposedException.ThrowIf(this._disposed, this);
 
             this._timer.Stop();
-            this._timer.Start();
+            if (!immediately)
+            {
+                this._timer.Start();
+                return;
+            }
+
+            if (!this.TryStartOrQueueUnderLock())
+            {
+                return;
+            }
         }
+
+        _ = this.RunAsync();
     }
 
     public void Dispose()
@@ -98,16 +109,25 @@ internal sealed partial class ThrottledAction : IDisposable
                 return;
             }
 
-            if (this._isRunning)
+            if (!this.TryStartOrQueueUnderLock())
             {
-                this._runPending = true;
                 return;
             }
-
-            this._isRunning = true;
         }
 
         _ = this.RunAsync();
+    }
+
+    private bool TryStartOrQueueUnderLock()
+    {
+        if (this._isRunning)
+        {
+            this._runPending = true;
+            return false;
+        }
+
+        this._isRunning = true;
+        return true;
     }
 
     private async Task RunAsync()

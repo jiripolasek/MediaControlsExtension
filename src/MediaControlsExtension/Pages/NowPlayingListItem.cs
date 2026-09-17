@@ -20,7 +20,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
     private readonly Lock _currentSessionLock = new();
     private readonly Lock _updateLock = new();
-    private readonly OptimisticPlaybackCommand _playPauseCommand;
+    private OptimisticPlaybackCommand _playPauseCommand;
     private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
     private readonly CurrentSessionCommand _nextTrackCommand;
     private readonly CurrentSessionCommand _previousTrackCommand;
@@ -55,7 +55,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             }
 
             var details = Volatile.Read(ref this._mediaDetails);
-            if (details is null || !details.Represents(viewModel))
+            if (details is null || !details.Represents(viewModel, this._playPauseCommand))
             {
                 viewModel.RequestArtwork();
                 var newDetails = this.CreateDetails(viewModel);
@@ -234,7 +234,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 this.Icon = this._iconService.GetIcon(ThemedIcon.NoMedia, this._iconSurface);
                 this.Subtitle = string.Empty;
 
-                this._playPauseCommand.UpdatePresentation(null, showName: !this._isBandPage);
+                this.Command = this._playPauseCommand = this._playPauseCommand.WithPresentation(null, showName: !this._isBandPage);
 #if FF_ENABLE_FULL_METADATA_PAGE
                 this.UpdateMetadataPage(null);
 #endif
@@ -245,9 +245,10 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             else
             {
                 this.UpdateNavigationCommandIcons();
-                var playbackAction = this._playPauseCommand.UpdatePresentation(
+                this.Command = this._playPauseCommand = this._playPauseCommand.WithPresentation(
                     viewModel.Session,
                     showName: !this._isBandPage);
+                var playbackAction = this._playPauseCommand.Presentation;
                 var properties = viewModel.MediaProperties;
 
                 this.Title = this._isBandPage
@@ -295,7 +296,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 
         viewModel.RequestArtwork();
         var details = Volatile.Read(ref this._mediaDetails);
-        if (details is not null && details.Represents(viewModel))
+        if (details is not null && details.Represents(viewModel, this._playPauseCommand))
         {
             return false;
         }
@@ -387,14 +388,15 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         }
     }
 
-    private void CurrentSessionOnChanged(object? sender, EventArgs args)
+    private void CurrentSessionOnChanged(object? sender, MediaSessionChangedEventArgs args)
     {
         lock (this._currentSessionLock)
         {
             if (Volatile.Read(ref this._disposed) == 0 &&
                 ReferenceEquals(sender, this._currentSession))
             {
-                this._updateMediaInfo.Invoke();
+                this._updateMediaInfo.Invoke(
+                    (args.Changes & (MediaSessionChanges.PlaybackInfo | MediaSessionChanges.Availability | MediaSessionChanges.Rebound)) != 0);
             }
         }
     }
@@ -421,7 +423,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             currentSession.Changed -= this.CurrentSessionOnChanged;
         }
 
-        this._playPauseCommand.UpdatePresentation(null);
+        this._playPauseCommand.Disable();
         Interlocked.Exchange(ref this._mediaDetails, null);
         this.DetailsChanged = null;
         this.MoreCommands = [];

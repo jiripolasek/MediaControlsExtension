@@ -109,7 +109,7 @@ internal sealed class GsmtcObservationGate(ILogger logger)
         _ = this.WarnIfSlowAsync(nativeTask, operationId, operationName);
 
         using var timeoutCts = new CancellationTokenSource();
-        var timeoutTask = DelayUntilTimeoutAsync(
+        var timeoutTask = GsmtcUnbiasedClock.DelayUntilTimeoutAsync(
             this._operationTimeout,
             this._resumeGraceDelay,
             timeoutCts.Token);
@@ -130,26 +130,6 @@ internal sealed class GsmtcObservationGate(ILogger logger)
         blockedCts.Cancel();
         _ = this.RecoverWhenCompleteAsync(nativeTask, operationId, operationName);
         throw new GsmtcObservationBlockedException(operationName, this._operationTimeout);
-    }
-
-    private static async Task DelayUntilTimeoutAsync(
-        TimeSpan timeout,
-        TimeSpan resumeGraceDelay,
-        CancellationToken cancellationToken)
-    {
-        var started = GsmtcUnbiasedClock.GetTime();
-        while (true)
-        {
-            var remaining = timeout - (GsmtcUnbiasedClock.GetTime() - started);
-            if (remaining <= TimeSpan.Zero)
-            {
-                break;
-            }
-
-            await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
-        }
-
-        await Task.Delay(resumeGraceDelay, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task RecoverWhenCompleteAsync<T>(

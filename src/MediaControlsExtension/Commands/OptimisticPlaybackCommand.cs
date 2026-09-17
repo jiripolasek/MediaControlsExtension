@@ -8,32 +8,22 @@ using JPSoftworks.MediaControlsExtension.Media;
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
 /// <summary>
-/// Submits playback toggles through the media service's predicted playback state.
+/// Submits the explicit playback action captured with the command's presentation.
 /// </summary>
 /// <remarks>
-/// This command is not currently optimistic at the presentation boundary. The
-/// service applies its prediction synchronously, but the command's icon and its
-/// owning item wait for an asynchronous session notification followed by a
-/// 100-150 ms presentation debounce. A prompt GSMTC confirmation can restart
-/// that debounce and extend the visible delay.
-///
-/// A command-owned synchronous presentation event is not a safe fix by itself:
-/// it would create a second state-delivery path with ordering races, update only
-/// the invoking surface, introduce reentrancy and duplicate reconciliation work,
-/// require careful lifetime management, and still need to handle rollback flashes
-/// and stale intent during rapid input. Prefer carrying session change flags
-/// through the view model, bypassing the debounce only for playback changes, and
-/// deriving command feedback from the post-submission predicted state.
+/// Each instance retains its session and action; owners publish replacements on session notifications.
 /// </remarks>
 internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
 {
-    private readonly Lock _presentationLock = new();
     private readonly IMediaService _mediaService;
     private readonly MediaCommandResultFactory _resultFactory;
     private readonly IIconService _iconService;
     private readonly IconSurface _iconSurface;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly CommandLifetime _lifetime;
+    private readonly PlaybackTarget? _target;
 
-    private PlaybackTarget? _target;
+    public PlaybackActionPresentation Presentation { get; }
 
     public OptimisticPlaybackCommand(
         IMediaService mediaService,
@@ -51,53 +41,61 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         this._resultFactory = resultFactory;
         this._iconService = iconService;
         this._iconSurface = iconSurface;
-        this.Icon = iconService.GetIcon(ThemedIcon.PlayPause, iconSurface);
-        this.Name = Strings.TogglePlayPause!;
+        this._loggerFactory = loggerFactory;
+        this._lifetime = new();
+        this.Presentation = PlaybackActionPolicy.GetPresentation(null, iconService, iconSurface);
+        this.Icon = this.Presentation.CommandIcon;
+        this.Name = this.Presentation.CommandName;
     }
 
-    public PlaybackActionPresentation UpdatePresentation(MediaSession? target, bool showName = true)
+    private OptimisticPlaybackCommand(
+        OptimisticPlaybackCommand previous,
+        PlaybackTarget? target,
+        PlaybackActionPresentation presentation,
+        bool showName)
+        : base(previous._loggerFactory)
+    {
+        this._mediaService = previous._mediaService;
+        this._resultFactory = previous._resultFactory;
+        this._iconService = previous._iconService;
+        this._iconSurface = previous._iconSurface;
+        this._loggerFactory = previous._loggerFactory;
+        this._lifetime = previous._lifetime;
+        this._target = target;
+        this.Presentation = presentation;
+        this.Id = previous.Id;
+        this.Name = showName ? presentation.CommandName : string.Empty;
+        this.Icon = presentation.CommandIcon;
+    }
+
+    /// <summary>Returns a command for this presentation while preserving previously published actions.</summary>
+    public OptimisticPlaybackCommand WithPresentation(MediaSession? target, bool showName = true)
     {
         var presentation = PlaybackActionPolicy.GetPresentation(
             target,
             this._iconService,
             this._iconSurface);
-        lock (this._presentationLock)
+        PlaybackTarget? playbackTarget = target is { IsAvailable: true }
+            ? new(target.Id, presentation.Intent)
+            : null;
+        if (this._target == playbackTarget && this.Presentation.Intent == presentation.Intent &&
+            this.Name == (showName ? presentation.CommandName : string.Empty) &&
+            IconExtensions.HasSameIcon(this.Icon, presentation.CommandIcon))
         {
-            this._target = target is null
-                || !target.IsAvailable
-                ? null
-                : new(
-                    target.Id,
-                    presentation.Intent);
-            this.Name = showName ? presentation.CommandName : string.Empty;
-            this.UpdateIcon(presentation.CommandIcon);
+            return this;
         }
 
-        return presentation;
+        return new(this, playbackTarget, presentation, showName);
     }
 
-    protected override Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> CreateInvocation()
-    {
-        PlaybackTarget? target;
-        lock (this._presentationLock)
-        {
-            target = this._target;
-        }
+    /// <summary>Disables every command published by this owner.</summary>
+    public void Disable() => Volatile.Write(ref this._lifetime.Disabled, 1);
 
-        return (diagnostics, cancellationToken) =>
-            this.InvokeAsync(target, diagnostics, cancellationToken);
-    }
+    protected override Func<ExtensionOperationDiagnostics, CancellationToken, Task<ICommandResult>> CreateInvocation() =>
+        (diagnostics, cancellationToken) => this.InvokeAsync(this._target, diagnostics, cancellationToken);
 
-    protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
-    {
-        PlaybackTarget? target;
-        lock (this._presentationLock)
-        {
-            target = this._target;
-        }
-
-        return this.InvokeAsync(target, diagnostics: null, cancellationToken);
-    }
+    protected override Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken) =>
+        this.InvokeAsync(this._target, diagnostics: null, cancellationToken);
 
     private Task<ICommandResult> InvokeAsync(
         PlaybackTarget? target,
@@ -105,16 +103,23 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         CancellationToken cancellationToken)
     {
         diagnostics?.SetStage("validating optimistic playback target");
-        if (target == null)
+        if (target == null || Volatile.Read(ref this._lifetime.Disabled) != 0)
         {
             return Task.FromResult(this._resultFactory.Create($"😢 {Strings.Toast_NoCurrentSession}"));
         }
 
+        var operation = target.Value.Intent switch
+        {
+            PlaybackIntent.Play => MediaOperation.Play,
+            PlaybackIntent.Pause => MediaOperation.Pause,
+            PlaybackIntent.Stop => MediaOperation.Stop,
+            _ => throw new InvalidOperationException("An available playback target must have an explicit action."),
+        };
         diagnostics?.SetStage(
-            $"submitting playback toggle for session {target.Value.SessionId.Value}");
+            $"submitting {operation} for session {target.Value.SessionId.Value}");
         var submission = this._mediaService.TrySubmit(new(
             MediaCommandTarget.ForSession(target.Value.SessionId),
-            MediaOperation.TogglePlayback));
+            operation));
         if (submission.Status != MediaCommandSubmissionStatus.Accepted)
         {
             diagnostics?.SetStage($"media service rejected command: {submission.Status}");
@@ -129,7 +134,7 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
             return Task.FromResult(this._resultFactory.Create(failureMessage));
         }
 
-        var message = target.Value.Intent switch
+        string? message = target.Value.Intent switch
         {
             PlaybackIntent.Play => $"⏯️ {Strings.Toast_Playing}",
             PlaybackIntent.Stop => $"⏹️ {Strings.Command_Stop}",
@@ -137,11 +142,13 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
         };
         if (submission.Completion is { IsCompletedSuccessfully: true } completed)
         {
-            message = MediaCommandFeedback.AppendPauseWarning(message, completed.Result);
+            message = completed.Result.Status == MediaCommandOutcomeStatus.Completed
+                ? MediaCommandFeedback.AppendPauseWarning(message, completed.Result)
+                : MediaCommandFeedback.GetWarning(completed.Result);
         }
         else
         {
-            this._resultFactory.ObservePauseFailures(submission);
+            this._resultFactory.ObserveFailures(submission);
         }
 
         diagnostics?.SetStage("creating optimistic command result");
@@ -157,4 +164,9 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
     private readonly record struct PlaybackTarget(
         MediaSessionId SessionId,
         PlaybackIntent Intent);
+
+    private sealed class CommandLifetime
+    {
+        public int Disabled;
+    }
 }

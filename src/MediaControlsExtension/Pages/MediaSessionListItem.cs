@@ -18,7 +18,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     private readonly ILogger _logger;
     private readonly IconSurface _iconSurface;
     private readonly ThrottledAction _throttledAction;
-    private readonly OptimisticPlaybackCommand _command;
+    private OptimisticPlaybackCommand _command;
     private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
     private readonly ICommand _nextTrackCommand;
     private readonly ICommand _previousTrackCommand;
@@ -105,9 +105,6 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             },
             this._logger);
 
-        this._viewModel.Changed += this.ViewModelOnChanged;
-        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
-
         this.Title = Strings.Command_PlayPause!;
         this.Icon = iconService.GetIcon(ThemedIcon.PlayPause, this._iconSurface);
         this._asBand = asBand;
@@ -165,6 +162,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
 
+        this._viewModel.Changed += this.ViewModelOnChanged;
+        this._settingsManager.Settings.SettingsChanged += this.SettingsOnSettingsChanged;
         this.Update(viewModel);
     }
 
@@ -202,7 +201,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
 
         this.Title = (isPlaying && !this._asBand ? "\u25B6\uFE0F " : string.Empty) + properties.Title;
         this.Subtitle = BuildSubtitle(viewModel);
-        this._command.UpdatePresentation(viewModel.Session);
+        this.Command = this._command = this._command.WithPresentation(viewModel.Session);
         this.UpdateNavigationCommandIcons();
         var detailsChanged = this.UpdateDetails(viewModel);
         this.UpdateTags(viewModel);
@@ -250,7 +249,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         }
 
         var details = Volatile.Read(ref this._mediaDetails);
-        if (details is not null && details.Represents(viewModel))
+        if (details is not null && details.Represents(viewModel, this._command))
         {
             return false;
         }
@@ -349,9 +348,10 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
 
     private void SettingsOnSettingsChanged(object sender, Settings args) => this.ScheduleUpdate();
 
-    private void ViewModelOnChanged(object? sender, EventArgs args) => this.ScheduleUpdate();
+    private void ViewModelOnChanged(object? sender, MediaSessionChangedEventArgs args) =>
+        this.ScheduleUpdate((args.Changes & (MediaSessionChanges.PlaybackInfo | MediaSessionChanges.Availability | MediaSessionChanges.Rebound)) != 0);
 
-    private void ScheduleUpdate()
+    private void ScheduleUpdate(bool immediately = false)
     {
         if (Volatile.Read(ref this._disposed) != 0)
         {
@@ -360,7 +360,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
 
         try
         {
-            this._throttledAction.Invoke();
+            this._throttledAction.Invoke(immediately);
         }
         catch (ObjectDisposedException) when (Volatile.Read(ref this._disposed) != 0)
         {
@@ -390,7 +390,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             viewModel.Changed -= this.ViewModelOnChanged;
         }
 
-        this._command.UpdatePresentation(null);
+        this._command.Disable();
         Interlocked.Exchange(ref this._mediaDetails, null);
         this._lastIcon = null;
         this.Icon = Icons.Unknown;
