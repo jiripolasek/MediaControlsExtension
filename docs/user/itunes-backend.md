@@ -20,9 +20,9 @@ the provider releases its COM connection without closing iTunes or changing play
 - Supports play, pause, stop, previous, next, shuffle, repeat, title, artist, album,
   genre, track number, timeline, and artwork. Repeat cycles through off, all, one,
   and off.
-- Uses iTunes events together with polling. Playback is polled once per second and
-  idle state once every two seconds so changes are still observed if an event is
-  missed.
+- Uses iTunes events for playback and metadata updates. A lightweight discovery
+  check runs only while iTunes is disconnected; once connected, the worker watches
+  the iTunes process for exit instead of repeatedly polling COM.
 - Exports the current artwork through a temporary file created by iTunes, reads it
   into memory, and removes the file immediately. One image is cached at a time and
   track changes invalidate the old artwork key.
@@ -34,10 +34,12 @@ the provider releases its COM connection without closing iTunes or changing play
 - Reports the native application identity `Apple.iTunes` and uses the discovered
   `iTunes.exe` path when available. This lets the extension retain normal player
   identity and application-switching behavior.
-- While enabled, claims GSMTC application IDs `Apple.iTunes` and `iTunes.exe` so an
-  SMTC plugin does not create a duplicate player. The claim remains active during
-  a temporary COM disconnection. Disable the iTunes source to use a third-party
-  iTunes SMTC integration instead.
+- While enabled, claims GSMTC application IDs `Apple.iTunes`, `iTunes.exe`, and the
+  two Media Controller Helper identities (`49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg`
+  and `49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg!App`) so those
+  integrations do not create a duplicate player. The claims remain active during a
+  temporary COM disconnection. Disable the iTunes source to use a third-party iTunes
+  SMTC integration instead.
 - Controls only the local iTunes instance registered with Windows COM. Remote
   libraries, playlist browsing, seeking, and application-specific volume are not
   exposed by this provider.

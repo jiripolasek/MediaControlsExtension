@@ -23,15 +23,15 @@ namespace JPSoftworks.MediaControlsExtension.Media.ITunes;
 public sealed class ITunesBackend : IMediaBackend
 {
     private static readonly MediaBackendSessionId DefaultSessionId = new(1);
-    private static readonly TimeSpan ActivePollInterval = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan IdlePollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan DiscoveryPollInterval = TimeSpan.FromSeconds(2);
 
     private readonly ILogger _logger;
     private readonly string? _sourceIconPath;
-    private readonly Func<string, bool> _isProcessRunning;
+    private readonly Func<string, bool>? _isProcessRunning;
     private readonly Channel<bool> _signals;
     private readonly Lock _stateLock = new();
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly ITunesRefreshScheduler _refreshScheduler = new();
 
     // Dispatcher-thread-only fields:
     private DispatcherQueueController? _dispatcherController;
@@ -41,6 +41,9 @@ public sealed class ITunesBackend : IMediaBackend
     private nint _connectionPoint;
     private uint _adviseCookie;
     private ITunesEventSink? _eventSink;
+    private ITunesProcessExitSubscription? _processExitSubscription;
+    private bool _isDiscoveryTimerRunning;
+    private int? _quittingProcessId;
 
     // State observed across threads (must be read and written under _stateLock):
     private bool _isConnected;
@@ -59,6 +62,7 @@ public sealed class ITunesBackend : IMediaBackend
     private int _disposeState;
     private int _startState;
     private int _pendingSignals;
+    private int _quitDisconnectPending;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ITunesBackend"/> class.
@@ -73,7 +77,7 @@ public sealed class ITunesBackend : IMediaBackend
     {
         this._logger = logger ?? NullLogger<ITunesBackend>.Instance;
         this._sourceIconPath = sourceIconPath;
-        this._isProcessRunning = isProcessRunning ?? DefaultIsProcessRunning;
+        this._isProcessRunning = isProcessRunning;
         this._signals = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
         {
             SingleReader = true,
@@ -117,12 +121,12 @@ public sealed class ITunesBackend : IMediaBackend
             {
                 this.ResolveExecutablePath();
                 this._pollTimer = this._dispatcherQueue.CreateTimer();
-                this._pollTimer.Interval = IdlePollInterval;
+                this._pollTimer.Interval = DiscoveryPollInterval;
                 this._pollTimer.IsRepeating = true;
-                this._pollTimer.Tick += (_, _) => this.PollState();
-                this._pollTimer.Start();
+                this._pollTimer.Tick += (_, _) => this.DiscoverITunes();
+                this.StartDiscoveryPolling();
 
-                this.PollState();
+                this.DiscoverITunes();
                 tcs.TrySetResult();
             }
             catch (Exception ex)
@@ -164,45 +168,62 @@ public sealed class ITunesBackend : IMediaBackend
 
         lock (this._stateLock)
         {
-            if (!this._isConnected || (this._currentPlaybackState == MediaPlaybackState.Stopped && this._currentMediaProperties == null))
-            {
-                return Task.FromResult(new MediaBackendSnapshot(
-                    this._revision,
-                    ImmutableArray<MediaBackendSessionSnapshot>.Empty,
-                    ImmutableArray<MediaBackendSessionId>.Empty,
-                    MediaControlAvailability.Available)
-                {
-                    Connection = this._isConnected ? MediaBackendConnectionState.Connected : MediaBackendConnectionState.Disconnected,
-                });
-            }
-
-            var source = this.CreateSourceSnapshot();
-
-            var session = new MediaBackendSessionSnapshot(
-                DefaultSessionId,
+            return Task.FromResult(CreateSnapshot(
+                this._isConnected,
+                this._revision,
                 this._bindingGeneration,
-                this._currentMediaProperties ?? MediaPropertiesSnapshot.Empty(source),
+                this._currentMediaProperties,
                 this._currentTimeline,
                 this._currentPlaybackState,
-                this._currentCapabilities,
-                IsAvailable: true)
-            {
-                Origin = MediaSessionOrigin.Local,
-            };
+                this._currentCapabilities));
+        }
+    }
 
-            ImmutableArray<MediaBackendSessionId> hints = this._currentPlaybackState == MediaPlaybackState.Playing
-                ? [DefaultSessionId]
-                : [];
-
-            return Task.FromResult(new MediaBackendSnapshot(
-                this._revision,
-                [session],
-                hints,
+    internal static MediaBackendSnapshot CreateSnapshot(
+        bool isConnected,
+        long revision,
+        long bindingGeneration,
+        MediaPropertiesSnapshot? mediaProperties,
+        MediaTimelinePropertiesSnapshot timeline,
+        MediaPlaybackState playbackState,
+        MediaCapabilities capabilities)
+    {
+        if (!isConnected || mediaProperties == null)
+        {
+            return new MediaBackendSnapshot(
+                revision,
+                ImmutableArray<MediaBackendSessionSnapshot>.Empty,
+                ImmutableArray<MediaBackendSessionId>.Empty,
                 MediaControlAvailability.Available)
             {
-                Connection = MediaBackendConnectionState.Connected,
-            });
+                Connection = isConnected ? MediaBackendConnectionState.Connected : MediaBackendConnectionState.Disconnected,
+            };
         }
+
+        var session = new MediaBackendSessionSnapshot(
+            DefaultSessionId,
+            bindingGeneration,
+            mediaProperties,
+            timeline,
+            playbackState,
+            capabilities,
+            IsAvailable: true)
+        {
+            Origin = MediaSessionOrigin.Local,
+        };
+
+        ImmutableArray<MediaBackendSessionId> hints = playbackState == MediaPlaybackState.Playing
+            ? [DefaultSessionId]
+            : [];
+
+        return new MediaBackendSnapshot(
+            revision,
+            [session],
+            hints,
+            MediaControlAvailability.Available)
+        {
+            Connection = MediaBackendConnectionState.Connected,
+        };
     }
 
     /// <inheritdoc />
@@ -291,7 +312,7 @@ public sealed class ITunesBackend : IMediaBackend
                     return;
                 }
 
-                this.PollState();
+                this.UpdatePlaybackAndMetadata();
 
                 if (hr >= 0)
                 {
@@ -343,7 +364,7 @@ public sealed class ITunesBackend : IMediaBackend
 
             if (needsPoll)
             {
-                this._dispatcherQueue.TryEnqueue(this.PollState);
+                this.RequestStateRefresh();
             }
         }
     }
@@ -366,74 +387,91 @@ public sealed class ITunesBackend : IMediaBackend
         return ValueTask.FromResult<MediaArtworkContent?>(null);
     }
 
-    private void PollState()
+    private void DiscoverITunes()
     {
         if (Volatile.Read(ref this._disposeState) != 0)
         {
             return;
         }
 
-        var isProcessRunning = this._isProcessRunning("iTunes");
-        if (!isProcessRunning)
+        lock (this._stateLock)
         {
-            bool isConnected;
-            lock (this._stateLock)
+            if (this._isConnected)
             {
-                isConnected = this._isConnected;
+                return;
             }
+        }
 
-            if (isConnected)
-            {
-                this.Disconnect();
-            }
-
+        var process = this.FindITunesProcess();
+        if (process == null)
+        {
             return;
         }
 
-        bool needConnect;
-        lock (this._stateLock)
+        this._quittingProcessId = null;
+        this.Connect(process);
+    }
+
+    private Process? FindITunesProcess()
+    {
+        if (this._isProcessRunning != null && !this._isProcessRunning("iTunes"))
         {
-            needConnect = !this._isConnected;
+            return null;
         }
 
-        if (needConnect)
+        Process[] processes = [];
+        Process? selected = null;
+        try
         {
-            this.Connect();
-            lock (this._stateLock)
+            processes = Process.GetProcessesByName("iTunes");
+            foreach (var process in processes)
             {
-                if (!this._isConnected)
+                if (!process.HasExited && process.Id != this._quittingProcessId)
                 {
-                    return;
+                    this.RecordExecutablePath(process);
+                    selected = process;
+                    break;
                 }
             }
         }
-
-        this.UpdatePlaybackAndMetadata();
-    }
-
-    private static bool DefaultIsProcessRunning(string name)
-    {
-        Process[] processes = [];
-        try
-        {
-            processes = Process.GetProcessesByName(name);
-            return processes.Length != 0;
-        }
         catch
         {
-            return false;
         }
         finally
         {
             foreach (var process in processes)
             {
-                process.Dispose();
+                if (!ReferenceEquals(process, selected))
+                {
+                    process.Dispose();
+                }
             }
+        }
+
+        return selected;
+    }
+
+    private void StartDiscoveryPolling()
+    {
+        if (this._pollTimer != null && !this._isDiscoveryTimerRunning)
+        {
+            this._pollTimer.Start();
+            this._isDiscoveryTimerRunning = true;
         }
     }
 
-    private void Connect()
+    private void StopDiscoveryPolling()
     {
+        if (this._pollTimer != null && this._isDiscoveryTimerRunning)
+        {
+            this._pollTimer.Stop();
+            this._isDiscoveryTimerRunning = false;
+        }
+    }
+
+    private void Connect(Process process)
+    {
+        var processAttached = false;
         try
         {
             var hr = ITunesNative.CoCreateInstance(
@@ -454,6 +492,8 @@ public sealed class ITunesBackend : IMediaBackend
             }
 
             this.HookEvents();
+            this.TrackConnectedProcess(process);
+            processAttached = true;
 
             lock (this._stateLock)
             {
@@ -462,12 +502,21 @@ public sealed class ITunesBackend : IMediaBackend
                 this._revision++;
             }
 
+            this.StopDiscoveryPolling();
             this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
+            this.UpdatePlaybackAndMetadata();
         }
         catch (Exception ex)
         {
             ITunesLog.ITunesConnectFailed(this._logger, ex);
             this.Disconnect();
+        }
+        finally
+        {
+            if (!processAttached)
+            {
+                process.Dispose();
+            }
         }
     }
 
@@ -526,17 +575,156 @@ public sealed class ITunesBackend : IMediaBackend
 
     private void OnITunesEvent(int dispId)
     {
-        if (Volatile.Read(ref this._disposeState) != 0)
+        try
+        {
+            if (Volatile.Read(ref this._disposeState) != 0)
+            {
+                return;
+            }
+
+            switch (ITunesEventClassifier.Classify(dispId))
+            {
+                case ITunesEventAction.Disconnect:
+                    this.RequestQuitDisconnect();
+                    break;
+                case ITunesEventAction.Refresh:
+                    this.RequestStateRefresh();
+                    break;
+            }
+        }
+        catch
+        {
+            // COM callbacks must never propagate managed failures back to iTunes.
+        }
+    }
+
+    private void RequestQuitDisconnect()
+    {
+        if (Interlocked.CompareExchange(ref this._quitDisconnectPending, 1, 0) != 0)
         {
             return;
         }
 
-        this._dispatcherQueue?.TryEnqueue(this.PollState);
+        if (this._dispatcherQueue?.TryEnqueue(this.DisconnectForQuit) != true)
+        {
+            Interlocked.Exchange(ref this._quitDisconnectPending, 0);
+        }
     }
 
-    private void Disconnect()
+    private void DisconnectForQuit()
     {
+        try
+        {
+            if (Volatile.Read(ref this._disposeState) != 0)
+            {
+                return;
+            }
+
+            if (this._processExitSubscription is { IsAttached: true } subscription)
+            {
+                this._quittingProcessId = subscription.ProcessId;
+            }
+
+            this.Disconnect();
+        }
+        catch (Exception ex)
+        {
+            ITunesLog.ITunesUpdatePlaybackStateFailed(this._logger, ex);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref this._quitDisconnectPending, 0);
+        }
+    }
+
+    private void RequestStateRefresh()
+    {
+        if (Volatile.Read(ref this._disposeState) != 0 || Volatile.Read(ref this._quitDisconnectPending) != 0)
+        {
+            return;
+        }
+
+        if (!this._refreshScheduler.RequestRefresh())
+        {
+            return;
+        }
+
+        if (this._dispatcherQueue?.TryEnqueue(this.RunRequestedRefresh) != true)
+        {
+            this._refreshScheduler.Clear();
+        }
+    }
+
+    private void RunRequestedRefresh()
+    {
+        if (!this._refreshScheduler.TryBeginRefresh())
+        {
+            return;
+        }
+
+        try
+        {
+            if (Volatile.Read(ref this._disposeState) == 0 && Volatile.Read(ref this._quitDisconnectPending) == 0)
+            {
+                bool isConnected;
+                lock (this._stateLock)
+                {
+                    isConnected = this._isConnected;
+                }
+
+                if (isConnected)
+                {
+                    this.UpdatePlaybackAndMetadata();
+                }
+            }
+        }
+        finally
+        {
+            if (Volatile.Read(ref this._disposeState) == 0 && this._refreshScheduler.CompleteRefresh())
+            {
+                if (this._dispatcherQueue?.TryEnqueue(this.RunRequestedRefresh) != true)
+                {
+                    this._refreshScheduler.Clear();
+                }
+            }
+        }
+    }
+
+    private void TrackConnectedProcess(Process process)
+    {
+        var subscription = new ITunesProcessExitSubscription();
+        subscription.Attach(process, this.OnConnectedProcessExited);
+        this._processExitSubscription = subscription;
+    }
+
+    private void OnConnectedProcessExited(int processId)
+    {
+        try
+        {
+            this._dispatcherQueue?.TryEnqueue(() => this.HandleConnectedProcessExited(processId));
+        }
+        catch
+        {
+            // Process.Exited can be raised on a runtime thread; it must not fault it.
+        }
+    }
+
+    private void HandleConnectedProcessExited(int processId)
+    {
+        if (this._processExitSubscription?.ProcessId == processId)
+        {
+            this._quittingProcessId = null;
+            this.Disconnect();
+        }
+    }
+
+    private void Disconnect(bool resumeDiscovery = true)
+    {
+        this._refreshScheduler.Clear();
         this.UnhookEvents();
+
+        this._processExitSubscription?.Dispose();
+        this._processExitSubscription = null;
 
         if (this._iTunesApp != 0)
         {
@@ -563,6 +751,11 @@ public sealed class ITunesBackend : IMediaBackend
         if (wasConnected)
         {
             this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
+        }
+
+        if (resumeDiscovery && Volatile.Read(ref this._disposeState) == 0)
+        {
+            this.StartDiscoveryPolling();
         }
     }
 
@@ -657,54 +850,44 @@ public sealed class ITunesBackend : IMediaBackend
 
             nint pTrack = 0;
             hr = ITunesNative.GetCurrentTrack(this._iTunesApp, out pTrack);
-            bool trackChanged = false;
-            if (hr >= 0 && pTrack != 0)
+            if (hr < 0 || pTrack == 0)
             {
-                try
-                {
-                    _ = ITunesNative.GetTrackName(pTrack, out title);
-                    _ = ITunesNative.GetTrackArtist(pTrack, out artist);
-                    _ = ITunesNative.GetTrackAlbum(pTrack, out album);
-                    _ = ITunesNative.GetTrackGenre(pTrack, out genre);
-                    _ = ITunesNative.GetTrackDuration(pTrack, out durationSec);
-                    _ = ITunesNative.GetTrackNumber(pTrack, out trackNumber);
-                    _ = ITunesNative.GetTrackCount(pTrack, out trackCount);
-                    _ = ITunesNative.GetTrackDatabaseId(pTrack, out currentTrackId);
-
-                    lock (this._stateLock)
-                    {
-                        trackChanged = currentTrackId != this._cachedArtworkTrackId;
-                        if (trackChanged)
-                        {
-                            // A track change immediately invalidates any cached artwork and bumps the version.
-                            this._cachedArtwork = null;
-                            this._cachedArtworkTrackId = currentTrackId;
-                            this._artworkVersion++;
-                        }
-                    }
-
-                    if (trackChanged && currentTrackId != 0)
-                    {
-                        this.UpdateCachedArtwork(pTrack, currentTrackId);
-                    }
-                }
-                finally
-                {
-                    _ = ITunesNative.Release(pTrack);
-                }
+                this.ClearCurrentTrack();
+                return;
             }
-            else
+
+            bool trackChanged = false;
+            try
             {
+                _ = ITunesNative.GetTrackName(pTrack, out title);
+                _ = ITunesNative.GetTrackArtist(pTrack, out artist);
+                _ = ITunesNative.GetTrackAlbum(pTrack, out album);
+                _ = ITunesNative.GetTrackGenre(pTrack, out genre);
+                _ = ITunesNative.GetTrackDuration(pTrack, out durationSec);
+                _ = ITunesNative.GetTrackNumber(pTrack, out trackNumber);
+                _ = ITunesNative.GetTrackCount(pTrack, out trackCount);
+                _ = ITunesNative.GetTrackDatabaseId(pTrack, out currentTrackId);
+
                 lock (this._stateLock)
                 {
-                    if (this._cachedArtworkTrackId != 0)
+                    trackChanged = currentTrackId != this._cachedArtworkTrackId;
+                    if (trackChanged)
                     {
-                        trackChanged = true;
+                        // A track change immediately invalidates any cached artwork and bumps the version.
                         this._cachedArtwork = null;
-                        this._cachedArtworkTrackId = 0;
+                        this._cachedArtworkTrackId = currentTrackId;
                         this._artworkVersion++;
                     }
                 }
+
+                if (trackChanged && currentTrackId != 0)
+                {
+                    this.UpdateCachedArtwork(pTrack, currentTrackId);
+                }
+            }
+            finally
+            {
+                _ = ITunesNative.Release(pTrack);
             }
 
             _ = ITunesNative.GetPlayerPosition(this._iTunesApp, out positionSec);
@@ -741,9 +924,12 @@ public sealed class ITunesBackend : IMediaBackend
                 LastUpdatedAt: DateTimeOffset.UtcNow);
 
             bool stateChanged = false;
+            bool sessionAppeared;
             lock (this._stateLock)
             {
+                sessionAppeared = this._currentMediaProperties == null;
                 if (trackChanged ||
+                    sessionAppeared ||
                     this._currentMediaProperties?.Artwork != properties.Artwork ||
                     this._currentPlaybackState != playbackState ||
                     this._currentCapabilities != capabilities ||
@@ -756,32 +942,64 @@ public sealed class ITunesBackend : IMediaBackend
                     this._revision++;
                 }
 
+                if (sessionAppeared)
+                {
+                    this._bindingGeneration++;
+                }
+
                 this._currentPlaybackState = playbackState;
                 this._currentCapabilities = capabilities;
                 this._currentMediaProperties = properties;
                 this._currentTimeline = timeline;
             }
 
-            if (this._pollTimer != null)
-            {
-                var targetInterval = playbackState == MediaPlaybackState.Playing
-                    ? ActivePollInterval
-                    : IdlePollInterval;
-
-                if (this._pollTimer.Interval != targetInterval)
-                {
-                    this._pollTimer.Interval = targetInterval;
-                }
-            }
-
             if (stateChanged)
             {
-                this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.CurrentSessionChanged);
+                var signal = MediaBackendSignal.ObservationsChanged | MediaBackendSignal.CurrentSessionChanged;
+                if (sessionAppeared)
+                {
+                    signal |= MediaBackendSignal.SessionsChanged;
+                }
+
+                this.SignalChanged(signal);
             }
         }
         catch (Exception ex)
         {
             ITunesLog.ITunesUpdatePlaybackStateFailed(this._logger, ex);
+        }
+    }
+
+    private void ClearCurrentTrack()
+    {
+        bool sessionRemoved;
+        lock (this._stateLock)
+        {
+            sessionRemoved = this._currentMediaProperties != null;
+            var hadArtwork = this._cachedArtwork != null || this._cachedArtworkTrackId != -1;
+
+            this._currentMediaProperties = null;
+            this._currentTimeline = MediaTimelinePropertiesSnapshot.Empty;
+            this._currentPlaybackState = MediaPlaybackState.Stopped;
+            this._currentCapabilities = MediaCapabilities.None;
+            this._cachedArtwork = null;
+            this._cachedArtworkTrackId = -1;
+
+            if (hadArtwork)
+            {
+                this._artworkVersion++;
+            }
+
+            if (sessionRemoved)
+            {
+                this._bindingGeneration++;
+                this._revision++;
+            }
+        }
+
+        if (sessionRemoved)
+        {
+            this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged);
         }
     }
 
@@ -916,45 +1134,40 @@ public sealed class ITunesBackend : IMediaBackend
 
     private void ResolveExecutablePath()
     {
-        Process[] processes = [];
         try
         {
-            processes = Process.GetProcessesByName("iTunes");
-            foreach (var process in processes)
-            {
-                if (process.MainModule?.FileName is { } path && File.Exists(path))
-                {
-                    lock (this._stateLock)
-                    {
-                        this._executablePath = path;
-                    }
+            var defaultPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "iTunes",
+                "iTunes.exe");
 
-                    return;
+            if (File.Exists(defaultPath))
+            {
+                lock (this._stateLock)
+                {
+                    this._executablePath = defaultPath;
                 }
             }
         }
         catch
         {
         }
-        finally
+    }
+
+    private void RecordExecutablePath(Process process)
+    {
+        try
         {
-            foreach (var process in processes)
+            if (process.MainModule?.FileName is { } path && File.Exists(path))
             {
-                process.Dispose();
+                lock (this._stateLock)
+                {
+                    this._executablePath = path;
+                }
             }
         }
-
-        var defaultPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            "iTunes",
-            "iTunes.exe");
-
-        if (File.Exists(defaultPath))
+        catch
         {
-            lock (this._stateLock)
-            {
-                this._executablePath = defaultPath;
-            }
         }
     }
 
@@ -982,6 +1195,8 @@ public sealed class ITunesBackend : IMediaBackend
 
         this._lifetime.Cancel();
         this._signals.Writer.TryComplete();
+        this._refreshScheduler.Clear();
+        Interlocked.Exchange(ref this._quitDisconnectPending, 1);
 
         if (this._dispatcherQueue != null)
         {
@@ -990,8 +1205,8 @@ public sealed class ITunesBackend : IMediaBackend
             {
                 try
                 {
-                    this._pollTimer?.Stop();
-                    this.Disconnect();
+                    this.StopDiscoveryPolling();
+                    this.Disconnect(resumeDiscovery: false);
                 }
                 finally
                 {

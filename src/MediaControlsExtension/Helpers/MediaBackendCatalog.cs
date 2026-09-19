@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Hosting;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
+using JPSoftworks.MediaControlsExtension.Media.ITunes;
 using JPSoftworks.MediaControlsExtension.Media.Vlc;
 
 namespace JPSoftworks.MediaControlsExtension.Helpers;
@@ -95,13 +96,7 @@ internal static class MediaBackendCatalog
             loggerFactory => new OutOfProcessMediaBackend(CreateWorkerOptions("itunes"), owner, loggerFactory),
             EnabledByDefault: true)
         {
-            ReplacesSources =
-            [
-                new("gsmtc", "Apple.iTunes"),
-                new("gsmtc.worker", "Apple.iTunes"),
-                new("gsmtc", "iTunes.exe"),
-                new("gsmtc.worker", "iTunes.exe"),
-            ],
+            ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
         });
 #if DEBUG || FF_ENABLE_DUMMY_BACKEND
     mediaBackendRegistry..Register(new(
