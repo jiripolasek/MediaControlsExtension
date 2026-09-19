@@ -7,10 +7,10 @@
 using System.Collections.Immutable;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
-namespace JPSoftworks.MediaControlsExtension.Media.ITunes;
+namespace JPSoftworks.MediaControlsExtension.Helpers;
 
 /// <summary>GSMTC identities replaced by the direct iTunes provider.</summary>
-public static class ITunesSourceClaims
+internal static class ITunesSourceClaims
 {
     /// <summary>Gets all GSMTC sessions suppressed while the direct provider is enabled.</summary>
     public static ImmutableArray<MediaBackendSourceClaim> ReplacesGsmtcSources { get; } =

@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using System.Diagnostics;
+using JPSoftworks.MediaControlsExtension.Helpers;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Media.ITunes;
 

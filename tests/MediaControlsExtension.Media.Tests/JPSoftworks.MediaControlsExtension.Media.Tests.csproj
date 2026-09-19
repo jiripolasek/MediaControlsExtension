@@ -19,5 +19,6 @@
 
 	<ItemGroup>
 		<Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSourcePresentation.cs" Link="Presentation\MediaSourcePresentation.cs" />
+		<Compile Include="..\..\src\MediaControlsExtension\Helpers\ITunesSourceClaims.cs" Link="Helpers\ITunesSourceClaims.cs" />
 	</ItemGroup>
 </Project>
