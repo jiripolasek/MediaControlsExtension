@@ -153,7 +153,7 @@ public sealed class ITunesBackendTests
         sink.Dispose();
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow((int)ITunesEventDispId.DatabaseChanged)]
     [DataRow((int)ITunesEventDispId.PlayerPlay)]
     [DataRow((int)ITunesEventDispId.PlayerStop)]
@@ -165,7 +165,7 @@ public sealed class ITunesBackendTests
         Assert.AreEqual(ITunesEventAction.Refresh, ITunesEventClassifier.Classify(dispId));
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow((int)ITunesEventDispId.AboutToPromptUserToQuit)]
     [DataRow((int)ITunesEventDispId.Quitting)]
     public void QuitEventsRequestDisconnectInsteadOfRefresh(int dispId)
@@ -230,6 +230,27 @@ public sealed class ITunesBackendTests
         Assert.AreEqual(MediaBackendConnectionState.Connected, snapshot.Connection);
         Assert.IsTrue(snapshot.Sessions.IsEmpty);
         Assert.IsTrue(snapshot.CurrentSessionHints.IsEmpty);
+    }
+
+    [TestMethod]
+    [DataRow("Apple.iTunes")]
+    [DataRow("iTunes.exe")]
+    [DataRow("AppleInc.iTunes_nzyj5cx40ttqa!iTunes")]
+    public void ITunesClaimsEachInstallationIdentityForBothGsmtcHosts(string applicationId)
+    {
+        Assert.IsTrue(ITunesSourceClaims.ReplacesGsmtcSources.Contains(new MediaBackendSourceClaim("gsmtc", applicationId)));
+        Assert.IsTrue(ITunesSourceClaims.ReplacesGsmtcSources.Contains(new MediaBackendSourceClaim("gsmtc.worker", applicationId)));
+    }
+
+    [TestMethod]
+    [DataRow("C:\\Program Files\\iTunes\\iTunes.exe", "Apple.iTunes")]
+    [DataRow("C:\\Program Files\\WindowsApps\\AppleInc.iTunes_12.13.8.3_x64__nzyj5cx40ttqa\\iTunes.exe", "AppleInc.iTunes_nzyj5cx40ttqa!iTunes")]
+    public void NativeIdentityMatchesTheDiscoveredITunesInstallation(string executablePath, string expectedApplicationId)
+    {
+        var identity = ITunesBackend.CreateNativeApplicationIdentity(executablePath);
+
+        Assert.AreEqual(expectedApplicationId, identity.ApplicationId);
+        Assert.AreEqual(executablePath, identity.ExecutablePath);
     }
 
     [TestMethod]

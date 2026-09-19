@@ -19,6 +19,8 @@ internal static class ITunesSourceClaims
         new("gsmtc.worker", "Apple.iTunes"),
         new("gsmtc", "iTunes.exe"),
         new("gsmtc.worker", "iTunes.exe"),
+        new("gsmtc", "AppleInc.iTunes_nzyj5cx40ttqa!iTunes"),
+        new("gsmtc.worker", "AppleInc.iTunes_nzyj5cx40ttqa!iTunes"),
         new("gsmtc", "49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg"),
         new("gsmtc.worker", "49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg"),
         new("gsmtc", "49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg!App"),

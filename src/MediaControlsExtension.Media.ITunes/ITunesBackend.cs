@@ -24,6 +24,8 @@ public sealed class ITunesBackend : IMediaBackend
 {
     private static readonly MediaBackendSessionId DefaultSessionId = new(1);
     private static readonly TimeSpan DiscoveryPollInterval = TimeSpan.FromSeconds(2);
+    private const string DirectInstallerApplicationId = "Apple.iTunes";
+    private const string StoreApplicationId = "AppleInc.iTunes_nzyj5cx40ttqa!iTunes";
 
     private readonly ILogger _logger;
     private readonly string? _sourceIconPath;
@@ -1176,8 +1178,28 @@ public sealed class ITunesBackend : IMediaBackend
             DisplayName: "iTunes",
             IconPath: this._sourceIconPath)
         {
-            NativeApplication = new MediaNativeApplicationIdentity("Apple.iTunes", this._executablePath),
+            NativeApplication = CreateNativeApplicationIdentity(this._executablePath),
         };
+
+    internal static MediaNativeApplicationIdentity CreateNativeApplicationIdentity(string? executablePath) =>
+        new(IsStoreInstallation(executablePath) ? StoreApplicationId : DirectInstallerApplicationId, executablePath);
+
+    private static bool IsStoreInstallation(string? executablePath)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            return false;
+        }
+
+        var windowsApps = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            "WindowsApps");
+        var windowsAppsPrefix = Path.EndsInDirectorySeparator(windowsApps)
+            ? windowsApps
+            : windowsApps + Path.DirectorySeparatorChar;
+
+        return executablePath.StartsWith(windowsAppsPrefix, StringComparison.OrdinalIgnoreCase);
+    }
 
     private void SignalChanged(MediaBackendSignal signal)
     {

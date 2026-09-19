@@ -31,15 +31,17 @@ the provider releases its COM connection without closing iTunes or changing play
   Native AOT-compatible interop rather than runtime-generated COM wrappers. A native
   crash or an unresponsive COM call can therefore be terminated and recovered without
   taking down the extension process.
-- Reports the native application identity `Apple.iTunes` and uses the discovered
-  `iTunes.exe` path when available. This lets the extension retain normal player
-  identity and application-switching behavior.
-- While enabled, claims GSMTC application IDs `Apple.iTunes`, `iTunes.exe`, and the
-  two Media Controller Helper identities (`49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg`
-  and `49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg!App`) so those
-  integrations do not create a duplicate player. The claims remain active during a
-  temporary COM disconnection. Disable the iTunes source to use a third-party iTunes
-  SMTC integration instead.
+- Reports `Apple.iTunes` for Apple's direct installer and the packaged Store AUMID
+  `AppleInc.iTunes_nzyj5cx40ttqa!iTunes` when the discovered executable is under
+  `Program Files\WindowsApps`. The discovered `iTunes.exe` path is retained when
+  available for normal player identity and application-switching behavior.
+- While enabled, claims the direct-install identities `Apple.iTunes` and `iTunes.exe`,
+  the Store AUMID `AppleInc.iTunes_nzyj5cx40ttqa!iTunes`, and the two Media Controller
+  Helper identities (`49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg` and
+  `49586DaveAntoine.MediaControllerforiTunes_9bzempp7dntjg!App`) so those integrations
+  do not create a duplicate player. The claims remain active during a temporary COM
+  disconnection. Disable the iTunes source to use a third-party iTunes SMTC integration
+  instead.
 - Controls only the local iTunes instance registered with Windows COM. Remote
   libraries, playlist browsing, seeking, and application-specific volume are not
   exposed by this provider.
