@@ -758,6 +758,12 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
     <value>Control one local or remote VLC 3 player through its Web interface.</value>
   </data>
+  <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
+    <value>Controls desktop iTunes through its COM interface.</value>
+  </data>
   <data name="Settings_Group_Vlc" xml:space="preserve">
     <value>VLC connection</value>
   </data>

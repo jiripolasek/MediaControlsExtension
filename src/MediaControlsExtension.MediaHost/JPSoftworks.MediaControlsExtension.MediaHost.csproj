@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="../MediaControlsExtension.Media.Hosting/JPSoftworks.MediaControlsExtension.Media.Hosting.csproj" />
     <ProjectReference Include="../MediaControlsExtension.Media.Gsmtc/JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
+    <ProjectReference Include="../MediaControlsExtension.Media.ITunes/JPSoftworks.MediaControlsExtension.Media.ITunes.csproj" />
     <ProjectReference Include="../MediaControlsExtension.Media.Dummy/JPSoftworks.MediaControlsExtension.Media.Dummy.csproj" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Windows.CsWinRT" />

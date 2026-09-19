@@ -33,6 +33,7 @@ internal static class WorkerApplicationTests
     public static IEnumerable<(string Name, Func<Task> Run)> Cases(string directory) =>
     [
         ("Worker application rejects invalid arguments and unknown factories", InvalidLaunchAsync),
+        ("Production worker catalog registers iTunes", ProductionCatalogRegistersITunesAsync),
         ("Worker application does not construct a backend before a valid handshake", InvalidHandshakeAsync),
         ("Worker application dispatches an activation backend and preserves owner lifetime",
             () => DispatchAsync("application-activation", directory)),
@@ -41,6 +42,13 @@ internal static class WorkerApplicationTests
         ("Worker application logs the expired command watchdog", () => WatchdogLoggingAsync(false, directory)),
         ("Worker application logs the expired snapshot watchdog", () => WatchdogLoggingAsync(true, directory))
     ];
+
+    private static Task ProductionCatalogRegistersITunesAsync()
+    {
+        HostingTests.Check(WorkerBackendCatalog.Factories.ContainsKey("itunes"),
+            "The production worker catalog did not register the iTunes backend.");
+        return Task.CompletedTask;
+    }
 
     private static async Task InvalidLaunchAsync()
     {
