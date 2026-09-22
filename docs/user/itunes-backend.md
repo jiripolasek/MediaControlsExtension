@@ -23,6 +23,11 @@ the provider releases its COM connection without closing iTunes or changing play
 - Uses iTunes events for playback and metadata updates. A lightweight discovery
   check runs only while iTunes is disconnected; once connected, the worker watches
   the iTunes process for exit instead of repeatedly polling COM.
+- Releases its COM connection when iTunes starts quitting and waits for that
+  process to exit before resuming discovery. It does not poll while waiting. If
+  you cancel quitting, including choosing Don't Quit in the scripting-interface
+  warning, the source remains disconnected. To reconnect, disable and re-enable
+  iTunes in Media sources, or close and reopen iTunes.
 - Exports the current artwork through a temporary file created by iTunes, reads it
   into memory, and removes the file immediately. One image is cached at a time and
   track changes invalidate the old artwork key.
@@ -52,6 +57,11 @@ Start the extension before and after iTunes, then verify that the source connect
 both orders. Check playback, stop, previous/next, shuffle, the complete repeat cycle,
 metadata, timeline, and tracks with different or missing artwork. Close and reopen
 iTunes and confirm that the old session disappears and a fresh session replaces it.
+If the scripting-interface warning appears, choose Don't Quit and confirm that the
+source remains disconnected. Disable and re-enable iTunes in Media sources and
+confirm that it reconnects. Then quit again, choose Quit if the warning appears,
+and confirm that the source stays disconnected while iTunes shuts down and that
+iTunes stays closed. Reopen iTunes and confirm that the source reconnects.
 
 If an iTunes SMTC plugin is installed, verify that only the direct iTunes session is
 shown while this provider is enabled. Disable the provider and confirm that the GSMTC
