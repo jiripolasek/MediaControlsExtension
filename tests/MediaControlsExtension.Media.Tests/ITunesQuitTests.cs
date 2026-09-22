@@ -182,6 +182,67 @@ public sealed class ITunesQuitTests
         fixture.AssertTemporaryObjectsReleased();
     }
 
+    [TestMethod]
+    [DataRow(8)]
+    [DataRow(9)]
+    public async Task QuitWaitsForProcessExitWithoutResumingDiscovery(int eventId)
+    {
+        await using var fixture = await NativeFixture.CreateAsync(eventId);
+        await fixture.RunAsync(fixture.SendQuit);
+        await fixture.AssertQuitCompletedAsync();
+        var before = await fixture.Backend.ReadSnapshotAsync(default);
+        var discoveryChecks = fixture.DiscoveryChecks;
+
+        await fixture.RunAsync(() => fixture.InvokeBackend("DiscoverITunes"));
+        fixture.RequestRefresh();
+        await fixture.RunAsync(fixture.SendQuit);
+
+        Assert.AreEqual(discoveryChecks, fixture.DiscoveryChecks);
+        Assert.AreEqual(false, fixture.GetBackendField("_isDiscoveryTimerRunning"));
+        Assert.AreEqual(before.Revision, (await fixture.Backend.ReadSnapshotAsync(default)).Revision);
+        Assert.AreEqual(MediaBackendCommandStatus.Unavailable, (await fixture.ExecuteAsync(MediaOperation.Play)).Status);
+    }
+
+    [TestMethod]
+    [DataRow(8)]
+    [DataRow(9)]
+    public async Task ProcessExitAfterQuitReleasesTheWatchAndResumesDiscovery(int eventId)
+    {
+        await using var fixture = await NativeFixture.CreateAsync(eventId);
+        await fixture.RunAsync(fixture.SendQuit);
+        await fixture.AssertQuitCompletedAsync();
+        var subscription = (ITunesProcessExitSubscription)fixture.GetBackendField("_processExitSubscription")!;
+        await fixture.RunAsync(() => fixture.InvokeBackend("HandleConnectedProcessExited", -1));
+        Assert.AreEqual(false, fixture.GetBackendField("_isDiscoveryTimerRunning"));
+        Assert.IsTrue(subscription.IsAttached);
+
+        await fixture.RunAsync(() => fixture.InvokeBackend("HandleConnectedProcessExited", Environment.ProcessId));
+
+        Assert.IsFalse(subscription.IsAttached);
+        Assert.IsNull(fixture.GetBackendField("_processExitSubscription"));
+        Assert.IsNull(fixture.GetBackendField("_quittingProcessId"));
+        Assert.AreEqual(true, fixture.GetBackendField("_isDiscoveryTimerRunning"));
+        var discoveryChecks = fixture.DiscoveryChecks;
+        await fixture.RunAsync(() => fixture.InvokeBackend("DiscoverITunes"));
+        Assert.IsTrue(fixture.DiscoveryChecks > discoveryChecks);
+    }
+
+    [TestMethod]
+    public async Task DisposingAfterQuitReleasesTheProcessWatch()
+    {
+        await using var fixture = await NativeFixture.CreateAsync(9);
+        await fixture.RunAsync(fixture.SendQuit);
+        await fixture.AssertQuitCompletedAsync();
+        var subscription = (ITunesProcessExitSubscription)fixture.GetBackendField("_processExitSubscription")!;
+
+        await fixture.Backend.DisposeAsync();
+
+        Assert.IsFalse(subscription.IsAttached);
+        Assert.IsNull(fixture.GetBackendField("_processExitSubscription"));
+        Assert.IsNull(fixture.GetBackendField("_quittingProcessId"));
+        Assert.AreEqual(false, fixture.GetBackendField("_isDiscoveryTimerRunning"));
+    }
+
     private sealed class NativeFixture : IAsyncDisposable
     {
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
@@ -197,9 +258,18 @@ public sealed class ITunesQuitTests
         private int _nativeDepth;
         private bool _quitSent;
 
-        private NativeFixture(int eventId) => this._eventId = eventId;
+        private NativeFixture(int eventId)
+        {
+            this._eventId = eventId;
+            this.Backend = new(isProcessRunning: _ =>
+            {
+                this.DiscoveryChecks++;
+                return false;
+            });
+        }
 
-        public ITunesBackend Backend { get; } = new(isProcessRunning: static _ => false);
+        public ITunesBackend Backend { get; }
+        public int DiscoveryChecks { get; private set; }
         public string? QuitDuring { get; set; }
         public int StateReadResult { get; set; }
         public int TrackReadResult { get; set; }
@@ -221,6 +291,9 @@ public sealed class ITunesQuitTests
 
         private void SetBackendField(string name, object value) =>
             typeof(ITunesBackend).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(this.Backend, value);
+
+        public void InvokeBackend(string name, params object[] arguments) =>
+            typeof(ITunesBackend).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this.Backend, arguments);
 
         public Task<MediaBackendCommandResult> ExecuteAsync(MediaOperation operation) =>
             this.Backend.ExecuteAsync(new(new(1), (long)this.GetBackendField("_bindingGeneration")!, operation, []), default);
@@ -249,7 +322,10 @@ public sealed class ITunesQuitTests
         public void SendQuit()
         {
             this._quitSent = true;
-            _ = ITunesNative.DispatchInvoke(this._sink, this._eventId);
+            if (this._sink != 0)
+            {
+                _ = ITunesNative.DispatchInvoke(this._sink, this._eventId);
+            }
         }
 
         public async Task AssertQuitCompletedAsync()
@@ -259,6 +335,9 @@ public sealed class ITunesQuitTests
             Assert.IsEmpty(this._callsAfterQuit, string.Join(", ", this._callsAfterQuit));
             Assert.IsEmpty(this._lifetimeErrors, string.Join(", ", this._lifetimeErrors));
             Assert.IsTrue(this._objects.All(static item => item.References == 0));
+            Assert.IsTrue(((ITunesProcessExitSubscription)this.GetBackendField("_processExitSubscription")!).IsAttached);
+            Assert.AreEqual(Environment.ProcessId, this.GetBackendField("_quittingProcessId"));
+            Assert.AreEqual(false, this.GetBackendField("_isDiscoveryTimerRunning"));
             Assert.IsTrue(this._exportedFiles.All(static path => !File.Exists(path)));
             var snapshot = await this.Backend.ReadSnapshotAsync(default);
             Assert.AreEqual(MediaBackendConnectionState.Disconnected, snapshot.Connection);
@@ -352,6 +431,7 @@ public sealed class ITunesQuitTests
             {
                 this.CheckReleaseThread("Unadvise");
                 _ = ITunesNative.Release(this._sink);
+                this._sink = 0;
                 return 0;
             });
             this.SetBackendField("_eventSink", sink);

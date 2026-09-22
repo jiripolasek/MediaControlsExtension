@@ -397,7 +397,7 @@ public sealed class ITunesBackend : IMediaBackend
 
     private void DiscoverITunes()
     {
-        if (Volatile.Read(ref this._disposeState) != 0)
+        if (this.IsDisconnectRequested || this._quittingProcessId != null)
         {
             return;
         }
@@ -416,7 +416,6 @@ public sealed class ITunesBackend : IMediaBackend
             return;
         }
 
-        this._quittingProcessId = null;
         this.Connect(process);
     }
 
@@ -434,7 +433,7 @@ public sealed class ITunesBackend : IMediaBackend
             processes = Process.GetProcessesByName("iTunes");
             foreach (var process in processes)
             {
-                if (!process.HasExited && process.Id != this._quittingProcessId)
+                if (!process.HasExited)
                 {
                     this.RecordExecutablePath(process);
                     selected = process;
@@ -728,11 +727,16 @@ public sealed class ITunesBackend : IMediaBackend
 
     private void Disconnect(bool resumeDiscovery = true)
     {
+        var waitForProcessExit = resumeDiscovery && this._quittingProcessId != null;
         this._refreshScheduler.Clear();
         this.UnhookEvents();
 
-        this._processExitSubscription?.Dispose();
-        this._processExitSubscription = null;
+        if (!waitForProcessExit)
+        {
+            this._processExitSubscription?.Dispose();
+            this._processExitSubscription = null;
+            this._quittingProcessId = null;
+        }
 
         if (this._iTunesApp != 0)
         {
@@ -761,9 +765,13 @@ public sealed class ITunesBackend : IMediaBackend
             this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
         }
 
-        if (resumeDiscovery && Volatile.Read(ref this._disposeState) == 0)
+        if (resumeDiscovery && !waitForProcessExit && Volatile.Read(ref this._disposeState) == 0)
         {
             this.StartDiscoveryPolling();
+        }
+        else
+        {
+            this.StopDiscoveryPolling();
         }
     }
 
