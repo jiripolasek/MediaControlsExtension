@@ -836,13 +836,6 @@ public sealed class ITunesBackend : IMediaBackend
                 return;
             }
 
-            var playbackState = rawState switch
-            {
-                ITPlayerState.Playing => MediaPlaybackState.Playing,
-                ITPlayerState.Stopped => MediaPlaybackState.Stopped,
-                _ => MediaPlaybackState.Paused,
-            };
-
             var capabilities = MediaCapabilities.Play |
                                MediaCapabilities.Pause |
                                MediaCapabilities.Stop |
@@ -929,6 +922,11 @@ public sealed class ITunesBackend : IMediaBackend
 
             _ = ITunesNative.GetPlayerPosition(this.GetComCallTarget(this._iTunesApp), out positionSec);
             this.ThrowIfDisconnectRequested();
+
+            // Paused playback retains CurrentTrack; Stop clears it and takes the session-removal path above.
+            var playbackState = rawState == ITPlayerState.Playing
+                ? MediaPlaybackState.Playing
+                : MediaPlaybackState.Paused;
 
             MediaArtworkKey? artworkKey = null;
             lock (this._stateLock)

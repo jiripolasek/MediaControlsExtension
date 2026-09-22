@@ -20,6 +20,7 @@ the provider releases its COM connection without closing iTunes or changing play
 - Supports play, pause, stop, previous, next, shuffle, repeat, title, artist, album,
   genre, track number, timeline, and artwork. Repeat cycles through off, all, one,
   and off.
+- Pause keeps the current session. Stop removes it until playback starts again.
 - Uses iTunes events for playback and metadata updates. A lightweight discovery
   check runs only while iTunes is disconnected; once connected, the worker watches
   the iTunes process for exit instead of repeatedly polling COM.
@@ -57,6 +58,9 @@ Start the extension before and after iTunes, then verify that the source connect
 both orders. Check playback, stop, previous/next, shuffle, the complete repeat cycle,
 metadata, timeline, and tracks with different or missing artwork. Close and reopen
 iTunes and confirm that the old session disappears and a fresh session replaces it.
+Pause through Media Controls, then resume directly in iTunes and confirm that the
+source immediately shows playback as active. Stop playback and confirm that the
+session disappears instead of remaining paused.
 If the scripting-interface warning appears, choose Don't Quit and confirm that the
 source remains disconnected. Disable and re-enable iTunes in Media sources and
 confirm that it reconnects. Then quit again, choose Quit if the warning appears,
