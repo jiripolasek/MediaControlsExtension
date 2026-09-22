@@ -41,16 +41,21 @@ Adding a factory does not require changing `Program` or `WorkerApplication`.
 callback to a backend-specific interface. Factories may ignore capabilities they
 do not need. Each enabled hosted backend still gets its own process.
 
-`Backends/DummyBackendFactory` is a second compiled factory. It creates the
+`Backends/ITunesBackendFactory` creates the native desktop iTunes backend. Its
+dedicated dispatcher thread, COM objects, and event sink all remain inside the
+worker, while immutable snapshots and artwork cross the existing protocol. It
+does not require owner activation.
+
+`Backends/DummyBackendFactory` is another compiled factory. It creates the
 provider in `MediaControlsExtension.Media.Dummy` without owner activation or
 native dependencies. The extension registers it as `dummy.worker`, disabled by
 default and outside the GSMTC exclusive group. It can run alongside GSMTC in a
 separate worker without changing `Program`, `WorkerApplication`, or the protocol.
 See [Dummy media](dummy-media.md) for its simulated behavior.
 
-Both worker registrations use one options helper for the executable layout and
+All worker registrations use one options helper for the executable layout and
 logging policy. GSMTC adds its owner activation callback to those common options;
-the dummy factory uses them directly.
+the iTunes and dummy factories use them directly.
 
 ## Provider selection and mutual exclusion
 

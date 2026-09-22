@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RuntimeIdentifiers>$(CmdPalRuntimeIdentifiers)</RuntimeIdentifiers>
+    <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NeutralLanguage>$(CmdPalDefaultLanguage)</NeutralLanguage>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+    <InternalsVisibleTo Include="JPSoftworks.MediaControlsExtension.Media.Tests" />
+  </ItemGroup>
+</Project>

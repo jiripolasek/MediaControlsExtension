@@ -87,6 +87,16 @@ internal static class MediaBackendCatalog
         {
             ReplacesSources = VlcSourceClaims(getVlcOptions()),
         });
+
+        mediaBackendRegistry.Register(new(
+            "itunes",
+            Strings.ResourceManager.GetString("Settings_Backend_ITunes_Title", Strings.Culture)!,
+            Strings.ResourceManager.GetString("Settings_Backend_ITunes_Description", Strings.Culture)!,
+            loggerFactory => new OutOfProcessMediaBackend(CreateWorkerOptions("itunes"), owner, loggerFactory),
+            EnabledByDefault: true)
+        {
+            ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
+        });
 #if DEBUG || FF_ENABLE_DUMMY_BACKEND
     mediaBackendRegistry..Register(new(
         "dummy.worker",
