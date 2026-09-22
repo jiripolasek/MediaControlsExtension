@@ -243,7 +243,7 @@ public sealed class ITunesBackend : IMediaBackend
                     "iTunes session is no longer active."));
             }
 
-            if (!this._isConnected || this._dispatcherQueue == null)
+            if (!this._isConnected || this._dispatcherQueue == null || this.IsDisconnectRequested)
             {
                 return Task.FromResult(new MediaBackendCommandResult(
                     MediaBackendCommandStatus.Unavailable,
@@ -283,7 +283,7 @@ public sealed class ITunesBackend : IMediaBackend
                         return;
                     }
 
-                    if (!this._isConnected || this._iTunesApp == 0)
+                    if (!this._isConnected || this._iTunesApp == 0 || this.IsDisconnectRequested)
                     {
                         tcs.TrySetResult(new(MediaBackendCommandStatus.Unavailable, "iTunes is not connected."));
                         return;
@@ -298,11 +298,11 @@ public sealed class ITunesBackend : IMediaBackend
 
                 var hr = command.Operation switch
                 {
-                    MediaOperation.Play => ITunesNative.Play(this._iTunesApp),
-                    MediaOperation.Pause => ITunesNative.Pause(this._iTunesApp),
-                    MediaOperation.Stop => ITunesNative.Stop(this._iTunesApp),
-                    MediaOperation.SkipNext => ITunesNative.NextTrack(this._iTunesApp),
-                    MediaOperation.SkipPrevious => ITunesNative.BackTrack(this._iTunesApp),
+                    MediaOperation.Play => ITunesNative.Play(this.GetComCallTarget(this._iTunesApp)),
+                    MediaOperation.Pause => ITunesNative.Pause(this.GetComCallTarget(this._iTunesApp)),
+                    MediaOperation.Stop => ITunesNative.Stop(this.GetComCallTarget(this._iTunesApp)),
+                    MediaOperation.SkipNext => ITunesNative.NextTrack(this.GetComCallTarget(this._iTunesApp)),
+                    MediaOperation.SkipPrevious => ITunesNative.BackTrack(this.GetComCallTarget(this._iTunesApp)),
                     MediaOperation.ToggleShuffle => this.ExecuteToggleShuffle(),
                     MediaOperation.ToggleRepeat => this.ExecuteToggleRepeat(),
                     _ => int.MinValue,
@@ -314,7 +314,9 @@ public sealed class ITunesBackend : IMediaBackend
                     return;
                 }
 
+                this.ThrowIfDisconnectRequested();
                 this.UpdatePlaybackAndMetadata();
+                this.ThrowIfDisconnectRequested();
 
                 if (hr >= 0)
                 {
@@ -324,6 +326,10 @@ public sealed class ITunesBackend : IMediaBackend
                 {
                     tcs.TrySetResult(new(MediaBackendCommandStatus.Failed, $"iTunes COM call returned 0x{hr:X8}"));
                 }
+            }
+            catch (OperationCanceledException) when (this.IsDisconnectRequested)
+            {
+                tcs.TrySetResult(new(MediaBackendCommandStatus.Unavailable, "iTunes is disconnecting."));
             }
             catch (Exception ex)
             {
@@ -787,16 +793,35 @@ public sealed class ITunesBackend : IMediaBackend
         }
     }
 
+    private bool IsDisconnectRequested =>
+        Volatile.Read(ref this._quitDisconnectPending) != 0 || Volatile.Read(ref this._disposeState) != 0;
+
+    private void ThrowIfDisconnectRequested()
+    {
+        if (this.IsDisconnectRequested)
+        {
+            throw new OperationCanceledException("iTunes is disconnecting.");
+        }
+    }
+
+    // A native call can deliver a quit callback before returning to its caller.
+    private nint GetComCallTarget(nint instance)
+    {
+        this.ThrowIfDisconnectRequested();
+        return instance;
+    }
+
     private void UpdatePlaybackAndMetadata()
     {
-        if (this._iTunesApp == 0)
+        if (this._iTunesApp == 0 || this.IsDisconnectRequested)
         {
             return;
         }
 
         try
         {
-            var hr = ITunesNative.GetPlayerState(this._iTunesApp, out var rawState);
+            var hr = ITunesNative.GetPlayerState(this.GetComCallTarget(this._iTunesApp), out var rawState);
+            this.ThrowIfDisconnectRequested();
             if (hr < 0)
             {
                 this.Disconnect();
@@ -817,18 +842,18 @@ public sealed class ITunesBackend : IMediaBackend
                                MediaCapabilities.SkipPrevious;
 
             nint pPlaylist = 0;
-            _ = ITunesNative.GetCurrentPlaylist(this._iTunesApp, out pPlaylist);
+            _ = ITunesNative.GetCurrentPlaylist(this.GetComCallTarget(this._iTunesApp), out pPlaylist);
             if (pPlaylist != 0)
             {
                 try
                 {
-                    var shuffleHr = ITunesNative.GetPlaylistShuffle(pPlaylist, out _);
+                    var shuffleHr = ITunesNative.GetPlaylistShuffle(this.GetComCallTarget(pPlaylist), out _);
                     if (shuffleHr >= 0)
                     {
                         capabilities |= MediaCapabilities.ToggleShuffle;
                     }
 
-                    var repeatHr = ITunesNative.GetPlaylistRepeat(pPlaylist, out _);
+                    var repeatHr = ITunesNative.GetPlaylistRepeat(this.GetComCallTarget(pPlaylist), out _);
                     if (repeatHr >= 0)
                     {
                         capabilities |= MediaCapabilities.ToggleRepeat;
@@ -851,24 +876,26 @@ public sealed class ITunesBackend : IMediaBackend
             int currentTrackId = 0;
 
             nint pTrack = 0;
-            hr = ITunesNative.GetCurrentTrack(this._iTunesApp, out pTrack);
-            if (hr < 0 || pTrack == 0)
-            {
-                this.ClearCurrentTrack();
-                return;
-            }
-
+            hr = ITunesNative.GetCurrentTrack(this.GetComCallTarget(this._iTunesApp), out pTrack);
             bool trackChanged = false;
             try
             {
-                _ = ITunesNative.GetTrackName(pTrack, out title);
-                _ = ITunesNative.GetTrackArtist(pTrack, out artist);
-                _ = ITunesNative.GetTrackAlbum(pTrack, out album);
-                _ = ITunesNative.GetTrackGenre(pTrack, out genre);
-                _ = ITunesNative.GetTrackDuration(pTrack, out durationSec);
-                _ = ITunesNative.GetTrackNumber(pTrack, out trackNumber);
-                _ = ITunesNative.GetTrackCount(pTrack, out trackCount);
-                _ = ITunesNative.GetTrackDatabaseId(pTrack, out currentTrackId);
+                this.ThrowIfDisconnectRequested();
+                if (hr < 0 || pTrack == 0)
+                {
+                    this.ClearCurrentTrack();
+                    return;
+                }
+
+                _ = ITunesNative.GetTrackName(this.GetComCallTarget(pTrack), out title);
+                _ = ITunesNative.GetTrackArtist(this.GetComCallTarget(pTrack), out artist);
+                _ = ITunesNative.GetTrackAlbum(this.GetComCallTarget(pTrack), out album);
+                _ = ITunesNative.GetTrackGenre(this.GetComCallTarget(pTrack), out genre);
+                _ = ITunesNative.GetTrackDuration(this.GetComCallTarget(pTrack), out durationSec);
+                _ = ITunesNative.GetTrackNumber(this.GetComCallTarget(pTrack), out trackNumber);
+                _ = ITunesNative.GetTrackCount(this.GetComCallTarget(pTrack), out trackCount);
+                _ = ITunesNative.GetTrackDatabaseId(this.GetComCallTarget(pTrack), out currentTrackId);
+                this.ThrowIfDisconnectRequested();
 
                 lock (this._stateLock)
                 {
@@ -892,7 +919,8 @@ public sealed class ITunesBackend : IMediaBackend
                 _ = ITunesNative.Release(pTrack);
             }
 
-            _ = ITunesNative.GetPlayerPosition(this._iTunesApp, out positionSec);
+            _ = ITunesNative.GetPlayerPosition(this.GetComCallTarget(this._iTunesApp), out positionSec);
+            this.ThrowIfDisconnectRequested();
 
             MediaArtworkKey? artworkKey = null;
             lock (this._stateLock)
@@ -966,6 +994,9 @@ public sealed class ITunesBackend : IMediaBackend
                 this.SignalChanged(signal);
             }
         }
+        catch (OperationCanceledException) when (this.IsDisconnectRequested)
+        {
+        }
         catch (Exception ex)
         {
             ITunesLog.ITunesUpdatePlaybackStateFailed(this._logger, ex);
@@ -1008,7 +1039,7 @@ public sealed class ITunesBackend : IMediaBackend
     private void UpdateCachedArtwork(nint pTrack, int trackDatabaseId)
     {
         nint pArtworks = 0;
-        _ = ITunesNative.GetTrackArtworkCollection(pTrack, out pArtworks);
+        _ = ITunesNative.GetTrackArtworkCollection(this.GetComCallTarget(pTrack), out pArtworks);
         if (pArtworks == 0)
         {
             return;
@@ -1017,7 +1048,7 @@ public sealed class ITunesBackend : IMediaBackend
         try
         {
             nint pArtwork = 0;
-            _ = ITunesNative.GetArtworkItem(pArtworks, 1, out pArtwork);
+            _ = ITunesNative.GetArtworkItem(this.GetComCallTarget(pArtworks), 1, out pArtwork);
             if (pArtwork == 0)
             {
                 return;
@@ -1025,12 +1056,13 @@ public sealed class ITunesBackend : IMediaBackend
 
             try
             {
-                _ = ITunesNative.GetArtworkFormat(pArtwork, out var format);
+                _ = ITunesNative.GetArtworkFormat(this.GetComCallTarget(pArtwork), out var format);
                 var tempFile = Path.Combine(Path.GetTempPath(), $"MC_iTunes_Art_{Guid.NewGuid():N}.tmp");
 
                 try
                 {
-                    var saveHr = ITunesNative.SaveArtworkToFile(pArtwork, tempFile);
+                    var saveHr = ITunesNative.SaveArtworkToFile(this.GetComCallTarget(pArtwork), tempFile);
+                    this.ThrowIfDisconnectRequested();
                     if (saveHr >= 0 && File.Exists(tempFile))
                     {
                         var bytes = File.ReadAllBytes(tempFile);
@@ -1080,7 +1112,7 @@ public sealed class ITunesBackend : IMediaBackend
     private int ExecuteToggleShuffle()
     {
         nint pPlaylist = 0;
-        var hr = ITunesNative.GetCurrentPlaylist(this._iTunesApp, out pPlaylist);
+        var hr = ITunesNative.GetCurrentPlaylist(this.GetComCallTarget(this._iTunesApp), out pPlaylist);
         if (hr < 0 || pPlaylist == 0)
         {
             return hr;
@@ -1088,10 +1120,10 @@ public sealed class ITunesBackend : IMediaBackend
 
         try
         {
-            hr = ITunesNative.GetPlaylistShuffle(pPlaylist, out var currentShuffle);
+            hr = ITunesNative.GetPlaylistShuffle(this.GetComCallTarget(pPlaylist), out var currentShuffle);
             if (hr >= 0)
             {
-                hr = ITunesNative.SetPlaylistShuffle(pPlaylist, !currentShuffle);
+                hr = ITunesNative.SetPlaylistShuffle(this.GetComCallTarget(pPlaylist), !currentShuffle);
             }
 
             return hr;
@@ -1105,7 +1137,7 @@ public sealed class ITunesBackend : IMediaBackend
     private int ExecuteToggleRepeat()
     {
         nint pPlaylist = 0;
-        var hr = ITunesNative.GetCurrentPlaylist(this._iTunesApp, out pPlaylist);
+        var hr = ITunesNative.GetCurrentPlaylist(this.GetComCallTarget(this._iTunesApp), out pPlaylist);
         if (hr < 0 || pPlaylist == 0)
         {
             return hr;
@@ -1113,7 +1145,7 @@ public sealed class ITunesBackend : IMediaBackend
 
         try
         {
-            hr = ITunesNative.GetPlaylistRepeat(pPlaylist, out var currentRepeat);
+            hr = ITunesNative.GetPlaylistRepeat(this.GetComCallTarget(pPlaylist), out var currentRepeat);
             if (hr >= 0)
             {
                 var nextRepeat = currentRepeat switch
@@ -1123,7 +1155,7 @@ public sealed class ITunesBackend : IMediaBackend
                     _ => ITPlaylistRepeatMode.Off,
                 };
 
-                hr = ITunesNative.SetPlaylistRepeat(pPlaylist, nextRepeat);
+                hr = ITunesNative.SetPlaylistRepeat(this.GetComCallTarget(pPlaylist), nextRepeat);
             }
 
             return hr;
