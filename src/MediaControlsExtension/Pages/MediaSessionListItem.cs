@@ -22,6 +22,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
     private readonly BringAssociatedAppToFrontCommand _switchToApplicationCommand;
     private readonly ICommand _nextTrackCommand;
     private readonly ICommand _previousTrackCommand;
+    private readonly IContextItem[] _mediaContextCommands;
+    private readonly IContextItem[] _mediaContextCommandsWithoutActivation;
 #if FF_ENABLE_FULL_METADATA_PAGE
     private MediaMetadataPage? _metadataPage;
 #endif
@@ -151,7 +153,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         this._metadataPage = metadataPages.GetOrCreate(viewModel);
 #endif
 
-        this.MoreCommands =
+        this._mediaContextCommands =
         [
             new CommandContextItem(this._switchToApplicationCommand) { RequestedShortcut = Chords.SwitchToApplication, Icon = Icons.SwitchApps },
 #if FF_ENABLE_FULL_METADATA_PAGE
@@ -164,6 +166,8 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             new CommandContextItem(toggleRepeatCommand) { RequestedShortcut = Chords.ToggleRepeat, Icon = Icons.ToggleRepeat },
             new CommandContextItem(toggleShuffleCommand) { RequestedShortcut = Chords.ToggleShuffle, Icon = Icons.ToggleShuffle },
         ];
+        this._mediaContextCommandsWithoutActivation = this._mediaContextCommands
+            .Skip(1).SkipWhile(static item => item is Separator).ToArray();
 
         this.Update(viewModel);
     }
@@ -203,6 +207,9 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
         this.Title = (isPlaying && !this._asBand ? "\u25B6\uFE0F " : string.Empty) + properties.Title;
         this.Subtitle = BuildSubtitle(viewModel);
         this._command.UpdatePresentation(viewModel.Session);
+        this.MoreCommands = viewModel.CanActivateSource
+            ? this._mediaContextCommands
+            : this._mediaContextCommandsWithoutActivation;
         this.UpdateNavigationCommandIcons();
         var detailsChanged = this.UpdateDetails(viewModel);
         this.UpdateTags(viewModel);

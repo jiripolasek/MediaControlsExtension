@@ -53,6 +53,8 @@ internal sealed partial class MediaSessionViewModel : IDisposable
 
     public bool IsAvailable => this.Session.IsAvailable;
 
+    public bool CanActivateSource => this.IsAvailable && this.PlaybackInfo.Capabilities.HasFlag(MediaCapabilities.ActivateSource);
+
     public MediaPropertiesSnapshot MediaProperties => this.Session.MediaProperties;
 
     public MediaTimelinePropertiesSnapshot TimelineProperties => this.Session.TimelineProperties;

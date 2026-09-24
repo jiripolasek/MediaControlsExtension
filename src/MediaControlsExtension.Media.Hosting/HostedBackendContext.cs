@@ -1,9 +1,15 @@
+using System.Text.Json.Serialization;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Hosting;
 
 /// <summary>Managed activation values associated with one admitted command and worker binding.</summary>
-public sealed record HostedSourceActivation(long CommandId, MediaBackendSessionTarget Target, string ApplicationId, string MediaTitle);
+public sealed record HostedSourceActivation(long CommandId, MediaBackendSessionTarget Target, string ApplicationId, string MediaTitle)
+{
+    /// <summary>Gets the worker-reported path copied by the owner from the current binding's snapshot, not the activation payload.</summary>
+    [JsonIgnore]
+    public string? ExecutablePath { get; init; }
+}
 
 /// <summary>Worker logging configuration supplied by the owner.</summary>
 public sealed record WorkerLoggingOptions(string Directory, bool Detailed);

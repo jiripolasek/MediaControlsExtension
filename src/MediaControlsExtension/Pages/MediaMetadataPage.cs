@@ -324,8 +324,11 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
             commands.Add(this._repeatCommand);
         }
 
-        commands.Add(new Separator());
-        commands.Add(this._switchToApplicationCommand);
+        if (availability.CanActivateSource)
+        {
+            commands.Add(new Separator());
+            commands.Add(this._switchToApplicationCommand);
+        }
         return [.. commands];
     }
 
@@ -333,7 +336,8 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
         bool CanSkipPrevious,
         bool CanSkipNext,
         bool CanToggleShuffle,
-        bool CanToggleRepeat)
+        bool CanToggleRepeat,
+        bool CanActivateSource)
     {
         public static MediaCommandAvailability FromSnapshot(
             MediaMetadataSnapshot snapshot) =>
@@ -341,7 +345,8 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
                 snapshot.CanSkipPrevious,
                 snapshot.CanSkipNext,
                 snapshot.CanToggleShuffle,
-                snapshot.CanToggleRepeat);
+                snapshot.CanToggleRepeat,
+                snapshot.CanActivateSource);
     }
 
     private async Task LoadArtworkAsync(

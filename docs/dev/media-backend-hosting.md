@@ -43,8 +43,9 @@ do not need. Each enabled hosted backend still gets its own process.
 
 `Backends/ITunesBackendFactory` creates the native desktop iTunes backend. Its
 dedicated dispatcher thread, COM objects, and event sink all remain inside the
-worker, while immutable snapshots and artwork cross the existing protocol. It
-does not require owner activation.
+worker, while immutable snapshots and artwork cross the existing protocol. The
+factory forwards the negotiated owner activation callback. Activation is advertised
+only when that callback is available and the iTunes executable path is known.
 
 `Backends/DummyBackendFactory` is another compiled factory. It creates the
 provider in `MediaControlsExtension.Media.Dummy` without owner activation or
@@ -54,8 +55,9 @@ separate worker without changing `Program`, `WorkerApplication`, or the protocol
 See [Dummy media](dummy-media.md) for its simulated behavior.
 
 All worker registrations use one options helper for the executable layout and
-logging policy. GSMTC adds its owner activation callback to those common options;
-the iTunes and dummy factories use them directly.
+logging policy. GSMTC and iTunes add their owner activation callbacks to those
+common options; the dummy factory uses them directly. The iTunes callback focuses
+an existing window by executable path and does not launch the application.
 
 ## Provider selection and mutual exclusion
 
@@ -368,6 +370,9 @@ connection and command lifetime before activating a source. Callback support is
 negotiated; do not advertise activation without an implementation. The callback
 uses the original command deadline and runs off the pipe reader. An explicit
 request context associates it with the command; titles are only window hints.
+For iTunes, the owner copies the worker-reported executable path from the current
+binding's snapshot into the callback request. The activation RPC cannot supply
+or override that path. This validates the binding, not the executable's provenance.
 
 ## Worker logging
 

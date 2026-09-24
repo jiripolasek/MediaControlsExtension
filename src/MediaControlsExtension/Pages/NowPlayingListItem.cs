@@ -28,7 +28,9 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
     private MediaMetadataPage? _metadataPage;
 #endif
     private readonly IContextItem[] _mediaContextCommandsWithoutMetadata;
+    private readonly IContextItem[] _mediaContextCommandsWithoutMetadataOrActivation;
     private IContextItem[] _mediaContextCommands;
+    private IContextItem[] _mediaContextCommandsWithoutActivation;
     private readonly bool _isBandPage;
 
     private MediaSessionViewModel? _currentSession;
@@ -142,6 +144,9 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             new CommandContextItem(new CurrentSessionCommand(this._mediaService, new PlayPreviousSessionMop(this._viewModels), resultFactory, loggerFactory) { Name = Strings.Command_PreviousApp })  { RequestedShortcut = Chords.PreviousSession, Icon = Icons.PreviousApp },
         ];
         this._mediaContextCommands = this._mediaContextCommandsWithoutMetadata;
+        this._mediaContextCommandsWithoutMetadataOrActivation = this._mediaContextCommandsWithoutMetadata
+            .Skip(1).SkipWhile(static item => item is Separator).ToArray();
+        this._mediaContextCommandsWithoutActivation = this._mediaContextCommandsWithoutMetadataOrActivation;
 
         this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;
         this.UpdateIcon(this._iconService.GetIcon(ThemedIcon.PlayPause, this._iconSurface));
@@ -270,7 +275,9 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 #endif
                 detailsChanged = this.UpdateDetails(viewModel);
 
-                this.MoreCommands = this._mediaContextCommands;
+                this.MoreCommands = viewModel.CanActivateSource
+                    ? this._mediaContextCommands
+                    : this._mediaContextCommandsWithoutActivation;
             }
         }
 
@@ -334,6 +341,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         if (metadataPage is null)
         {
             this._mediaContextCommands = this._mediaContextCommandsWithoutMetadata;
+            this._mediaContextCommandsWithoutActivation = this._mediaContextCommandsWithoutMetadataOrActivation;
             return;
         }
 
@@ -351,6 +359,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             2,
             this._mediaContextCommandsWithoutMetadata.Length - 1);
         this._mediaContextCommands = commands;
+        this._mediaContextCommandsWithoutActivation = commands[1..];
     }
 #endif
 
@@ -426,6 +435,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
         this.DetailsChanged = null;
         this.MoreCommands = [];
         this._mediaContextCommands = [];
+        this._mediaContextCommandsWithoutActivation = [];
 #if FF_ENABLE_FULL_METADATA_PAGE
         Interlocked.Exchange(ref this._metadataPage, null);
 #endif

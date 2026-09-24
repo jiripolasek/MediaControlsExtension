@@ -77,7 +77,8 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
 
             var source = new MediaSourceSnapshot("Synthetic player")
             {
-                NativeApplication = new MediaNativeApplicationIdentity("spike.player")
+                NativeApplication = new MediaNativeApplicationIdentity("spike.player",
+                    behavior == "activation" ? @"C:\MediaControlsTests\player.exe" : null)
             };
             var properties = MediaPropertiesSnapshot.Empty(source) with
             {

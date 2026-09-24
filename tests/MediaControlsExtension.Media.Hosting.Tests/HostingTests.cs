@@ -296,6 +296,8 @@ internal static class HostingTests
                     Environment.ProcessId == ownerPid && request.ApplicationId == "spike.player" &&
                     request.CommandId > 0,
                     "Activation was not associated with the owning process and admitted command.");
+                Check(request.ExecutablePath == @"C:\MediaControlsTests\player.exe",
+                    "Activation lost the worker-reported executable path from the owner's current binding snapshot.");
                 calls++;
                 return Task.FromResult(true);
             }

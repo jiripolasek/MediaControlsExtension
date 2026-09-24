@@ -29,14 +29,14 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     private int _nativeDepth;
     private bool _quitSent;
 
-    private ITunesNativeFixture(int eventId)
+    private ITunesNativeFixture(int eventId, Func<string, string, CancellationToken, Task<bool>>? activateSource)
     {
         this._eventId = eventId;
         this.Backend = new(isProcessRunning: _ =>
         {
             this.DiscoveryChecks++;
             return false;
-        });
+        }, activateSource: activateSource);
     }
 
     public ITunesBackend Backend { get; }
@@ -51,9 +51,10 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public bool ShuffleEnabled { get; private set; }
     public int RepeatMode { get; private set; }
 
-    public static async Task<ITunesNativeFixture> CreateAsync(int eventId = 9)
+    public static async Task<ITunesNativeFixture> CreateAsync(
+        int eventId = 9, Func<string, string, CancellationToken, Task<bool>>? activateSource = null)
     {
-        var fixture = new ITunesNativeFixture(eventId);
+        var fixture = new ITunesNativeFixture(eventId, activateSource);
         await fixture.Backend.StartAsync(default);
         fixture._queue = (DispatcherQueue)fixture.GetBackendField("_dispatcherQueue")!;
         await fixture.RunAsync(fixture.Connect);
@@ -63,13 +64,15 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public object? GetBackendField(string name) =>
         typeof(ITunesBackend).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(this.Backend);
 
-    private void SetBackendField(string name, object value) =>
+    private void SetBackendField(string name, object? value) =>
         typeof(ITunesBackend).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(this.Backend, value);
 
     public void InvokeBackend(string name, params object[] arguments) =>
         typeof(ITunesBackend).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this.Backend, arguments);
 
     public Task RefreshAsync() => this.RunAsync(() => this.InvokeBackend("UpdatePlaybackAndMetadata"));
+
+    public Task SetExecutablePathAsync(string? path) => this.RunAsync(() => this.SetBackendField("_executablePath", path));
 
     public async Task SendPlaybackEventAsync(ITunesEventDispId eventId)
     {
@@ -239,6 +242,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
         this.SetBackendField("_adviseCookie", 1u);
         this.SetBackendField("_iTunesApp", app.Pointer);
         this.SetBackendField("_isConnected", true);
+        this.SetBackendField("_executablePath", @"C:\Program Files\iTunes\iTunes.exe");
         typeof(ITunesBackend).GetMethod("TrackConnectedProcess", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(this.Backend, [Process.GetCurrentProcess()]);
     }

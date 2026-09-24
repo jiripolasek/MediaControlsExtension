@@ -92,7 +92,12 @@ internal static class MediaBackendCatalog
             "itunes",
             Strings.ResourceManager.GetString("Settings_Backend_ITunes_Title", Strings.Culture)!,
             Strings.ResourceManager.GetString("Settings_Backend_ITunes_Description", Strings.Culture)!,
-            loggerFactory => new OutOfProcessMediaBackend(CreateWorkerOptions("itunes"), owner, loggerFactory),
+            loggerFactory => new OutOfProcessMediaBackend(CreateWorkerOptions("itunes") with
+            {
+                ActivateSource = (request, cancellationToken) =>
+                    new ITunesSourceActivator(loggerFactory.CreateLogger<ITunesSourceActivator>())
+                        .TryActivateAsync(request, cancellationToken),
+            }, owner, loggerFactory),
             EnabledByDefault: true)
         {
             ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
