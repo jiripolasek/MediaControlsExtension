@@ -124,8 +124,8 @@ internal static partial class WindowManager
         if (length > 0)
         {
             char[] buffer = new char[length + 1];
-            GetWindowText(hWnd, buffer, buffer.Length);
-            info.Title = new string(buffer);
+            var copied = GetWindowText(hWnd, buffer, buffer.Length);
+            info.Title = new string(buffer, 0, copied);
         }
 
         GetWindowThreadProcessId(hWnd, out var processId);
