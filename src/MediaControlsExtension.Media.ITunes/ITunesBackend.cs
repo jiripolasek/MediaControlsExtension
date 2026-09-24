@@ -30,6 +30,7 @@ public sealed class ITunesBackend : IMediaBackend
     private readonly ILogger _logger;
     private readonly string? _sourceIconPath;
     private readonly Func<string, bool>? _isProcessRunning;
+    private readonly Func<string, string, CancellationToken, Task<bool>>? _activateSource;
     private readonly Channel<bool> _signals;
     private readonly Lock _stateLock = new();
     private readonly CancellationTokenSource _lifetime = new();
@@ -72,14 +73,17 @@ public sealed class ITunesBackend : IMediaBackend
     /// <param name="logger">Optional logger for diagnostic events.</param>
     /// <param name="sourceIconPath">Optional host-readable icon path override.</param>
     /// <param name="isProcessRunning">Optional delegate to check if the iTunes process is running (useful for deterministic tests).</param>
+    /// <param name="activateSource">Optional host callback that activates the running source application.</param>
     public ITunesBackend(
         ILogger<ITunesBackend>? logger = null,
         string? sourceIconPath = null,
-        Func<string, bool>? isProcessRunning = null)
+        Func<string, bool>? isProcessRunning = null,
+        Func<string, string, CancellationToken, Task<bool>>? activateSource = null)
     {
         this._logger = logger ?? NullLogger<ITunesBackend>.Instance;
         this._sourceIconPath = sourceIconPath;
         this._isProcessRunning = isProcessRunning;
+        this._activateSource = activateSource;
         this._signals = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
         {
             SingleReader = true,
@@ -234,6 +238,11 @@ public sealed class ITunesBackend : IMediaBackend
         ObjectDisposedException.ThrowIf(Volatile.Read(ref this._disposeState) != 0, this);
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (command.Operation == MediaOperation.ActivateSource)
+        {
+            return this.ActivateSourceAsync(command, cancellationToken);
+        }
+
         lock (this._stateLock)
         {
             if (command.SessionId != DefaultSessionId || command.BindingGeneration != this._bindingGeneration)
@@ -346,6 +355,52 @@ public sealed class ITunesBackend : IMediaBackend
         }
 
         return tcs.Task;
+    }
+
+    private async Task<MediaBackendCommandResult> ActivateSourceAsync(
+        MediaBackendCommand command, CancellationToken cancellationToken)
+    {
+        MediaPropertiesSnapshot properties;
+        lock (this._stateLock)
+        {
+            if (command.SessionId != DefaultSessionId || command.BindingGeneration != this._bindingGeneration ||
+                this._currentMediaProperties is null)
+            {
+                return new(MediaBackendCommandStatus.SessionGone, "iTunes session is no longer active.");
+            }
+
+            if (!this._isConnected || this.IsDisconnectRequested)
+            {
+                return new(MediaBackendCommandStatus.Unavailable, "iTunes is not connected.");
+            }
+
+            properties = this._currentMediaProperties;
+        }
+
+        if (this._activateSource is null || properties.Source.NativeApplication is not { } application ||
+            string.IsNullOrWhiteSpace(application.ExecutablePath))
+        {
+            return new(MediaBackendCommandStatus.Unsupported, "Source activation is not configured.");
+        }
+
+        try
+        {
+            // Keep the admitted host callback on the caller's execution context.
+            cancellationToken.ThrowIfCancellationRequested();
+            var activated = await this._activateSource(application.ApplicationId, properties.Title, cancellationToken)
+                .ConfigureAwait(false);
+            return activated
+                ? new(MediaBackendCommandStatus.Completed, null)
+                : new(MediaBackendCommandStatus.Failed, "The iTunes window could not be activated.");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new(MediaBackendCommandStatus.Failed, ex.Message);
+        }
     }
 
     /// <inheritdoc />
@@ -841,6 +896,11 @@ public sealed class ITunesBackend : IMediaBackend
                                MediaCapabilities.Stop |
                                MediaCapabilities.SkipNext |
                                MediaCapabilities.SkipPrevious;
+
+            if (this._activateSource is not null && !string.IsNullOrWhiteSpace(this._executablePath))
+            {
+                capabilities |= MediaCapabilities.ActivateSource;
+            }
 
             nint pPlaylist = 0;
             _ = ITunesNative.GetCurrentPlaylist(this.GetComCallTarget(this._iTunesApp), out pPlaylist);

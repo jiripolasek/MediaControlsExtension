@@ -42,7 +42,8 @@ internal static class ProtocolTests
         ("Full worker queue cannot delay owner shutdown", FullQueueShutdownAsync),
         ("Worker rejects duplicate admitted request IDs", () => InvalidRequestAsync(true)),
         ("Worker bounds canceled noncooperative work", () => InvalidRequestAsync(false)),
-        ("Activation callback is revoked outside its command", ActivationContextAsync)
+        ("Activation callback is revoked outside its command", ActivationContextAsync),
+        ("Activation payloads cannot supply an executable path", ActivationPathIsOwnerLocalAsync)
     ];
 
     private static async Task InvalidLengthsAsync()
@@ -350,6 +351,22 @@ internal static class ProtocolTests
         await RejectAsync<InvalidOperationException>(() =>
             context.ExecuteAsync(duplicate, 43, command, CancellationToken.None)).ConfigureAwait(false);
         HostingTests.Check(calls == 2, "One command admitted duplicate activation callbacks.");
+    }
+
+    private static Task ActivationPathIsOwnerLocalAsync()
+    {
+        var activation = new WorkerActivation(Guid.NewGuid(), new(42, new(new(1), 1), "spike.player", "title")
+        {
+            ExecutablePath = @"C:\MediaControlsTests\owner.exe",
+        });
+        var json = JsonSerializer.Serialize(activation, WorkerJsonContext.Default.WorkerActivation);
+        HostingTests.Check(!json.Contains("executablePath", StringComparison.Ordinal),
+            "An owner-local executable path changed the activation wire contract.");
+        var injected = json.Replace("\"applicationId\":", "\"executablePath\":\"worker.exe\",\"applicationId\":", StringComparison.Ordinal);
+        var decoded = JsonSerializer.Deserialize(injected, WorkerJsonContext.Default.WorkerActivation)!;
+        HostingTests.Check(decoded.Activation.ExecutablePath is null,
+            "The worker supplied an executable path instead of using the owner's session snapshot.");
+        return Task.CompletedTask;
     }
 
     private static JsonRpcRequest HungCommand(Guid epoch, int id) => new()

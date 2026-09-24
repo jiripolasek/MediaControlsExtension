@@ -207,7 +207,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                     this.UpdateIcon(icon.IconInfo);
                 }
 
-                this.MoreCommands = ReferenceEquals(
+                this.MoreCommands = !viewModel.CanActivateSource || ReferenceEquals(
                     primaryCommand,
                     this._primaryMediaCommand)
                     ? this._mediaContextCommands
@@ -244,7 +244,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
         => this.ResolvePlayerCommand(viewModel);
 
     private ICommand ResolvePlayerCommand(MediaSessionViewModel? viewModel)
-        => viewModel is { IsAvailable: true }
+        => viewModel is { CanActivateSource: true }
             ? this._primaryMediaCommand
             : this._noOpCommand;
 

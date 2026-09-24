@@ -21,6 +21,10 @@ the provider releases its COM connection without closing iTunes or changing play
   genre, track number, timeline, and artwork. Repeat cycles through off, all, one,
   and off.
 - Pause keeps the current session. Stop removes it until playback starts again.
+- Switch to Application brings the running iTunes window forward through the
+  extension host, including the desktop and Store editions. It does not launch
+  iTunes if the application has exited. The action is hidden when the executable
+  path could not be determined.
 - Uses iTunes events for playback and metadata updates. A lightweight discovery
   check runs only while iTunes is disconnected; once connected, the worker watches
   the iTunes process for exit instead of repeatedly polling COM.

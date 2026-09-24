@@ -25,7 +25,8 @@ internal readonly record struct MediaMetadataSnapshot(
     bool CanSkipPrevious,
     bool CanSkipNext,
     bool CanToggleShuffle,
-    bool CanToggleRepeat)
+    bool CanToggleRepeat,
+    bool CanActivateSource)
 {
     public static MediaMetadataSnapshot FromViewModel(MediaSessionViewModel viewModel)
     {
@@ -51,6 +52,7 @@ internal readonly record struct MediaMetadataSnapshot(
             playback.Capabilities.HasFlag(MediaCapabilities.SkipPrevious),
             playback.Capabilities.HasFlag(MediaCapabilities.SkipNext),
             playback.Capabilities.HasFlag(MediaCapabilities.ToggleShuffle),
-            playback.Capabilities.HasFlag(MediaCapabilities.ToggleRepeat));
+            playback.Capabilities.HasFlag(MediaCapabilities.ToggleRepeat),
+            viewModel.CanActivateSource);
     }
 }

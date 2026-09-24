@@ -7,6 +7,7 @@ namespace JPSoftworks.MediaControlsExtension.MediaHost.Backends;
 
 internal static class ITunesBackendFactory
 {
-    public static IMediaBackend Create(HostedBackendContext _, ILoggerFactory loggerFactory) =>
-        new ITunesBackend(loggerFactory.CreateLogger<ITunesBackend>());
+    public static IMediaBackend Create(HostedBackendContext context, ILoggerFactory loggerFactory) =>
+        new ITunesBackend(loggerFactory.CreateLogger<ITunesBackend>(),
+            activateSource: context.CanActivateSource ? context.TryActivateSourceAsync : null);
 }

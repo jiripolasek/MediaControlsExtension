@@ -667,18 +667,20 @@ public sealed partial class OutOfProcessMediaBackend : IMediaSourcePolicyBackend
     {
         lock (this._gate)
         {
+            var application = this._routes.Values.FirstOrDefault(route =>
+                route.Id == activation.Target.SessionId && route.IsAvailable &&
+                route.BindingGeneration == activation.Target.BindingGeneration)?.MediaProperties.Source.NativeApplication;
             if (this._disposal is not null || connection != this._connection ||
                 cancellationToken.IsCancellationRequested ||
                 this._options.ActivateSource is null || this._observationFailure is not null ||
                 this._snapshot.Availability != MediaControlAvailability.Available ||
-                !this._routes.Values.Any(route => route.Id == activation.Target.SessionId && route.IsAvailable &&
-                                                  route.BindingGeneration == activation.Target.BindingGeneration &&
-                                                  route.MediaProperties.Source.NativeApplication?.ApplicationId ==
-                                                  activation.ApplicationId) ||
+                application is null || application.ApplicationId != activation.ApplicationId ||
                 this._policy.ExcludedApplicationIds.Contains(activation.ApplicationId))
             {
                 return Task.FromResult(false);
             }
+
+            activation = activation with { ExecutablePath = application.ExecutablePath };
         }
 
         cancellationToken.ThrowIfCancellationRequested();

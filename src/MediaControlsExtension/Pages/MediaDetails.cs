@@ -104,7 +104,11 @@ internal sealed class MediaDetails
             commands.Add(previousCommand);
         }
 
-        commands.Add(switchToApplicationCommand);
+        if (state.CanActivateSource)
+        {
+            commands.Add(switchToApplicationCommand);
+        }
+
         if (viewMetadataCommand is not null)
         {
             commands.Add(viewMetadataCommand);
@@ -123,6 +127,7 @@ internal sealed class MediaDetails
         MediaSourceSnapshot Source,
         bool CanSkipPrevious,
         bool CanSkipNext,
+        bool CanActivateSource,
         string? ArtworkHash)
     {
         public static MediaDetailsState FromViewModel(MediaSessionViewModel viewModel)
@@ -145,6 +150,7 @@ internal sealed class MediaDetails
                 presentation.Source,
                 playback.Capabilities.HasFlag(MediaCapabilities.SkipPrevious),
                 playback.Capabilities.HasFlag(MediaCapabilities.SkipNext),
+                viewModel.CanActivateSource,
                 artworkHash);
         }
     }
