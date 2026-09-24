@@ -103,7 +103,7 @@ internal static class MediaBackendCatalog
             ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
         });
 #if DEBUG || FF_ENABLE_DUMMY_BACKEND
-    mediaBackendRegistry..Register(new(
+    mediaBackendRegistry.Register(new(
         "dummy.worker",
         Strings.ResourceManager.GetString("Settings_Backend_Dummy_Title", Strings.Culture)!,
         Strings.ResourceManager.GetString("Settings_Backend_Dummy_Description", Strings.Culture)!,
