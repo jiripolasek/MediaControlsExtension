@@ -21,4 +21,7 @@ internal static partial class ITunesLog
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "Failed to unadvise iTunes connection point events. HRESULT: 0x{HResult:X8}")]
     public static partial void ITunesUnhookEventsFailed(ILogger logger, int hResult);
+
+    [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = "Could not read iTunes artwork.")]
+    public static partial void ITunesReadArtworkFailed(ILogger logger, Exception exception);
 }

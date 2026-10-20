@@ -35,7 +35,13 @@ the provider releases its COM connection without closing iTunes or changing play
   iTunes in Media sources, or close and reopen iTunes.
 - Exports the current artwork through a temporary file created by iTunes, reads it
   into memory, and removes the file immediately. One image is cached at a time and
-  track changes invalidate the old artwork key.
+  track changes invalidate the old artwork key. Missing or failed artwork can be
+  retried on updates triggered by iTunes events or explicit observation refresh
+  requests. Refreshes that confirm a command do not retry artwork for the same
+  track. There are up to three retries, with minimum delays of 1, 2, and 4 seconds
+  after each unsuccessful attempt. There is no artwork polling: without another
+  eligible refresh, or after all retries fail, artwork stays absent until the
+  track changes or the source reconnects.
 - Runs in a dedicated MediaHost worker process. Within that worker, all iTunes COM
   access stays on its own dispatcher thread. The COM calls and event sink use direct,
   Native AOT-compatible interop rather than runtime-generated COM wrappers. A native

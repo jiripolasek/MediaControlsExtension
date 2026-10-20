@@ -24,10 +24,13 @@ public sealed class ITunesBackend : IMediaBackend
 {
     private static readonly MediaBackendSessionId DefaultSessionId = new(1);
     private static readonly TimeSpan DiscoveryPollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan[] ArtworkRetryDelays =
+        [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4)];
     private const string DirectInstallerApplicationId = "Apple.iTunes";
     private const string StoreApplicationId = "AppleInc.iTunes_nzyj5cx40ttqa!iTunes";
 
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly string? _sourceIconPath;
     private readonly Func<string, bool>? _isProcessRunning;
     private readonly Func<string, string, CancellationToken, Task<bool>>? _activateSource;
@@ -47,6 +50,8 @@ public sealed class ITunesBackend : IMediaBackend
     private ITunesProcessExitSubscription? _processExitSubscription;
     private bool _isDiscoveryTimerRunning;
     private int? _quittingProcessId;
+    private int _artworkAttempts;
+    private long _lastArtworkAttemptTimestamp;
 
     // State observed across threads (must be read and written under _stateLock):
     private bool _isConnected;
@@ -80,7 +85,18 @@ public sealed class ITunesBackend : IMediaBackend
         string? sourceIconPath = null,
         Func<string, bool>? isProcessRunning = null,
         Func<string, string, CancellationToken, Task<bool>>? activateSource = null)
+        : this(TimeProvider.System, logger, sourceIconPath, isProcessRunning, activateSource)
     {
+    }
+
+    internal ITunesBackend(
+        TimeProvider timeProvider,
+        ILogger<ITunesBackend>? logger = null,
+        string? sourceIconPath = null,
+        Func<string, bool>? isProcessRunning = null,
+        Func<string, string, CancellationToken, Task<bool>>? activateSource = null)
+    {
+        this._timeProvider = timeProvider;
         this._logger = logger ?? NullLogger<ITunesBackend>.Instance;
         this._sourceIconPath = sourceIconPath;
         this._isProcessRunning = isProcessRunning;
@@ -336,7 +352,8 @@ public sealed class ITunesBackend : IMediaBackend
                         : 0;
                 }
 
-                this.UpdatePlaybackAndMetadata(publishPlaybackObservation: minimumPlaybackRevision > 0);
+                this.UpdatePlaybackAndMetadata(
+                    publishPlaybackObservation: minimumPlaybackRevision > 0, allowArtworkRetry: false);
                 this.ThrowIfDisconnectRequested();
 
                 if (hr >= 0)
@@ -825,6 +842,7 @@ public sealed class ITunesBackend : IMediaBackend
             this._currentCapabilities = MediaCapabilities.None;
             this._cachedArtwork = null;
             this._cachedArtworkTrackId = -1;
+            this._artworkAttempts = 0;
             this._artworkVersion++;
             this._bindingGeneration++;
             this._revision++;
@@ -889,7 +907,7 @@ public sealed class ITunesBackend : IMediaBackend
         return instance;
     }
 
-    private void UpdatePlaybackAndMetadata(bool publishPlaybackObservation = false)
+    private void UpdatePlaybackAndMetadata(bool publishPlaybackObservation = false, bool allowArtworkRetry = true)
     {
         if (this._iTunesApp == 0 || this.IsDisconnectRequested)
         {
@@ -981,13 +999,22 @@ public sealed class ITunesBackend : IMediaBackend
                         // A track change immediately invalidates any cached artwork and bumps the version.
                         this._cachedArtwork = null;
                         this._cachedArtworkTrackId = currentTrackId;
+                        this._artworkAttempts = 0;
                         this._artworkVersion++;
                     }
                 }
 
-                if (trackChanged && currentTrackId != 0)
+                if (currentTrackId != 0 && (trackChanged || allowArtworkRetry) && this.ShouldReadArtwork())
                 {
-                    this.UpdateCachedArtwork(pTrack, currentTrackId);
+                    this._artworkAttempts++;
+                    try
+                    {
+                        this.UpdateCachedArtwork(pTrack, currentTrackId);
+                    }
+                    finally
+                    {
+                        this._lastArtworkAttemptTimestamp = this._timeProvider.GetTimestamp();
+                    }
                 }
             }
             finally
@@ -1100,6 +1127,7 @@ public sealed class ITunesBackend : IMediaBackend
             this._currentCapabilities = MediaCapabilities.None;
             this._cachedArtwork = null;
             this._cachedArtworkTrackId = -1;
+            this._artworkAttempts = 0;
 
             if (hadArtwork)
             {
@@ -1116,6 +1144,21 @@ public sealed class ITunesBackend : IMediaBackend
         if (sessionRemoved)
         {
             this.SignalChanged(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged);
+        }
+    }
+
+    private bool ShouldReadArtwork()
+    {
+        lock (this._stateLock)
+        {
+            if (this._cachedArtwork != null || this._artworkAttempts > ArtworkRetryDelays.Length)
+            {
+                return false;
+            }
+
+            // Existing refreshes drive retries; a missing image never starts a polling loop.
+            return this._artworkAttempts == 0 ||
+                   this._timeProvider.GetElapsedTime(this._lastArtworkAttemptTimestamp) >= ArtworkRetryDelays[this._artworkAttempts - 1];
         }
     }
 
@@ -1149,6 +1192,11 @@ public sealed class ITunesBackend : IMediaBackend
                     if (saveHr >= 0 && File.Exists(tempFile))
                     {
                         var bytes = File.ReadAllBytes(tempFile);
+                        if (bytes.Length == 0)
+                        {
+                            return;
+                        }
+
                         var contentType = format switch
                         {
                             ITArtworkFormat.PNG => "image/png",
@@ -1166,6 +1214,10 @@ public sealed class ITunesBackend : IMediaBackend
                             }
                         }
                     }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    ITunesLog.ITunesReadArtworkFailed(this._logger, ex);
                 }
                 finally
                 {
