@@ -58,7 +58,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         var settingsStore = new SettingsStore(SettingsManager.SettingsJsonPath(), this._logger);
         var vlcSettings = new VlcSettings();
         var configurationPages = MediaBackendCatalog.CreateConfigurationPages(vlcSettings, settingsStore, loggerFactory,
-            () => _ = this.UpdateVlcSourceClaimsAsync(vlcSettings));
+            () => _ = this.UpdateVlcSourceClaimsAsync(vlcSettings),
+            this.EnableVlcSource,
+            this.IsVlcSourceEnabled);
         var backendRegistry = MediaBackendCatalog.CreateRegistry(vlcSettings.GetOptions, workerOwner);
         this._settingsManager = new(settingsStore);
         this._backendSettings = new(backendRegistry, settingsStore, WindowsMediaBackendDefaults.Normalize, this._logger);
@@ -83,6 +85,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             loggerFactory);
         this.UpdateMediaServiceOptions();
 
+        this._mediaSourcesPage = new(this._mediaService, this._backendSettings.SetEnabled, configurationPages, loggerFactory,
+            this._backendSettings.GetDiagnostic,
+            backendRegistry.Registrations.ToDictionary(static registration => registration.Id, static registration => registration.Description));
         this._mediaControlsExtensionPage = new(
             this._mediaService,
             this._mediaSessionViewModels,
@@ -91,9 +96,9 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
             this._settingsManager,
             this._resultFactory,
             this._iconService,
-            loggerFactory);
-        this._mediaSourcesPage = new(this._mediaService, this._backendSettings.SetEnabled, configurationPages, loggerFactory,
-            this._backendSettings.GetDiagnostic);
+            loggerFactory,
+            windowsMediaRecoveryItem: new WindowsMediaRecoveryItem(this._mediaService, this.IsWindowsMediaEnabled,
+                this.EnableWindowsMediaSource, this._mediaSourcesPage, loggerFactory));
         this._backendSettingsBinding = new(this._backendSettings, this._mediaSourcesPage, this.UpdateEnabledMediaBackends);
         var reportProblemPage = new ReportProblemPage(
             new DiagnosticLogArchiveService(ExtensionHostIdentity.GetLogDirectoryPath()),
@@ -233,6 +238,14 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         this.UpdateDockBands();
         this.RaiseItemsChanged();
     }
+
+    private void EnableVlcSource() => this._backendSettings.SetEnabled("vlc", true);
+
+    private void EnableWindowsMediaSource() => this._backendSettings.SetEnabled("gsmtc.worker", true);
+
+    private bool IsWindowsMediaEnabled() => this._backendSettings.EnabledIds.Any(static id => id is "gsmtc" or "gsmtc.worker");
+
+    private bool IsVlcSourceEnabled() => this._backendSettings.EnabledIds.Contains("vlc");
 
     private async Task UpdateVlcSourceClaimsAsync(VlcSettings settings)
     {

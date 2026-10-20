@@ -1,18 +1,23 @@
 # iTunes media source
 
 The `itunes` media source controls the classic desktop iTunes application on this
-computer through its COM automation interface. It is enabled by default and runs
-alongside the other media sources. It does not control the newer Apple Music app.
+computer through its COM automation interface. It is disabled by default and can
+be enabled from [Media sources](media-sources.md). The newer Apple Music app uses
+the recommended Windows media source and does not need this integration.
+
+Upgrades preserve your saved enabled or disabled choice. If you have no saved
+choice for iTunes, it is now disabled; enable it in Media sources to use the direct
+provider.
 
 ## Use it
 
 1. Install and open desktop iTunes.
 2. Open the Media Controls command menu and choose Media sources.
-3. Confirm that iTunes is enabled. It is enabled by default on a new installation.
+3. Select iTunes under Optional players and choose Enable from its details or command menu.
 4. Start playback or select a track in iTunes. The player appears in Media Controls.
 
-The provider does not launch iTunes. While the application is closed, it remains
-disconnected with no media session and reconnects after iTunes starts. Disabling
+The provider does not launch iTunes. When enabled, it shows Waiting for iTunes with no
+media session while iTunes is closed and reconnects after iTunes starts. Disabling
 the provider releases its COM connection without closing iTunes or changing playback.
 
 ## Behavior and boundaries
@@ -64,10 +69,11 @@ the provider releases its COM connection without closing iTunes or changing play
 
 ## Manual validation
 
-Start the extension before and after iTunes, then verify that the source connects in
-both orders. Check playback, stop, previous/next, shuffle, the complete repeat cycle,
-metadata, timeline, and tracks with different or missing artwork. Close and reopen
-iTunes and confirm that the old session disappears and a fresh session replaces it.
+Enable iTunes in Media sources. Start the extension before and after iTunes, then
+verify that the source connects in both orders. Check playback, stop, previous/next,
+shuffle, the complete repeat cycle, metadata, timeline, and tracks with different or
+missing artwork. Close and reopen iTunes and confirm that the old session disappears
+and a fresh session replaces it.
 Pause through Media Controls, then resume directly in iTunes and confirm that the
 source immediately shows playback as active. Stop playback and confirm that the
 session disappears instead of remaining paused.

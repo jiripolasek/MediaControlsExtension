@@ -4,9 +4,11 @@ Media Controls for Command Palette discovers Windows media sessions through the 
 
 VLC 3 desktop also has an optional [direct VLC media source](vlc-backend.md), configured through Media sources in the Media Controls command menu. It supports local and remote playback controls, metadata, timeline, artwork, shuffle, and repeat without an SMTC plugin. While enabled with a loopback URL, it excludes duplicate desktop VLC sessions from GSMTC. Disabling it or configuring a remote URL restores local GSMTC discovery, independently of how the remote session is treated for playback behavior.
 
-Desktop iTunes has a built-in [direct iTunes media source](itunes-backend.md), enabled by default and configured through Media sources. It uses the local iTunes COM interface for playback controls, metadata, timeline, artwork, shuffle, and repeat without an SMTC plugin. While enabled, it excludes duplicate desktop iTunes sessions from GSMTC, including Media Controller Helper; disabling it restores GSMTC discovery for third-party iTunes integrations.
+Desktop iTunes has an optional [direct iTunes media source](itunes-backend.md), disabled by default. Enable it through Media sources. It uses the local iTunes COM interface for playback controls, metadata, timeline, artwork, shuffle, and repeat without an SMTC plugin. While enabled, it excludes duplicate desktop iTunes sessions from GSMTC, including Media Controller Helper; disabling it restores GSMTC discovery for third-party iTunes integrations.
 
 The extension uses the capabilities advertised by each live session. A player may expose play and pause but omit previous, next, stop, shuffle, repeat, artwork, or the timeline information used to show track length. Availability can also change with the current content.
+
+See [Media sources setup](media-sources.md) for source selection, status labels, configuration, and retry actions.
 
 This is a practical compatibility guide, not a test certification. Player versions, settings, websites, browser behavior, and content types can change the result.
 
@@ -37,7 +39,7 @@ This is a practical compatibility guide, not a test certification. Player versio
 | [MediaMonkey](https://www.mediamonkey.com/) | ✅ | ✅ | ✅ | ✅ | — | — | — | App identity is generally available even when richer media properties are not. |
 | MusicBee | 🧩 | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | Requires the third-party [mb_MediaControl plugin](https://github.com/ameer1234567890/mb_MediaControl). |
 | AIMP | 🧩 | ✅ | ✅ | ✅ | ✅ | ➖ | ➖ | Requires the third-party [Windows 10 Media Control plugin](https://www.aimp.ru/?do=catalog&rec_id=1097). |
-| iTunes | 🧩 | ✅ | ✅ | ✅ | ✅ | ➖ | ➖ | A third-party SMTC plugin is optional because the extension includes a direct iTunes media source. |
+| iTunes | 🧩 | ✅ | ✅ | ✅ | ✅ | ➖ | ➖ | Enable the direct iTunes media source in Media sources to use it without a third-party SMTC plugin. |
 
 ## Video and general media players
 

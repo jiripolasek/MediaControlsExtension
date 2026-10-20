@@ -2,6 +2,14 @@
 
 This software incorporates material from third parties.
 
+## Simple Icons - iTunes icon
+
+**Source**: https://github.com/simple-icons/simple-icons/blob/develop/icons/itunes.svg
+
+CC0 1.0 Universal: https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md
+
+The icon in `Assets/Providers/ITunes.svg` has been sized and colored for the Media sources page.
+
 ## Shmuelie.WinRTServer
 
 **Source**: https://github.com/shmuelie/Shmuelie.WinRTServer/

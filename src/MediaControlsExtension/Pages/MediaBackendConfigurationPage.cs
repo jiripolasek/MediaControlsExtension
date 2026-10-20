@@ -4,6 +4,7 @@
 //
 // ------------------------------------------------------------
 
+using System.Text.Json.Nodes;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,9 @@ internal sealed partial class MediaBackendConfigurationPage : ContentPage
     private readonly Action _save;
     private readonly ILogger _logger;
     public Func<string, string?>? ValidateInputs { get; init; }
+    public Func<string?>? GetSaveError { get; init; }
+    public Action? EnableSource { get; init; }
+    public Func<bool>? IsSourceEnabled { get; init; }
 
     public MediaBackendConfigurationPage(string id, string title, Settings settings, Action save, ILoggerFactory loggerFactory)
     {
@@ -35,14 +39,32 @@ internal sealed partial class MediaBackendConfigurationPage : ContentPage
     {
         lock (this._gate)
         {
-            return [new ConfigurationForm(this, ((IFormContent)this._settings.ToContent()[0]).TemplateJson)];
+            var template = ((IFormContent)this._settings.ToContent()[0]).TemplateJson;
+            if (this.EnableSource is not null && this.IsSourceEnabled?.Invoke() != true)
+            {
+                var card = JsonNode.Parse(template)!.AsObject();
+                var actions = card["actions"] as JsonArray ?? new JsonArray();
+                actions.Insert(0, new JsonObject
+                {
+                    ["type"] = "Action.Submit",
+                    ["title"] = MediaSourcesPage.Text("SaveAndEnable"),
+                    ["data"] = new JsonObject { ["enableSource"] = true },
+                });
+                card["actions"] = actions;
+                template = card.ToJsonString();
+            }
+
+            return [new ConfigurationForm(this, template)];
         }
     }
 
-    private CommandResult Save(string inputs)
+    private CommandResult Save(string inputs, string data)
     {
+        var saved = false;
         try
         {
+            var enable = !string.IsNullOrWhiteSpace(data) &&
+                JsonNode.Parse(data)?["enableSource"]?.GetValue<bool>() == true;
             lock (this._gate)
             {
                 if (this.ValidateInputs?.Invoke(inputs) is { } error)
@@ -52,19 +74,39 @@ internal sealed partial class MediaBackendConfigurationPage : ContentPage
 
                 this._settings.Update(inputs);
                 this._save();
+                saved = true;
+                if (this.GetSaveError?.Invoke() is { } saveError)
+                {
+                    return CommandResult.ShowToast(new ToastArgs { Message = saveError, Result = CommandResult.KeepOpen() });
+                }
             }
 
-            this.RaiseItemsChanged();
-            return CommandResult.KeepOpen();
+            if (enable)
+            {
+                this.EnableSource?.Invoke();
+            }
+
+            return CommandResult.ShowToast(new ToastArgs
+            {
+                Message = MediaSourcesPage.Text(enable && this.EnableSource is not null ? "SavedAndEnabled" : "Saved"),
+                Result = CommandResult.KeepOpen(),
+            });
         }
         catch (Exception ex)
         {
             SaveFailed(this._logger, ex);
             return CommandResult.ShowToast(new ToastArgs
             {
-                Message = MediaSourcesPage.Text("SaveFailed"),
+                Message = MediaSourcesPage.Text(saved ? "SavedButEnableFailed" : "SaveFailed"),
                 Result = CommandResult.KeepOpen(),
             });
+        }
+        finally
+        {
+            if (saved)
+            {
+                this.RaiseItemsChanged();
+            }
         }
     }
 
@@ -78,6 +120,6 @@ internal sealed partial class MediaBackendConfigurationPage : ContentPage
             this.TemplateJson = template;
         }
 
-        public override ICommandResult SubmitForm(string inputs, string data) => this._owner.Save(inputs);
+        public override ICommandResult SubmitForm(string inputs, string data) => this._owner.Save(inputs, data);
     }
 }

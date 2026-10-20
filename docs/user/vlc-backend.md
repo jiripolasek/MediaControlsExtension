@@ -16,14 +16,17 @@ media contracts. The extension owns settings and credential storage.
    the server firewall and VLC's access controls.
 5. Save, fully exit VLC, and reopen it.
 6. Open the Media Controls command menu and choose Media sources. Open VLC media
-   player to configure it, enter the server URL and password, and save. Examples:
+   player to configure it, enter the server URL and password, and choose Save and enable. Examples:
    `http://127.0.0.1:8080`, `http://living-room:8080`, or `http://192.168.1.10:8080`.
 7. Use Test saved connection from the configuration page's command menu to verify
    setup. It reads VLC status without enabling the provider or changing playback.
-8. Return to Media sources and choose Enable from VLC's command menu.
+8. Return to Media sources to check VLC's status and connection details.
 9. Play or queue media in VLC. Its player appears alongside the GSMTC sessions.
 
-Configuration is available while disabled; saving it does not enable the provider.
+Configuration is available while disabled. Save and enable saves settings and enables
+the source in one step; Save preserves its current enabled or disabled choice. To
+test before enabling, choose Save, then Test saved connection, and return to Media
+sources to choose Enable. Failed validation or saving does not enable the source.
 Connection settings apply while enabled. General Settings contains shared
 preferences and a text hint pointing to Media sources. The password is stored in Windows
 Credential Locker under `JPSoftworks.MediaControlsExtension.Vlc`, keyed by the
@@ -37,7 +40,8 @@ If Windows Credential Locker cannot read the password, the configuration page di
 and lets you save it again. A failed replacement displays a notification and keeps
 the previous password; other settings remain usable.
 
-The Media sources page reports the endpoint, connection and authentication failures. A running
+The [Media sources page](media-sources.md) shows a status badge, with the endpoint,
+connection and authentication failures in the details pane. A running
 VLC with an empty playlist is connected with zero sessions. A stopped player with
 queued media remains available for Play. Disabling the provider closes its HTTP
 client and stops polling; it does not exit VLC or change playback.

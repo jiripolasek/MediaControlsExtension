@@ -60,6 +60,7 @@
     <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaBackendConfigurationPage.cs" Link="Pages\MediaBackendConfigurationPage.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaDetails.cs" Link="Pages\MediaDetails.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Pages\MediaSourcesPage.cs" Link="Pages\MediaSourcesPage.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\WindowsMediaRecoveryItem.cs" Link="Pages\WindowsMediaRecoveryItem.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Services\ExtensionLog.cs" Link="Services\ExtensionLog.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Services\IIconService.cs" Link="Services\IIconService.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSessionViewModel.cs" Link="ViewModels\MediaSessionViewModel.cs" />

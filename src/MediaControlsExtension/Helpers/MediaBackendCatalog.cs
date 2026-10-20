@@ -18,7 +18,9 @@ internal static class MediaBackendCatalog
         VlcSettings vlcSettings,
         SettingsStore store,
         ILoggerFactory loggerFactory,
-        Action configurationChanged)
+        Action configurationChanged,
+        Action enableVlc,
+        Func<bool> isVlcEnabled)
     {
         var settings = new Settings();
         vlcSettings.AddTo(settings);
@@ -37,6 +39,9 @@ internal static class MediaBackendCatalog
             loggerFactory)
         {
             ValidateInputs = vlcSettings.Validate,
+            GetSaveError = vlcSettings.GetSaveError,
+            EnableSource = enableVlc,
+            IsSourceEnabled = isVlcEnabled,
             Commands = [new CommandContextItem(new TestVlcConnectionCommand(vlcSettings.GetOptions, loggerFactory))],
         };
 
@@ -98,7 +103,7 @@ internal static class MediaBackendCatalog
                     new ITunesSourceActivator(loggerFactory.CreateLogger<ITunesSourceActivator>())
                         .TryActivateAsync(request, cancellationToken),
             }, owner, loggerFactory),
-            EnabledByDefault: true)
+            EnabledByDefault: false)
         {
             ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
         });

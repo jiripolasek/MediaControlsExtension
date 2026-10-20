@@ -49,6 +49,8 @@ internal sealed class VlcSettings
 
     public VlcConnectionOptions GetOptions() => Volatile.Read(ref this._options);
 
+    public string? GetSaveError() => this._password.Error;
+
     public void AddTo(Settings settings)
     {
         settings.Add(new SettingsGroupHeader(
