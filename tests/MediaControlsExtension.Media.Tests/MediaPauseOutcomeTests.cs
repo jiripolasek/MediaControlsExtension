@@ -22,11 +22,11 @@ public sealed class MediaPauseOutcomeTests
         {
             CommandResult = new(primaryStatus, "Primary diagnostic"),
         };
-        var failed = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Failed pause", bindingGeneration: 7))
+        var failed = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Failed pause", bindingGeneration: 7, playbackState: MediaPlaybackState.Playing))
         {
             CommandResult = new(MediaBackendCommandStatus.Failed, "Pause diagnostic"),
         };
-        var healthy = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Healthy", bindingGeneration: 9));
+        var healthy = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Healthy", bindingGeneration: 9, playbackState: MediaPlaybackState.Playing));
         await using var composite = new CompositeMediaBackend(Registry(target, failed, healthy));
         await using var service = new MediaService(composite);
         service.UpdateOptions(new(PauseOtherSessionsOnPlay: true));
@@ -56,14 +56,14 @@ public sealed class MediaPauseOutcomeTests
     }
 
     [TestMethod]
-    public async Task MissingAndUnsupportedPausesAreReportedWithoutDispatchOrDuplicates()
+    public async Task MissingPausesAreSkippedAndLeafFailuresAreReportedWithoutDuplicates()
     {
         var target = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Target"));
         var unsupportedSnapshot = FakeMediaBackend.CreateSnapshot(1, "Unsupported", bindingGeneration: 7);
         var unsupported = new FakeMediaBackend(unsupportedSnapshot with
         {
             Sessions = [unsupportedSnapshot.Sessions.Single() with { Capabilities = MediaCapabilities.Play }],
-        });
+        }) { CommandResult = new(MediaBackendCommandStatus.Unsupported, "No native pause support") };
         await using var composite = new CompositeMediaBackend(Registry(target, unsupported));
         await composite.StartAsync(default);
         var snapshot = await WaitForSnapshotAsync(composite, static snapshot => snapshot.Sessions.Length == 2);
@@ -79,7 +79,7 @@ public sealed class MediaPauseOutcomeTests
         Assert.AreEqual(2, result.PauseResults.Length);
         Assert.AreEqual(MediaBackendCommandStatus.Unsupported, result.PauseResults.Single(pause => pause.Target == unsupportedTarget).Status);
         Assert.AreEqual(MediaBackendCommandStatus.SessionGone, result.PauseResults.Single(pause => pause.Target == missingTarget).Status);
-        Assert.IsEmpty(unsupported.Commands);
+        Assert.AreEqual(MediaOperation.Pause, unsupported.Commands.Single().Operation);
         Assert.AreEqual(MediaOperation.Play, target.Commands.Single().Operation);
     }
 

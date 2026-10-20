@@ -14,6 +14,28 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class MediaSessionSelectionTests
 {
     [TestMethod]
+    [DataRow(MediaOperation.SwitchNextSession)]
+    [DataRow(MediaOperation.SwitchPreviousSession)]
+    public async Task CyclingIncludesPlayersWithOnlyTogglePlayback(MediaOperation operation)
+    {
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, 1, (1, "Current"), (2, "Toggle player"));
+        snapshot = snapshot with
+        {
+            Sessions = [snapshot.Sessions[0], snapshot.Sessions[1] with { Capabilities = MediaCapabilities.TogglePlayback }],
+        };
+        var backend = new FakeMediaBackend(snapshot);
+        await using var service = new MediaService(backend);
+        await service.StartAsync();
+
+        var submission = Submit(service, MediaCommandTarget.ForSession(new(1)), operation);
+
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await submission.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+        Assert.AreEqual(new MediaSessionId(2), service.CurrentSession?.Id);
+        Assert.AreEqual(new MediaBackendSessionId(2), backend.Commands.Single().SessionId);
+        Assert.AreEqual(MediaOperation.Play, backend.Commands.Single().Operation);
+    }
+
+    [TestMethod]
     public async Task SelectedProviderSurvivesUnrelatedRefreshesAndKeepsCommandRouting()
     {
         var first = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "First", playbackState: MediaPlaybackState.Playing));
@@ -56,6 +78,41 @@ public sealed class MediaSessionSelectionTests
         {
             second.ReleaseCommands();
         }
+    }
+
+    [TestMethod]
+    public async Task PlayingProviderReplacesAPausedSelectionAndReceivesCurrentCommands()
+    {
+        var first = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "First", playbackState: MediaPlaybackState.Playing));
+        var second = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Second"));
+        await using var service = new MediaService(new CompositeMediaBackend(Registry(first, second)));
+        await service.StartAsync();
+        await WaitUntilAsync(() => service.Sessions.Length == 2);
+        var previous = service.Sessions.Single(static session => session.MediaProperties.Title == "First");
+        var next = service.Sessions.Single(static session => session.MediaProperties.Title == "Second");
+        var selectionChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        service.CurrentSessionChanged += (_, _) =>
+        {
+            if (service.CurrentSession == next)
+            {
+                selectionChanged.TrySetResult();
+            }
+        };
+        var play = Submit(service, MediaCommandTarget.ForSession(previous.Id), MediaOperation.Play);
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await play.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+        Assert.AreSame(previous, service.CurrentSession);
+
+        first.SetSnapshot(FakeMediaBackend.CreateSnapshot(2, "First"));
+        await WaitUntilAsync(() => previous.PlaybackInfo.ConfirmedState == MediaPlaybackState.Paused);
+        second.SetSnapshot(FakeMediaBackend.CreateSnapshot(2, "Second", playbackState: MediaPlaybackState.Playing));
+        await selectionChanged.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.AreSame(next, service.CurrentSession);
+        var pause = Submit(service, MediaCommandTarget.CurrentSession, MediaOperation.Pause);
+        Assert.AreEqual(MediaCommandOutcomeStatus.Completed, (await pause.Completion!.WaitAsync(TimeSpan.FromSeconds(5))).Status);
+        Assert.AreEqual(MediaOperation.Pause, Assert.ContainsSingle(second.Commands).Operation);
+        Assert.AreEqual(MediaOperation.Play, Assert.ContainsSingle(first.Commands).Operation);
+        Assert.AreEqual(next.Id, (await pause.Completion!).SessionId);
     }
 
     [TestMethod]
@@ -193,7 +250,7 @@ public sealed class MediaSessionSelectionTests
     }
 
     [TestMethod]
-    public async Task RejectedPlayAndTargetedPauseDoNotSelectTheTarget()
+    public async Task RejectedPlayAndTargetedStopDoNotSelectTheTarget()
     {
         var backend = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, 1, (1, "Current"), (2, "Other")));
         backend.BlockCommands();
@@ -204,7 +261,7 @@ public sealed class MediaSessionSelectionTests
             var target = MediaCommandTarget.ForSession(new(2));
             Submit(service, target, MediaOperation.SkipNext);
             await backend.CommandStarted.WaitAsync(TimeSpan.FromSeconds(5));
-            Submit(service, target, MediaOperation.Pause);
+            Submit(service, target, MediaOperation.Stop);
             Assert.AreEqual(MediaCommandSubmissionStatus.Busy, service.TrySubmit(new(target, MediaOperation.Play)).Status);
             Assert.AreEqual(new MediaSessionId(1), service.CurrentSession?.Id);
         }
@@ -240,6 +297,124 @@ public sealed class MediaSessionSelectionTests
             Sessions = [snapshot.Sessions[0] with { PlaybackState = MediaPlaybackState.Playing }, snapshot.Sessions[1]],
         };
         Assert.AreEqual(new MediaSessionId(2), store.ApplyBackendSnapshot(snapshot).CurrentSessionId);
+    }
+
+    [TestMethod]
+    [DataRow(MediaPlaybackState.Paused)]
+    [DataRow(MediaPlaybackState.Stopped)]
+    public void InactiveSelectionYieldsToPlayingLocalSession(MediaPlaybackState inactiveState)
+    {
+        var store = new MediaStateStore();
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, 1,
+            (1, "Selected", MediaPlaybackState.Playing), (2, "Other", MediaPlaybackState.Paused));
+        store.ApplyBackendSnapshot(snapshot);
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted,
+            store.TryResolveCommand(new(MediaCommandTarget.CurrentSession, MediaOperation.Play), out var play));
+        store.ApplyAcceptedCommand(play, new(1));
+        store.CompleteCommand(play, new(1), succeeded: true);
+
+        snapshot = snapshot with
+        {
+            Revision = 2,
+            Sessions = [snapshot.Sessions[0] with { PlaybackState = inactiveState }, snapshot.Sessions[1]],
+        };
+        Assert.AreEqual(new MediaSessionId(1), store.ApplyBackendSnapshot(snapshot).CurrentSessionId);
+        snapshot = snapshot with
+        {
+            Revision = 3,
+            Sessions = [snapshot.Sessions[0], snapshot.Sessions[1] with { PlaybackState = MediaPlaybackState.Playing }],
+        };
+        Assert.AreEqual(new MediaSessionId(2), store.ApplyBackendSnapshot(snapshot).CurrentSessionId);
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted,
+            store.TryResolveCommand(new(MediaCommandTarget.CurrentSession, MediaOperation.Pause), out var pause));
+        Assert.AreEqual(new MediaSessionId(2), pause.SessionId);
+
+        snapshot = snapshot with
+        {
+            Revision = 4,
+            Sessions = [snapshot.Sessions[0], snapshot.Sessions[1] with { PlaybackState = MediaPlaybackState.Paused }],
+            CurrentSessionHints = [],
+        };
+        Assert.AreEqual(new MediaSessionId(2), store.ApplyBackendSnapshot(snapshot).CurrentSessionId);
+    }
+
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public void PendingPlaybackKeepsSelectionUntilItsConfirmingObservation(bool completeBeforeObservation)
+    {
+        var store = new MediaStateStore();
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, 2,
+            (1, "Selected", MediaPlaybackState.Playing), (2, "Other", MediaPlaybackState.Playing));
+        store.ApplyBackendSnapshot(snapshot);
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted,
+            store.TryResolveCommand(new(MediaCommandTarget.ForSession(new(1)), MediaOperation.Play), out var play));
+        store.ApplyAcceptedCommand(play, new(1));
+        store.CompleteCommand(play, new(1), succeeded: true);
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted,
+            store.TryResolveCommand(new(MediaCommandTarget.CurrentSession, MediaOperation.Pause), out var pause));
+        store.ApplyAcceptedCommand(pause, new(2));
+        if (completeBeforeObservation)
+        {
+            store.CompleteCommand(pause, new(2), succeeded: true, confirmedPlaybackRevision: 3);
+        }
+
+        snapshot = snapshot with
+        {
+            Revision = 2,
+            Sessions = [snapshot.Sessions[0] with
+                { PlaybackState = MediaPlaybackState.Paused, PlaybackObservationRevision = 2 }, snapshot.Sessions[1]],
+        };
+        Assert.AreEqual(new MediaSessionId(1), store.ApplyBackendSnapshot(snapshot).CurrentSessionId);
+        snapshot = snapshot with
+        {
+            Revision = 3,
+            Sessions = [snapshot.Sessions[0] with { PlaybackObservationRevision = 3 }, snapshot.Sessions[1]],
+        };
+        var observed = store.ApplyBackendSnapshot(snapshot);
+        if (!completeBeforeObservation)
+        {
+            Assert.AreEqual(new MediaSessionId(1), observed.CurrentSessionId);
+            store.CompleteCommand(pause, new(2), succeeded: true, confirmedPlaybackRevision: 3);
+            observed = store.ApplyBackendSnapshot(snapshot with { Revision = 4 });
+        }
+
+        Assert.AreEqual(new MediaSessionId(2), observed.CurrentSessionId);
+        Assert.IsFalse(observed.Sessions[0].PlaybackInfo.IsOptimistic);
+    }
+
+    [TestMethod]
+    [DataRow(true, MediaPlaybackState.Playing, true, true, DisplayName = "Keeps a playing selection")]
+    [DataRow(false, MediaPlaybackState.Paused, true, true, DisplayName = "Keeps an explicit remote selection")]
+    [DataRow(true, MediaPlaybackState.Paused, false, true, DisplayName = "Ignores remote playback")]
+    [DataRow(true, MediaPlaybackState.Paused, true, false, DisplayName = "Ignores unavailable playback")]
+    public void SelectionIsRetainedWithoutAnEligibleReplacement(
+        bool selectedLocal,
+        MediaPlaybackState selectedState,
+        bool otherLocal,
+        bool otherAvailable)
+    {
+        var store = new MediaStateStore();
+        var snapshot = FakeMediaBackend.CreateSnapshot(1, 2,
+            (1, "Selected", MediaPlaybackState.Playing), (2, "Other", MediaPlaybackState.Playing));
+        snapshot = snapshot with
+        {
+            Sessions = [snapshot.Sessions[0] with { Origin = new("selected", selectedLocal) },
+                snapshot.Sessions[1] with { Origin = new("other", otherLocal), IsAvailable = otherAvailable }],
+        };
+        store.ApplyBackendSnapshot(snapshot);
+        Assert.AreEqual(MediaCommandSubmissionStatus.Accepted,
+            store.TryResolveCommand(new(MediaCommandTarget.ForSession(new(1)), MediaOperation.Play), out var play));
+        store.ApplyAcceptedCommand(play, new(1));
+        Assert.IsFalse(store.CompleteCommand(play, new(1), succeeded: true).Sessions[0].PlaybackInfo.IsOptimistic);
+
+        var result = store.ApplyBackendSnapshot(snapshot with
+        {
+            Revision = 2,
+            Sessions = [snapshot.Sessions[0] with { PlaybackState = selectedState }, snapshot.Sessions[1]],
+        });
+
+        Assert.AreEqual(new MediaSessionId(1), result.CurrentSessionId);
     }
 
     [TestMethod]

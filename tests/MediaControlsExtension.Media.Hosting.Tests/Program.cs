@@ -206,13 +206,14 @@ internal static class Program
 
     private static IMediaBackend CreateBackend(string backendId, HostedBackendContext context) => backendId switch
     {
+        _ when backendId.StartsWith(StopCompletionTests.BackendPrefix, StringComparison.Ordinal) => new StopCompletionBackend(backendId),
         "plain" => new PlainBackend(),
         "synthetic" or "hang-start" or "hang-command" or "hang-cleanup" or "slow-artwork" or "cancel-command" or
             "large-artwork" or "oversized-artwork" or "activation" or "invalid-activation" or "delayed-activation" or
             "slow-start" or "slow-command" or "slow-policy" or "slow-cancel" or "quiet-artwork" or
             "transient-read-failure" or "startup-read-failure" or "persistent-read-failure" or "recurring-read-failure"
             or
-            "short-read-failure" or "invalidation-failure" => new SyntheticBackend(backendId, context),
+            "short-read-failure" or "invalidation-failure" or "unconfirmed-playback" => new SyntheticBackend(backendId, context),
         _ => throw new ArgumentException("Unknown compiled backend factory.", nameof(backendId))
     };
 

@@ -70,7 +70,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public void InvokeBackend(string name, params object[] arguments) =>
         typeof(ITunesBackend).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this.Backend, arguments);
 
-    public Task RefreshAsync() => this.RunAsync(() => this.InvokeBackend("UpdatePlaybackAndMetadata"));
+    public Task RefreshAsync() => this.RunAsync(() => this.InvokeBackend("UpdatePlaybackAndMetadata", false));
 
     public Task SetExecutablePathAsync(string? path) => this.RunAsync(() => this.SetBackendField("_executablePath", path));
 

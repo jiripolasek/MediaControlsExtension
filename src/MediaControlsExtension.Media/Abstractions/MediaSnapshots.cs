@@ -90,6 +90,8 @@ public enum MediaCapabilities
     ToggleRepeat = 1 << 6,
     /// <summary>The owning source can be activated, independently of playback or native application metadata.</summary>
     ActivateSource = 1 << 7,
+    /// <summary>Playback can alternate between playing and paused while directional controls change.</summary>
+    TogglePlayback = 1 << 8,
 }
 
 /// <summary>Immutable metadata and source presentation for one session.</summary>
@@ -243,6 +245,8 @@ internal sealed record MediaSessionSnapshot(
     MediaTimelinePropertiesSnapshot TimelineProperties,
     MediaPlaybackInfoSnapshot PlaybackInfo)
 {
+    public long PlaybackObservationRevision { get; init; }
+
     public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
 }
 

@@ -26,3 +26,11 @@ internal interface ISettingsManager
     string CommandPaletteIconThemeId { get; }
     string DockIconThemeId { get; }
 }
+
+internal enum DockCurrentMediaActionMode
+{
+    Default = 0,
+    SwitchToPlayer = 1,
+    OpenMediaControls = 2,
+    OpenMediaMetadata = 3
+}

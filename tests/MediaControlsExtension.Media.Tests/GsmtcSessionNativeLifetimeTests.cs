@@ -13,6 +13,32 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 public sealed class GsmtcSessionNativeLifetimeTests
 {
     [TestMethod]
+    public async Task TransitionPlaybackRootsRemainIndependentUntilRetirement()
+    {
+        var lifetime = new GsmtcSessionNativeLifetime();
+        var nativeUse = lifetime.TryEnter() ?? throw new AssertFailedException("The native use was rejected.");
+        var transitionInfo = new object();
+        var transitionControls = new object();
+        nativeUse.CommitTransitionPlaybackObjects(transitionInfo, transitionControls);
+        var observationInfo = new object();
+        var commandInfo = new object();
+        nativeUse.CommitPlaybackObjects(observationInfo, new object());
+        nativeUse.CommitCommandPlaybackObjects(commandInfo, new object());
+        var retirement = lifetime.RetireAsync(() => Task.FromResult(true));
+
+        Assert.IsFalse(retirement.IsCompleted);
+        Assert.AreSame(transitionInfo, lifetime.RetainedTransitionPlaybackInfo);
+        Assert.AreSame(transitionControls, lifetime.RetainedTransitionPlaybackControls);
+        Assert.AreSame(observationInfo, lifetime.RetainedPlaybackInfo);
+        Assert.AreSame(commandInfo, lifetime.RetainedCommandPlaybackInfo);
+        nativeUse.Dispose();
+
+        Assert.IsTrue(await retirement.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.IsNull(lifetime.RetainedTransitionPlaybackInfo);
+        Assert.IsNull(lifetime.RetainedTransitionPlaybackControls);
+    }
+
+    [TestMethod]
     public void PlaybackObjectsAreReplacedOnlyWhenTheActiveUseCommitsTheirReplacement()
     {
         var lifetime = new GsmtcSessionNativeLifetime();

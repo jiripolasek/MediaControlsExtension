@@ -52,6 +52,7 @@ public sealed class ITunesBackend : IMediaBackend
     private bool _isConnected;
     private long _bindingGeneration = 1;
     private long _revision = 1;
+    private long _playbackObservationRevision;
     private long _artworkVersion = 1;
     private int _cachedArtworkTrackId = -1;
     private MediaArtworkContent? _cachedArtwork;
@@ -181,7 +182,8 @@ public sealed class ITunesBackend : IMediaBackend
                 this._currentMediaProperties,
                 this._currentTimeline,
                 this._currentPlaybackState,
-                this._currentCapabilities));
+                this._currentCapabilities,
+                this._playbackObservationRevision));
         }
     }
 
@@ -192,7 +194,8 @@ public sealed class ITunesBackend : IMediaBackend
         MediaPropertiesSnapshot? mediaProperties,
         MediaTimelinePropertiesSnapshot timeline,
         MediaPlaybackState playbackState,
-        MediaCapabilities capabilities)
+        MediaCapabilities capabilities,
+        long playbackObservationRevision = 0)
     {
         if (!isConnected || mediaProperties == null)
         {
@@ -216,6 +219,7 @@ public sealed class ITunesBackend : IMediaBackend
             IsAvailable: true)
         {
             Origin = MediaSessionOrigin.Local,
+            PlaybackObservationRevision = playbackObservationRevision,
         };
 
         ImmutableArray<MediaBackendSessionId> hints = playbackState == MediaPlaybackState.Playing
@@ -324,12 +328,23 @@ public sealed class ITunesBackend : IMediaBackend
                 }
 
                 this.ThrowIfDisconnectRequested();
-                this.UpdatePlaybackAndMetadata();
+                long minimumPlaybackRevision;
+                lock (this._stateLock)
+                {
+                    minimumPlaybackRevision = command.Operation is MediaOperation.Play or MediaOperation.Pause
+                        ? this._playbackObservationRevision + 1
+                        : 0;
+                }
+
+                this.UpdatePlaybackAndMetadata(publishPlaybackObservation: minimumPlaybackRevision > 0);
                 this.ThrowIfDisconnectRequested();
 
                 if (hr >= 0)
                 {
-                    tcs.TrySetResult(new(MediaBackendCommandStatus.Completed, null));
+                    tcs.TrySetResult(new(MediaBackendCommandStatus.Completed, null)
+                    {
+                        ConfirmedPlaybackRevision = minimumPlaybackRevision,
+                    });
                 }
                 else
                 {
@@ -874,7 +889,7 @@ public sealed class ITunesBackend : IMediaBackend
         return instance;
     }
 
-    private void UpdatePlaybackAndMetadata()
+    private void UpdatePlaybackAndMetadata(bool publishPlaybackObservation = false)
     {
         if (this._iTunesApp == 0 || this.IsDisconnectRequested)
         {
@@ -1023,8 +1038,10 @@ public sealed class ITunesBackend : IMediaBackend
             bool sessionAppeared;
             lock (this._stateLock)
             {
+                this._playbackObservationRevision++;
                 sessionAppeared = this._currentMediaProperties == null;
-                if (trackChanged ||
+                if (publishPlaybackObservation ||
+                    trackChanged ||
                     sessionAppeared ||
                     this._currentMediaProperties?.Artwork != properties.Artwork ||
                     this._currentPlaybackState != playbackState ||
