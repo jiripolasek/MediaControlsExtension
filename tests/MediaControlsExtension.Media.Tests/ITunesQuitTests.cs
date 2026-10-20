@@ -224,6 +224,23 @@ public sealed class ITunesQuitTests
     }
 
     [TestMethod]
+    public async Task ReconnectTracksTheCurrentAppRelease()
+    {
+        await using var fixture = await ITunesNativeFixture.CreateAsync();
+        var previousRelease = fixture.AppReleased;
+        Assert.IsFalse(previousRelease.IsCompleted);
+
+        await fixture.ReconnectAsync();
+
+        Assert.IsTrue(previousRelease.IsCompletedSuccessfully);
+        var currentRelease = fixture.AppReleased;
+        Assert.IsFalse(currentRelease.IsCompleted);
+        await fixture.RunAsync(fixture.SendQuit);
+        await fixture.AssertQuitCompletedAsync();
+        Assert.IsTrue(currentRelease.IsCompletedSuccessfully);
+    }
+
+    [TestMethod]
     public async Task DisposingAfterQuitReleasesTheProcessWatch()
     {
         await using var fixture = await ITunesNativeFixture.CreateAsync(9);

@@ -21,18 +21,19 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     private readonly List<string> _callsAfterQuit = [];
     private readonly List<string> _lifetimeErrors = [];
     private readonly List<string> _exportedFiles = [];
-    private readonly TaskCompletionSource _appReleased = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly List<FileStream> _artworkFileLocks = [];
     private readonly int _eventId;
+    private TaskCompletionSource _appReleased = null!;
     private DispatcherQueue _queue = null!;
     private nint _sink;
     private int _ownerThread;
     private int _nativeDepth;
     private bool _quitSent;
 
-    private ITunesNativeFixture(int eventId, Func<string, string, CancellationToken, Task<bool>>? activateSource)
+    private ITunesNativeFixture(int eventId, Func<string, string, CancellationToken, Task<bool>>? activateSource, TimeProvider? timeProvider)
     {
         this._eventId = eventId;
-        this.Backend = new(isProcessRunning: _ =>
+        this.Backend = new(timeProvider ?? TimeProvider.System, isProcessRunning: _ =>
         {
             this.DiscoveryChecks++;
             return false;
@@ -40,6 +41,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     }
 
     public ITunesBackend Backend { get; }
+    public Task AppReleased => this._appReleased.Task;
     public int DiscoveryChecks { get; private set; }
     public string? QuitDuring { get; set; }
     public int StateReadResult { get; set; }
@@ -50,11 +52,22 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public bool HasCurrentTrack { get; set; } = true;
     public bool ShuffleEnabled { get; private set; }
     public int RepeatMode { get; private set; }
+    public int TrackId { get; set; } = 1;
+    public bool HasArtworkCollection { get; set; } = true;
+    public bool HasArtwork { get; set; } = true;
+    public int ArtworkSaveResult { get; set; }
+    public bool WriteArtworkFile { get; set; } = true;
+    public bool LockArtworkFile { get; set; }
+    public byte[] ArtworkData { get; set; } = [1, 2, 3];
+    public int ArtworkCollectionReads { get; private set; }
+    public int ArtworkExports { get; private set; }
+    public IReadOnlyList<string> ExportedArtworkFiles => this._exportedFiles;
+    public bool AllNativeObjectsDisposed => this._objects.All(static item => item.IsDisposed);
 
     public static async Task<ITunesNativeFixture> CreateAsync(
-        int eventId = 9, Func<string, string, CancellationToken, Task<bool>>? activateSource = null)
+        int eventId = 9, Func<string, string, CancellationToken, Task<bool>>? activateSource = null, TimeProvider? timeProvider = null)
     {
-        var fixture = new ITunesNativeFixture(eventId, activateSource);
+        var fixture = new ITunesNativeFixture(eventId, activateSource, timeProvider);
         await fixture.Backend.StartAsync(default);
         fixture._queue = (DispatcherQueue)fixture.GetBackendField("_dispatcherQueue")!;
         await fixture.RunAsync(fixture.Connect);
@@ -70,7 +83,30 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public void InvokeBackend(string name, params object[] arguments) =>
         typeof(ITunesBackend).GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(this.Backend, arguments);
 
-    public Task RefreshAsync() => this.RunAsync(() => this.InvokeBackend("UpdatePlaybackAndMetadata", false));
+    public Task RefreshAsync() => this.RunAsync(() => this.InvokeBackend("UpdatePlaybackAndMetadata", false, true));
+
+    public Task ReconnectAsync() => this.RunAsync(() =>
+    {
+        this.InvokeBackend("Disconnect", false);
+        this.Connect();
+    });
+
+    public void ReleaseArtworkFileLocks()
+    {
+        foreach (var stream in this._artworkFileLocks)
+        {
+            stream.Dispose();
+        }
+
+        this._artworkFileLocks.Clear();
+        foreach (var path in this._exportedFiles)
+        {
+            File.Delete(path);
+        }
+    }
+
+    public void AssertArtworkFilesDeleted() =>
+        Assert.IsTrue(this._exportedFiles.All(static path => !File.Exists(path)));
 
     public Task SetExecutablePathAsync(string? path) => this.RunAsync(() => this.SetBackendField("_executablePath", path));
 
@@ -139,6 +175,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     private void Connect()
     {
         this._ownerThread = Environment.CurrentManagedThreadId;
+        this._appReleased = new(TaskCreationOptions.RunContinuationsAsynchronously);
         var app = this.AddObject("App", 64, 1);
         var connectionPoint = this.AddObject("ConnectionPoint", 7, 1);
         var playlist = this.AddObject("Playlist", 27);
@@ -204,24 +241,40 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
             });
         }
 
-        foreach (var (slot, name) in new[] { (14, "DatabaseId"), (38, "Duration"), (63, "Count"), (65, "Number") })
+        this.AddNumber(track, 14, "Track.DatabaseId", () => this.TrackId);
+        foreach (var (slot, name) in new[] { (38, "Duration"), (63, "Count"), (65, "Number") })
         {
             this.AddNumber(track, slot, $"Track.{name}", () => 1);
         }
 
-        this.AddObjectGetter(track, 71, "Track.Artwork", artworks);
+        track.SetMethod<GetPointer>(71, (nint _, out nint value) =>
+        {
+            this.ArtworkCollectionReads++;
+            value = this.HasArtworkCollection ? artworks.Acquire() : 0;
+            return this.Call("Track.Artwork");
+        });
         artworks.SetMethod<GetItem>(8, (nint _, int index, out nint value) =>
         {
-            value = artwork.Acquire();
+            value = this.HasArtwork ? artwork.Acquire() : 0;
             return this.Call("Artwork.Item");
         });
         this.AddNumber(artwork, 10, "Artwork.Format", () => 1);
         artwork.SetMethod<SaveFile>(9, (_, path) =>
         {
+            this.ArtworkExports++;
             var file = Marshal.PtrToStringBSTR(path);
             this._exportedFiles.Add(file);
-            File.WriteAllBytes(file, [1, 2, 3]);
-            return this.Call("Artwork.Save");
+            if (this.WriteArtworkFile)
+            {
+                File.WriteAllBytes(file, this.ArtworkData);
+                if (this.LockArtworkFile)
+                {
+                    this._artworkFileLocks.Add(new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None));
+                }
+            }
+
+            this.Call("Artwork.Save");
+            return this.ArtworkSaveResult;
         });
 
         var onEvent = typeof(ITunesBackend).GetMethod("OnITunesEvent", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -302,9 +355,16 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await this.Backend.DisposeAsync();
-        foreach (var item in this._objects)
+        try
         {
-            item.Dispose();
+            this.ReleaseArtworkFileLocks();
+        }
+        finally
+        {
+            foreach (var item in this._objects)
+            {
+                item.Dispose();
+            }
         }
     }
 
@@ -321,6 +381,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
             Marshal.Copy(new nint[slots], 0, this._vtable, slots);
             this.Pointer = Marshal.AllocHGlobal(nint.Size);
             Marshal.WriteIntPtr(this.Pointer, this._vtable);
+            var appReleased = owner._appReleased;
             this.SetMethod<ReferenceCount>(2, _ =>
             {
                 owner.CheckReleaseThread(this.Name);
@@ -332,7 +393,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
 
                 if (this.Name == "App")
                 {
-                    owner._appReleased.TrySetResult();
+                    appReleased.TrySetResult();
                 }
 
                 return (uint)this.References;
@@ -342,6 +403,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
         public string Name { get; }
         public nint Pointer { get; }
         public int References { get; private set; }
+        public bool IsDisposed { get; private set; }
 
         public nint Acquire()
         {
@@ -360,6 +422,7 @@ internal sealed class ITunesNativeFixture : IAsyncDisposable
             Marshal.FreeHGlobal(this.Pointer);
             Marshal.FreeHGlobal(this._vtable);
             GC.KeepAlive(this._methods);
+            this.IsDisposed = true;
         }
     }
 
