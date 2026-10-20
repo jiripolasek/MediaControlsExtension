@@ -166,9 +166,15 @@ internal sealed class GsmtcPlaybackObservations
         {
             var capabilities = this._latest.Value.Capabilities | sourceCapabilities;
             return this._latest.Sequence == 0 ||
-                   snapshot.PlaybackState == this._latest.Value.State && snapshot.Capabilities == capabilities
+                   snapshot.PlaybackState == this._latest.Value.State && snapshot.Capabilities == capabilities &&
+                   snapshot.PlaybackObservationRevision == this._latest.Sequence
                 ? snapshot
-                : snapshot with { PlaybackState = this._latest.Value.State, Capabilities = capabilities, };
+                : snapshot with
+                {
+                    PlaybackState = this._latest.Value.State,
+                    Capabilities = capabilities,
+                    PlaybackObservationRevision = this._latest.Sequence,
+                };
         }
     }
 

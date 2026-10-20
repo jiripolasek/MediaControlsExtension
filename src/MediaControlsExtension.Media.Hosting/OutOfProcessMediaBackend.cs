@@ -228,6 +228,7 @@ public sealed partial class OutOfProcessMediaBackend : IMediaSourcePolicyBackend
     {
         Connection? connection;
         MediaBackendSessionSnapshot? route;
+        long policyRevision;
         lock (this._gate)
         {
             connection = this._connection;
@@ -244,6 +245,8 @@ public sealed partial class OutOfProcessMediaBackend : IMediaSourcePolicyBackend
                 return new MediaBackendCommandResult(MediaBackendCommandStatus.Unavailable,
                     "The worker is unavailable.");
             }
+
+            policyRevision = this._policy.Revision;
         }
 
         if (!command.SessionsToPause.IsEmpty)
@@ -258,8 +261,16 @@ public sealed partial class OutOfProcessMediaBackend : IMediaSourcePolicyBackend
                 .ConfigureAwait(false);
             lock (this._gate)
             {
-                if (connection != this._connection || !this._routes.TryGetValue(command.SessionId, out var current) ||
-                    current.BindingGeneration != route.BindingGeneration || current.Id != route.Id)
+                this._routes.TryGetValue(command.SessionId, out var current);
+                // A successful Stop may remove its session before its result arrives.
+                var completedStop = current is null &&
+                    command.Operation == MediaOperation.Stop && result?.Status == MediaBackendCommandStatus.Completed &&
+                    this._disposal is null && this._policy.Revision == policyRevision && this._observationFailure is null &&
+                    this._snapshot.Connection.Status == MediaConnectionStatus.Connected &&
+                    this._snapshot.Availability == MediaControlAvailability.Available && !this._localIds.ContainsKey(route.Id);
+                if (connection != this._connection ||
+                    (!completedStop &&
+                     (current is null || current.BindingGeneration != route.BindingGeneration || current.Id != route.Id)))
                 {
                     return new MediaBackendCommandResult(MediaBackendCommandStatus.SessionGone,
                         "The worker binding changed during execution.");

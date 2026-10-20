@@ -88,7 +88,7 @@ internal sealed class GsmtcPlaybackController
                     {
                         if (observed.Value.State != MediaPlaybackState.Stopped)
                         {
-                            return new(MediaBackendCommandStatus.Completed, null);
+                            return new(MediaBackendCommandStatus.Completed, null) { ConfirmedPlaybackRevision = observed.Sequence };
                         }
 
                         fallbackStartedAt = Stopwatch.GetTimestamp();
@@ -142,14 +142,14 @@ internal sealed class GsmtcPlaybackController
                     {
                         if (observed.Value.State == desired)
                         {
-                            return new(MediaBackendCommandStatus.Completed, null);
+                            return new(MediaBackendCommandStatus.Completed, null) { ConfirmedPlaybackRevision = observed.Sequence };
                         }
 
                         if (operation == MediaOperation.Pause && observed.Value.State == MediaPlaybackState.Stopped)
                         {
                             if (IsConsecutive(firstStopped, observed, stopped: true))
                             {
-                                return new(MediaBackendCommandStatus.Completed, null);
+                                return new(MediaBackendCommandStatus.Completed, null) { ConfirmedPlaybackRevision = observed.Sequence };
                             }
 
                             firstStopped = FirstInRun(firstStopped, observed, stopped: true);

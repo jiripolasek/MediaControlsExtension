@@ -79,7 +79,9 @@ internal sealed class MediaStateStore
                 if (this._pendingPlayback.TryGetValue(sessionId, out var pending))
                 {
                     if (pending.BindingGeneration != backendSession.BindingGeneration ||
-                        (pending.CommandCompleted && IsPredictionSatisfied(pending.PredictedState, confirmedState)))
+                        (pending.CommandCompleted &&
+                         backendSession.PlaybackObservationRevision >= pending.MinimumPlaybackRevision &&
+                         IsPredictionSatisfied(pending.PredictedState, confirmedState)))
                     {
                         this._pendingPlayback.Remove(sessionId);
                     }
@@ -104,6 +106,7 @@ internal sealed class MediaStateStore
                         MediaCapabilityPolicy.ResolvePrimaryOperation(effectiveState, backendSession.Capabilities, isOptimistic)))
                 {
                     Origin = backendSession.Origin,
+                    PlaybackObservationRevision = backendSession.PlaybackObservationRevision,
                 });
             }
 
@@ -287,7 +290,8 @@ internal sealed class MediaStateStore
     public MediaServiceSnapshot CompleteCommand(
         ResolvedMediaCommand command,
         MediaOperationId operationId,
-        bool succeeded)
+        bool succeeded,
+        long confirmedPlaybackRevision = 0)
     {
         lock (this._stateLock)
         {
@@ -304,9 +308,15 @@ internal sealed class MediaStateStore
             }
 
             var session = this._current.Sessions[index];
-            if (succeeded && !IsPredictionSatisfied(pending.PredictedState, session.PlaybackInfo.ConfirmedState))
+            if (succeeded &&
+                (session.PlaybackObservationRevision < confirmedPlaybackRevision ||
+                 !IsPredictionSatisfied(pending.PredictedState, session.PlaybackInfo.ConfirmedState)))
             {
-                this._pendingPlayback[command.SessionId] = pending with { CommandCompleted = true };
+                this._pendingPlayback[command.SessionId] = pending with
+                {
+                    CommandCompleted = true,
+                    MinimumPlaybackRevision = confirmedPlaybackRevision,
+                };
                 return this._current;
             }
 
@@ -370,7 +380,15 @@ internal sealed class MediaStateStore
     {
         if (this._selectedSessionId is { } selectedId && liveSessionIds.Contains(selectedId))
         {
-            return selectedId;
+            var selected = snapshot.Sessions.First(session => session.Id.Value == selectedId.Value);
+            if (!selected.Origin.TreatAsLocal ||
+                selected.PlaybackState == MediaPlaybackState.Playing ||
+                this._pendingPlayback.ContainsKey(selectedId) ||
+                !snapshot.Sessions.Any(static session =>
+                    session.IsAvailable && session.Origin.TreatAsLocal && session.PlaybackState == MediaPlaybackState.Playing))
+            {
+                return selectedId;
+            }
         }
 
         this._selectedSessionId = null;
@@ -458,7 +476,8 @@ internal sealed class MediaStateStore
         MediaOperationId OperationId,
         long BindingGeneration,
         MediaPlaybackState PredictedState,
-        bool CommandCompleted = false);
+        bool CommandCompleted = false,
+        long MinimumPlaybackRevision = 0);
 }
 
 internal readonly record struct ResolvedMediaCommand(

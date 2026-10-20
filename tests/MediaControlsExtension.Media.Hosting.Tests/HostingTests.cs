@@ -30,6 +30,7 @@ internal static class HostingTests
             ("Broken pipe exits during normal operation", () => BrokenPipeAsync("synthetic")),
             ("Broken pipe exits during hung startup", () => BrokenPipeAsync("hang-start")),
             ("Broken pipe exits during hung cleanup", () => BrokenPipeAsync("hang-cleanup")),
+            ("Owner process reports tolerate transient sharing locks", () => OwnerReportSharingAsync(resultsDirectory)),
             ("Owner kill terminates its worker", () => OwnerDeathAsync("synthetic", resultsDirectory)),
             ("Owner kill during startup leaves no orphan", () => OwnerDeathAsync("hang-start", resultsDirectory)),
             ("Owner kill terminates a stuck backend", () => OwnerDeathAsync("hang-command", resultsDirectory)),
@@ -62,7 +63,7 @@ internal static class HostingTests
             .. ReviewRecoveryTests.Cases
         ];
         tests = [.. tests, .. WorkerLoggingTests.Cases(resultsDirectory), .. WorkerProcessTests.Cases];
-        tests = [.. tests, .. ReviewRpcTests.Cases];
+        tests = [.. tests, .. ReviewRpcTests.Cases, .. StopCompletionTests.Cases];
         if (filter is not null)
         {
             tests = [.. tests.Where(test => test.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))];
@@ -139,6 +140,7 @@ internal static class HostingTests
         var result = await backend.ExecuteAsync(Command(snapshot, MediaOperation.Play), CancellationToken.None).ConfigureAwait(false);
         Check(result.Status == MediaBackendCommandStatus.Unconfirmed && result.DiagnosticMessage == "Playback could not be confirmed.",
             "Unconfirmed playback result was lost in transit.");
+        Check(result.ConfirmedPlaybackRevision == 0, "Unconfirmed playback claimed a confirmation revision.");
     }
 
     private static async Task ContractRoundTripAsync()
@@ -151,6 +153,7 @@ internal static class HostingTests
         var snapshot = await WaitForSnapshotAsync(backend).ConfigureAwait(false);
         Check(snapshot.SourcePolicyRevision == 1 && snapshot.Sessions.Length == 1,
             "Initial policy/snapshot did not arrive.");
+        Check(snapshot.Sessions[0].PlaybackObservationRevision == 1, "Playback observation revision was lost in transit.");
         Check(backend.WorkerPackageFullName == OwnedWorkerProcess.CurrentPackageFullName,
             "The worker has the wrong package identity.");
         Check(snapshot.Sessions[0].Origin.TreatAsLocal, "Local playback became remote.");
@@ -158,12 +161,15 @@ internal static class HostingTests
         var artwork = await backend.GetArtworkAsync(key, CancellationToken.None).ConfigureAwait(false);
         Check(artwork is not null && artwork.Data.Span.SequenceEqual(new byte[] { 1, 2, 3, 1 }),
             "Artwork bytes changed in transit.");
-        Check(
-            (await backend.ExecuteAsync(Command(snapshot, MediaOperation.Play), CancellationToken.None)
-                .ConfigureAwait(false)).Status == MediaBackendCommandStatus.Completed, "Play failed.");
+        var play = await backend.ExecuteAsync(Command(snapshot, MediaOperation.Play), CancellationToken.None).ConfigureAwait(false);
+        Check(play.Status == MediaBackendCommandStatus.Completed, "Play failed.");
+        Check(play.ConfirmedPlaybackRevision == 2, "Playback confirmation revision was lost in transit.");
         await EventuallyAsync(async () =>
-            (await backend.ReadSnapshotAsync(CancellationToken.None).ConfigureAwait(false)).Sessions[0].PlaybackState ==
-            MediaPlaybackState.Playing).ConfigureAwait(false);
+        {
+            var current = (await backend.ReadSnapshotAsync(CancellationToken.None).ConfigureAwait(false)).Sessions[0];
+            return current.PlaybackState == MediaPlaybackState.Playing &&
+                   current.PlaybackObservationRevision == play.ConfirmedPlaybackRevision;
+        }).ConfigureAwait(false);
         backend.InvalidateObservations([
             new MediaBackendObservationRequest(snapshot.Sessions[0].Id, MediaBackendObservationChanges.Playback)
         ]);
@@ -625,6 +631,38 @@ internal static class HostingTests
         Check(backend.ForcedTerminationCount == 0, "The worker did not exit itself after pipe loss.");
     }
 
+    private static async Task OwnerReportSharingAsync(string directory)
+    {
+        var report = Path.Combine(Path.GetFullPath(directory), $"owner-report-{Guid.NewGuid():N}.txt");
+        Check(await ReadOwnerProcessIdAsync(report).ConfigureAwait(false) == 0, "A missing report was considered ready.");
+        await File.WriteAllTextAsync(report, "pending").ConfigureAwait(false);
+        Check(await ReadOwnerProcessIdAsync(report).ConfigureAwait(false) == 0, "An incomplete report was considered ready.");
+        await File.WriteAllTextAsync(report, Environment.ProcessId.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
+        using (var writer = new FileStream(report, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            Check(await ReadOwnerProcessIdAsync(report).ConfigureAwait(false) == 0, "A locked report was considered ready.");
+        }
+
+        Check(await ReadOwnerProcessIdAsync(report).ConfigureAwait(false) == Environment.ProcessId,
+            "The report was not read after its sharing lock was released.");
+    }
+
+    private static async Task<int> ReadOwnerProcessIdAsync(string report)
+    {
+        try
+        {
+            return File.Exists(report) &&
+                   int.TryParse(await File.ReadAllTextAsync(report).ConfigureAwait(false), out var processId)
+                ? processId
+                : 0;
+        }
+        catch (IOException ex) when (ex.HResult == unchecked((int)0x80070020))
+        {
+            // Retry sharing violations within the existing handoff timeout.
+            return 0;
+        }
+    }
+
     private static async Task OwnerDeathAsync(string behavior, string directory)
     {
         var report = Path.Combine(Path.GetFullPath(directory), $"owner-{behavior}-{Guid.NewGuid():N}.txt");
@@ -637,9 +675,10 @@ internal static class HostingTests
         {
             var workerId = 0;
             await EventuallyAsync(async () =>
-                    File.Exists(report) &&
-                    int.TryParse(await File.ReadAllTextAsync(report).ConfigureAwait(false), out workerId))
-                .ConfigureAwait(false);
+            {
+                workerId = await ReadOwnerProcessIdAsync(report).ConfigureAwait(false);
+                return workerId != 0;
+            }).ConfigureAwait(false);
             worker = Process.GetProcessById(workerId);
             _ = worker.SafeHandle;
             Check(!worker.HasExited, "The worker had exited before its owner was killed.");

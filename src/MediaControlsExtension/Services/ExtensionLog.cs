@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using Microsoft.Extensions.Logging;
+using JPSoftworks.MediaControlsExtension.Model;
 
 namespace JPSoftworks.MediaControlsExtension.Services;
 
@@ -63,4 +64,15 @@ internal static partial class ExtensionLog
         ILogger logger,
         Uri issuesUri,
         Exception exception);
+
+    [LoggerMessage(EventId = 1105, Level = LogLevel.Debug,
+        Message = "Preparing {Surface} playback presentation: " +
+                  "{PreviousSessionId}/{PreviousIntent} -> {SessionId}/{Intent}.")]
+    public static partial void PlaybackPresentationChanged(
+        ILogger logger,
+        IconSurface surface,
+        long? previousSessionId,
+        PlaybackIntent? previousIntent,
+        long? sessionId,
+        PlaybackIntent? intent);
 }

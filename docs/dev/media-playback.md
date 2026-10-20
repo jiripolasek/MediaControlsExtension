@@ -77,19 +77,33 @@ Late completions cannot change a returned result or its captured identity.
 [MediaStateStore](../../src/MediaControlsExtension.Media/State/MediaStateStore.cs)
 keeps the latest prediction while its command is queued or running. An earlier
 matching observation cannot confirm a queued inverse command. After success,
-the prediction clears if the confirmed state satisfies it; otherwise its expiry
+the prediction clears if the confirmed state satisfies it and reaches the
+command's minimum confirmation revision; otherwise its expiry
 countdown starts. Stopped satisfies a successful Pause prediction. Normal failure
-and abandonment handling clears the affected prediction.
+and abandonment handling clears the affected prediction. A Failed completion also
+clears any remaining prediction for that operation without waiting for expiry;
+it cannot clear a newer command's prediction.
+
+GSMTC tags snapshots and successful Play/Pause results with the per-binding
+playback observation revision. A cached matching state or delayed inverse state
+older than the confirming observation keeps the latest prediction.
+
+iTunes also tags playback observations. A successful Play/Pause requires at least
+the first observation after its native call. The command publishes that observation
+even when playback values are unchanged. If native playback has not changed yet,
+the prediction waits for a later matching observation or expires normally.
+Providers without these revisions retain state-based confirmation.
 
 [MediaCapabilityPolicy](../../src/MediaControlsExtension.Media/Infrastructure/MediaCapabilityPolicy.cs)
 owns admission and the primary action:
 
-- A pending Play offers Pause, and a pending Pause offers Play, even when reported
-  directional controls lag. This does not alter the reported capability flags.
+- A pending Play offers Pause, and a pending Pause or Stop offers Play, even when
+  reported directional controls lag. These actions remain admissible without
+  altering the reported capability flags.
 - Direct commands, relative toggles, session cycling, and automatic pauses use
   that admission policy. The provider makes the final control check.
 - Confirmed Playing offers Stop when Pause/toggle is unsupported and Stop exists.
-  The pending-intent exception applies to Play/Pause, not Stop.
+  The pending-intent exception admits Play/Pause, never an unsupported Stop.
 
 Published UI commands retain an immutable session and action. Repeated invocations
 of the same command request the same action; owners publish a replacement when its

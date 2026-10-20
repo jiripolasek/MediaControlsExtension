@@ -28,7 +28,9 @@ public sealed class GsmtcPlaybackControllerTests
             return true;
         };
 
-        Assert.AreEqual(MediaBackendCommandStatus.Completed, (await session.ExecuteAsync()).Status);
+        var result = await session.ExecuteAsync();
+        Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
+        Assert.AreEqual(2L, result.ConfirmedPlaybackRevision);
         Assert.AreEqual(2, session.Reads);
         Assert.AreEqual(1, session.CommandReads);
         Assert.HasCount(1, session.Operations);
@@ -46,7 +48,9 @@ public sealed class GsmtcPlaybackControllerTests
     {
         var session = new PlaybackTestSession { Value = new(state, capabilities) };
 
-        Assert.AreEqual(MediaBackendCommandStatus.Completed, (await session.ExecuteAsync(intent)).Status);
+        var result = await session.ExecuteAsync(intent);
+        Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
+        Assert.AreEqual(1L, result.ConfirmedPlaybackRevision);
         Assert.AreEqual(1, session.Reads);
         Assert.IsEmpty(session.Operations);
         await session.SnapshotAsync();
@@ -96,7 +100,9 @@ public sealed class GsmtcPlaybackControllerTests
             Controller = new(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(20)),
         };
 
-        Assert.AreEqual(MediaBackendCommandStatus.Completed, (await session.ExecuteAsync()).Status);
+        var result = await session.ExecuteAsync();
+        Assert.AreEqual(MediaBackendCommandStatus.Completed, result.Status);
+        Assert.AreEqual(3L, result.ConfirmedPlaybackRevision);
         Assert.AreEqual(3, session.Reads);
         Assert.AreEqual(1, session.CommandReads);
         Assert.IsEmpty(session.Operations);

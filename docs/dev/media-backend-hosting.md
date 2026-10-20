@@ -152,8 +152,9 @@ process disposal cannot invalidate an outstanding wait.
 ## Protocol and request flow
 
 [PipeProtocol](../../src/MediaControlsExtension.Media.Hosting/PipeProtocol.cs) is
-**version 7**. Owner and worker must ship together. Version 7 carries native toggle
-capability and the Unconfirmed command result; older peers are rejected.
+**version 8**. Owner and worker must ship together. Version 8 carries playback
+observation revisions so cached snapshots cannot confirm newer commands; older
+peers are rejected.
 
 The local duplex pipe is restricted to the current user/elevation level. Both
 peers check the pipe's peer PID against the expected owner/child, then validate
@@ -260,6 +261,12 @@ On restart, translate worker-local IDs into fresh proxy-local IDs. Preserve bind
 generations within an epoch and translate hints, artwork, invalidations, commands,
 and secondary results consistently. Proxy revisions never reset. Do not identify
 replacement sessions by title or application ID.
+
+A successful Stop may remove its session before its result arrives. Accept that
+result only while the same worker connection and source policy remain active,
+observations are healthy, and the source remains connected and available. A
+replacement binding still rejects the old result. Play queued for the removed
+binding remains obsolete and is never redirected to a replacement session.
 
 Reapply the latest source policy before accepting discovery. A connection is ready
 only after a complete snapshot acknowledges that policy; an empty snapshot is valid.

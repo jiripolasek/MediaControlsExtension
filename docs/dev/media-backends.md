@@ -157,12 +157,17 @@ Service disposal clears the published provider list.
 ## Select and group sessions
 
 An accepted Play selects its target immediately. This includes a toggle resolved
-to Play and next/previous-session commands. That choice survives refreshes, playback
-changes, rebinding of the same available session, and even a failed Play. Pause and
-other controls do not change selection. Rejected commands leave it unchanged.
+to Play and next/previous-session commands. That choice survives refreshes and
+rebinding of the same available session. A local choice yields to another playing
+local session once the chosen session is no longer playing and has no pending
+playback prediction. It stays selected while all local players are inactive,
+including after a failed Play. Pause and other controls do not select their target;
+their confirmed playback changes can allow this automatic handoff. Rejected
+commands leave selection unchanged.
 
 If the chosen session disappears or becomes unavailable, the explicit choice is
-forgotten. Automatic selection considers available sessions treated as local:
+forgotten. A choice that yields to another playing local session is also forgotten.
+Automatic selection considers available sessions treated as local:
 
 1. Playing sessions named by provider hints.
 2. Other playing sessions.

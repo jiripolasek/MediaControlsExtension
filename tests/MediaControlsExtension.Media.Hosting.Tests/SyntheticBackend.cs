@@ -23,6 +23,7 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
     private long _generation = 1;
     private int _invalidations;
     private MediaPlaybackState _playback = MediaPlaybackState.Paused;
+    private long _playbackObservationRevision = 1;
     private MediaBackendSourcePolicy _policy = MediaBackendSourcePolicy.Empty;
     private long _revision;
     private string _title = "Initial";
@@ -92,7 +93,10 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
                 MediaCapabilities.Play | MediaCapabilities.Pause | MediaCapabilities.Stop | MediaCapabilities.SkipNext |
                 MediaCapabilities.SkipPrevious |
                 (behavior == "unconfirmed-playback" ? MediaCapabilities.TogglePlayback : MediaCapabilities.None) |
-                (context?.CanActivateSource == true ? MediaCapabilities.ActivateSource : MediaCapabilities.None));
+                (context?.CanActivateSource == true ? MediaCapabilities.ActivateSource : MediaCapabilities.None))
+            {
+                PlaybackObservationRevision = this._playbackObservationRevision,
+            };
             return Task.FromResult(
                 new MediaBackendSnapshot(++this._revision, excluded ? [] : [session],
                     excluded ? [] : [new MediaBackendSessionId(1)], MediaControlAvailability.Available)
@@ -140,6 +144,7 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        long confirmedPlaybackRevision;
         lock (this._gate)
         {
             this._commands++;
@@ -174,6 +179,8 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
                 default:
                     return Task.FromResult(new MediaBackendCommandResult(MediaBackendCommandStatus.Unsupported, null));
             }
+
+            confirmedPlaybackRevision = ++this._playbackObservationRevision;
         }
 
         this.Signal();
@@ -197,7 +204,10 @@ internal sealed class SyntheticBackend(string behavior = "synthetic", HostedBack
             return this.SlowCommandAsync(cancellationToken);
         }
 
-        return Task.FromResult(new MediaBackendCommandResult(MediaBackendCommandStatus.Completed, null));
+        return Task.FromResult(new MediaBackendCommandResult(MediaBackendCommandStatus.Completed, null)
+        {
+            ConfirmedPlaybackRevision = command.Operation is MediaOperation.Play or MediaOperation.Pause ? confirmedPlaybackRevision : 0,
+        });
     }
 
     public async ValueTask<MediaArtworkContent?> GetArtworkAsync(

@@ -13,7 +13,7 @@ internal static class MediaCapabilityPolicy
         SupportsResolvedOperation(playback.Capabilities, operation, playback.EffectiveState) ||
         (playback.IsOptimistic &&
          ((playback.EffectiveState == MediaPlaybackState.Playing && operation == MediaOperation.Pause) ||
-          (playback.EffectiveState == MediaPlaybackState.Paused && operation == MediaOperation.Play)));
+          ((playback.EffectiveState is MediaPlaybackState.Paused or MediaPlaybackState.Stopped) && operation == MediaOperation.Play)));
 
     public static MediaOperation ResolvePrimaryOperation(
         MediaPlaybackState state, MediaCapabilities capabilities, bool isOptimistic = false)

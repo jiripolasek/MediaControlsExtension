@@ -86,6 +86,9 @@ public sealed record MediaBackendSessionSnapshot(
     MediaCapabilities Capabilities,
     bool IsAvailable = true)
 {
+    /// <summary>Gets the increasing playback observation revision within this binding, or zero when unsupported.</summary>
+    public long PlaybackObservationRevision { get; init; }
+
     /// <summary>Gets the connection and effective behavior; a replacement target requires a new binding generation.</summary>
     public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
 }
@@ -129,6 +132,9 @@ public sealed record MediaBackendCommandResult(
     MediaBackendCommandStatus Status,
     string? DiagnosticMessage)
 {
+    /// <summary>Gets the minimum playback observation revision allowed to confirm this command, or zero when unsupported.</summary>
+    public long ConfirmedPlaybackRevision { get; init; }
+
     /// <summary>Gets reported secondary pauses by captured binding; an empty array does not imply every pause succeeded.</summary>
     public ImmutableArray<MediaBackendPauseResult> PauseResults { get; init; } = [];
 }

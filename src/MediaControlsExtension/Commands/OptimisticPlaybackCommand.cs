@@ -85,6 +85,8 @@ internal sealed partial class OptimisticPlaybackCommand : AsyncInvokableCommand
             return this;
         }
 
+        ExtensionLog.PlaybackPresentationChanged(this.Logger, this._iconSurface,
+            this._target?.SessionId.Value, this._target?.Intent, playbackTarget?.SessionId.Value, playbackTarget?.Intent);
         return new(this, playbackTarget, presentation, showName);
     }
 

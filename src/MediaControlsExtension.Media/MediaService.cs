@@ -415,9 +415,11 @@ public sealed class MediaService : IMediaService
                 }
             }
 
-            updatedSnapshot = this._stateStore.CompleteCommand(command, work.OperationId, succeeded);
+            updatedSnapshot = this._stateStore.CompleteCommand(
+                command, work.OperationId, succeeded, result.ConfirmedPlaybackRevision);
         }
 
+        MediaLog.CommandFinished(this._logger, work.OperationId.Value, command.ResolvedOperation, command.SessionId.Value, outcomeStatus);
         this.PublishState(updatedSnapshot);
         work.Complete(new(
             work.OperationId,
@@ -847,12 +849,14 @@ public sealed class MediaService : IMediaService
         try
         {
             var outcome = await work.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
-            if (outcome.Status != MediaCommandOutcomeStatus.Completed)
+            if (outcome.Status == MediaCommandOutcomeStatus.Completed)
+            {
+                await Task.Delay(this._playbackPredictionLifetime, cancellationToken).ConfigureAwait(false);
+            }
+            else if (outcome.Status != MediaCommandOutcomeStatus.Failed)
             {
                 return;
             }
-
-            await Task.Delay(this._playbackPredictionLifetime, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -928,6 +932,24 @@ public sealed class MediaService : IMediaService
     private void PublishStateCore(MediaServiceSnapshot snapshot)
     {
         var publication = this._sessionCatalog.Apply(snapshot);
+        if (this._logger.IsEnabled(LogLevel.Debug))
+        {
+            foreach (var notification in publication.SessionNotifications)
+            {
+                if ((notification.Changes &
+                     (MediaSessionChanges.PlaybackInfo | MediaSessionChanges.Availability | MediaSessionChanges.Rebound)) == 0)
+                {
+                    continue;
+                }
+
+                var session = notification.Session;
+                var playback = session.PlaybackInfo;
+                MediaLog.PlaybackStatePublished(this._logger, snapshot.Revision, session.Id.Value, session.Revision,
+                    playback.ConfirmedState, playback.EffectiveState, playback.IsOptimistic,
+                    playback.PrimaryOperation, session.IsAvailable);
+            }
+        }
+
         this._notificationHub.Publish(publication);
     }
 

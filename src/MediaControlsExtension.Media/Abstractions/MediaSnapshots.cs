@@ -245,6 +245,8 @@ internal sealed record MediaSessionSnapshot(
     MediaTimelinePropertiesSnapshot TimelineProperties,
     MediaPlaybackInfoSnapshot PlaybackInfo)
 {
+    public long PlaybackObservationRevision { get; init; }
+
     public MediaSessionOrigin Origin { get; init; } = MediaSessionOrigin.Local;
 }
 

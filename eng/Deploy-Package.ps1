@@ -10,7 +10,7 @@ development package in Visual Studio's standard AppX output directory while
 preserving application data. Use -Aot to enable Native AOT and trimming;
 otherwise the script publishes a managed, untrimmed development package.
 Repository-specific paths and platform mappings are loaded from
-Package.config.psd1. 
+Package.config.psd1.
 
 Requires Visual Studio 2026 MSBuild with -getResultOutputFile support.
 Automatic discovery uses released installations by default. Use

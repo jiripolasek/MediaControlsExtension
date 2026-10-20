@@ -82,4 +82,28 @@ internal static partial class MediaLog
     public static partial void CommandSettleRefreshFailed(
         ILogger logger,
         Exception exception);
+
+    [LoggerMessage(EventId = 37, Level = LogLevel.Debug,
+        Message = "Media playback publication {Revision} for session {SessionId}/{SessionRevision}: " +
+                  "confirmed {ConfirmedState}, effective {EffectiveState}, optimistic {IsOptimistic}, " +
+                  "action {PrimaryOperation}, available {IsAvailable}.")]
+    public static partial void PlaybackStatePublished(
+        ILogger logger,
+        long revision,
+        long sessionId,
+        long sessionRevision,
+        MediaPlaybackState confirmedState,
+        MediaPlaybackState effectiveState,
+        bool isOptimistic,
+        MediaOperation primaryOperation,
+        bool isAvailable);
+
+    [LoggerMessage(EventId = 38, Level = LogLevel.Debug,
+        Message = "Media operation {OperationId} ({Operation}) finished for session {SessionId}: {Status}.")]
+    public static partial void CommandFinished(
+        ILogger logger,
+        long operationId,
+        MediaOperation operation,
+        long sessionId,
+        MediaCommandOutcomeStatus status);
 }
