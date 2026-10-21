@@ -344,7 +344,7 @@ Przytrzymaj Shift podczas uruchamiania polecenia, aby tymczasowo zrobić odwrotn
     <value>Wstrzymaj inne sesje podczas odtwarzania</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>Podczas odtwarzania sesji automatycznie wstrzymuj wszystkie pozostałe sesje.</value>
+    <value>Przy uruchamianiu sesji lokalnej wstrzymaj pozostałe sesje lokalne. Sesje zdalne uczestniczą tylko po uwzględnieniu ich poniżej.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
     <value>Pokaż bieżącą sesję multimedialną na stronie głównej</value>
@@ -602,5 +602,342 @@ Dzienniki diagnostyczne mogą zawierać tytuły multimediów, nazwy odtwarzaczy 
   </data>
   <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
     <value>Nie można otworzyć GitHub Issues. Spróbuj ponownie lub otwórz repozytorium z poziomu Ustawień.</value>
+  </data>
+  <data name="Details_Provider" xml:space="preserve">
+    <value>Dostawca</value>
+  </data>
+  <data name="Command_NextTrack_Dock" xml:space="preserve">
+    <value>Następny</value>
+    <comment>Short Dock button label for skipping to the next track.</comment>
+  </data>
+  <data name="Command_PreviousTrack_Dock" xml:space="preserve">
+    <value>Poprzedni</value>
+    <comment>Short Dock button label for returning to the previous track.</comment>
+  </data>
+  <data name="WindowsMediaRecovery_Title" xml:space="preserve">
+    <value>Multimedia Windows są wyłączone</value>
+  </data>
+  <data name="WindowsMediaRecovery_Description" xml:space="preserve">
+    <value>Włącz zalecane źródło Multimedia Windows, aby wykrywać odtwarzanie z Apple Music, Spotify i przeglądarek, albo otwórz Źródła multimediów, aby wybrać inne źródło.</value>
+  </data>
+  <data name="WindowsMediaRecovery_Enable" xml:space="preserve">
+    <value>Włącz Multimedia Windows</value>
+  </data>
+  <data name="Toast_PauseOtherFailed" xml:space="preserve">
+    <value>Nie udało się wstrzymać innego odtwarzacza.</value>
+  </data>
+  <data name="Toast_PauseOthersFailed" xml:space="preserve">
+    <value>Nie udało się wstrzymać innych odtwarzaczy: {0}.</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Title" xml:space="preserve">
+    <value>Pokaż etykiety odtwarzania w Docku</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Subtitle" xml:space="preserve">
+    <value>Pokaż etykiety przycisków odtwarzania i przełączania utworów. Włącz też etykiety pasma Sterowanie multimediami w ustawieniach Docka w Command Palette.</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Title" xml:space="preserve">
+    <value>Pokaż wykonawcę w tytule w Docku</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Subtitle" xml:space="preserve">
+    <value>Dodaj wykonawcę obok tytułu utworu we wszystkich rozmiarach Docka, także w trybie kompaktowym.</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Title" xml:space="preserve">
+    <value>Zezwól na szerszy tytuł w Docku</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Subtitle" xml:space="preserve">
+    <value>Przeznacz więcej miejsca w poziomie na etykietę bieżącego materiału. Wymaga wersji Command Palette obsługującej wskazówki dotyczące szerokości Docka.</value>
+  </data>
+  <data name="Settings_Group_MediaBackends" xml:space="preserve">
+    <value>Źródła multimediów</value>
+  </data>
+  <data name="Settings_MediaBackends_Help" xml:space="preserve">
+    <value>Skonfiguruj dostawców multimediów na stronie Źródła multimediów w Sterowaniu multimediami. Otwórz menu poleceń Sterowania multimediami i wybierz Źródła multimediów.</value>
+  </data>
+  <data name="MediaSources_ManageProviders" xml:space="preserve">
+    <value>Wybierz źródło, aby zobaczyć wskazówki konfiguracji i działania. Włącz tylko źródła, których używasz.</value>
+  </data>
+  <data name="MediaSources_Configure" xml:space="preserve">
+    <value>Konfiguruj</value>
+  </data>
+  <data name="MediaSources_Enable" xml:space="preserve">
+    <value>Włącz</value>
+  </data>
+  <data name="MediaSources_Disable" xml:space="preserve">
+    <value>Wyłącz</value>
+  </data>
+  <data name="MediaSources_DisableWindowsTitle" xml:space="preserve">
+    <value>Wyłączyć Multimedia Windows?</value>
+  </data>
+  <data name="MediaSources_DisableWindowsDescription" xml:space="preserve">
+    <value>Apple Music, Spotify, odtwarzanie w przeglądarkach i inne sesje multimediów Windows znikną ze Sterowania multimediami. Włączone źródła VLC i iTunes pozostaną dostępne. Aby zmienić tryb, anuluj i włącz drugie źródło multimediów Windows.</value>
+  </data>
+  <data name="MediaSources_DisableWindowsAction" xml:space="preserve">
+    <value>Wyłącz Multimedia Windows</value>
+  </data>
+  <data name="MediaSources_SaveFailed" xml:space="preserve">
+    <value>Nie udało się zapisać ustawień źródeł multimediów. Sprawdź dostęp do pliku ustawień i spróbuj ponownie.</value>
+  </data>
+  <data name="MediaSources_TestConnection" xml:space="preserve">
+    <value>Przetestuj zapisane połączenie</value>
+  </data>
+  <data name="MediaSources_TestConnected" xml:space="preserve">
+    <value>Połączono z VLC. Zapisane ustawienia połączenia działają.</value>
+  </data>
+  <data name="MediaSources_TestFailed" xml:space="preserve">
+    <value>Nie udało się połączyć z VLC. Sprawdź jego interfejs WWW i zapisane ustawienia połączenia.</value>
+  </data>
+  <data name="MediaSources_TestSettingsChanged" xml:space="preserve">
+    <value>Ustawienia połączenia VLC zmieniły się podczas testu. Ponownie przetestuj zapisane połączenie.</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
+    <value>Multimedia Windows (zgodność)</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
+    <value>Alternatywne źródło multimediów Windows do rozwiązywania problemów.</value>
+  </data>
+  <data name="MediaSources_Title" xml:space="preserve">
+    <value>Źródła multimediów</value>
+  </data>
+  <data name="MediaSources_Search" xml:space="preserve">
+    <value>Szukaj źródeł multimediów</value>
+  </data>
+  <data name="MediaSources_Empty" xml:space="preserve">
+    <value>Brak pasujących źródeł multimediów</value>
+  </data>
+  <data name="MediaSources_Manage" xml:space="preserve">
+    <value>Włącz lub wyłącz źródła multimediów w Ustawieniach.</value>
+  </data>
+  <data name="MediaSources_OpenSettings" xml:space="preserve">
+    <value>Otwórz ustawienia</value>
+  </data>
+  <data name="MediaSources_Enabled" xml:space="preserve">
+    <value>Włączone</value>
+  </data>
+  <data name="MediaSources_Disabled" xml:space="preserve">
+    <value>Wyłączone</value>
+  </data>
+  <data name="MediaSources_Enablement" xml:space="preserve">
+    <value>Wybór użytkownika</value>
+  </data>
+  <data name="MediaSources_Lifecycle" xml:space="preserve">
+    <value>Stan dostawcy</value>
+  </data>
+  <data name="MediaSources_Connection" xml:space="preserve">
+    <value>Połączenie</value>
+  </data>
+  <data name="MediaSources_AvailableSessions" xml:space="preserve">
+    <value>Dostępne sesje</value>
+  </data>
+  <data name="MediaSources_ProviderMessage" xml:space="preserve">
+    <value>Komunikat dostawcy</value>
+  </data>
+  <data name="MediaSources_ConnectionMessage" xml:space="preserve">
+    <value>Komunikat połączenia</value>
+  </data>
+  <data name="MediaSources_OneSession" xml:space="preserve">
+    <value>{0} sesja</value>
+  </data>
+  <data name="MediaSources_SessionCount" xml:space="preserve">
+    <value>Liczba sesji: {0}</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Disabled" xml:space="preserve">
+    <value>Wyłączone</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Starting" xml:space="preserve">
+    <value>Uruchamianie</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Ready" xml:space="preserve">
+    <value>Gotowe</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Stopping" xml:space="preserve">
+    <value>Zatrzymywanie</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Faulted" xml:space="preserve">
+    <value>Błąd</value>
+  </data>
+  <data name="MediaSources_Connection_Unknown" xml:space="preserve">
+    <value>Nieznane</value>
+  </data>
+  <data name="MediaSources_Connection_Connecting" xml:space="preserve">
+    <value>Łączenie</value>
+  </data>
+  <data name="MediaSources_Connection_Connected" xml:space="preserve">
+    <value>Połączono</value>
+  </data>
+  <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
+    <value>Rozłączono</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
+    <value>Odtwarzacz multimedialny VLC</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
+    <value>Połącz się z lokalnym lub zdalnym odtwarzaczem VLC 3 przez jego interfejs WWW.</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
+    <value>Steruj klasycznym iTunes na komputerze. Apple Music korzysta ze źródła Multimedia Windows.</value>
+  </data>
+  <data name="Settings_Group_Vlc" xml:space="preserve">
+    <value>Połączenie VLC</value>
+  </data>
+  <data name="Settings_Vlc_Help" xml:space="preserve">
+    <value>W VLC włącz interfejs WWW, ustaw hasło HTTP Lua, a następnie uruchom VLC ponownie. Na innym komputerze zezwól w interfejsie i zaporze na połączenia z tego komputera. Poniżej podaj adres URL serwera i hasło. Wybierz Zapisz i włącz, aby zacząć korzystać z VLC, lub Zapisz, aby zachować obecny stan włączenia albo wyłączenia. Użyj polecenia Przetestuj zapisane połączenie w menu poleceń tej strony, aby sprawdzić zapisane ustawienia. Połączenia HTTP są przeznaczone dla zaufanych sieci; użyj HTTPS, jeśli serwer je obsługuje.</value>
+    <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
+    <value>Adres URL serwera</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Description" xml:space="preserve">
+    <value>Na przykład http://127.0.0.1:8080 lub http://living-room:8080. Użyj adresu głównego serwera bez ścieżki i hasła.</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Invalid" xml:space="preserve">
+    <value>Podaj prawidłowy adres URL serwera HTTP lub HTTPS bez ścieżki, zapytania, fragmentu i osadzonego hasła.</value>
+  </data>
+  <data name="Settings_Vlc_Password_Title" xml:space="preserve">
+    <value>Hasło HTTP</value>
+  </data>
+  <data name="Settings_Vlc_Password_Description" xml:space="preserve">
+    <value>Zapisywane w magazynie poświadczeń Windows dla tego adresu URL serwera. Pozostaw puste, aby użyć zapisanego hasła tego serwera. Nowy serwer wymaga własnego hasła.</value>
+    <comment>Passwords are saved separately for each server URL. A blank input keeps only that server&apos;s saved password.</comment>
+  </data>
+  <data name="Settings_Vlc_Password_Placeholder" xml:space="preserve">
+    <value>Wprowadź lub zastąp hasło VLC</value>
+  </data>
+  <data name="Settings_Vlc_Password_LoadFailed" xml:space="preserve">
+    <value>Nie udało się odczytać zapisanego hasła VLC z magazynu poświadczeń Windows. Wprowadź hasło ponownie i zapisz.</value>
+  </data>
+  <data name="Settings_Vlc_Password_SaveFailed" xml:space="preserve">
+    <value>Nie udało się zapisać hasła VLC w magazynie poświadczeń Windows. Nowe hasło nie zostało zastosowane. Spróbuj zapisać ponownie.</value>
+  </data>
+  <data name="Page_Section_RemoteSessions" xml:space="preserve">
+    <value>Sesje zdalne</value>
+    <comment>Section for sessions treated as remote for playback behavior, regardless of their physical location.</comment>
+  </data>
+  <data name="Session_Remote" xml:space="preserve">
+    <value>Zdalna</value>
+    <comment>Short marker appended to a player&apos;s name when its session is treated as remote.</comment>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Title" xml:space="preserve">
+    <value>Uwzględnij sesje zdalne przy wstrzymywaniu innych odtwarzaczy</value>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Subtitle" xml:space="preserve">
+    <value>Gdy wstrzymywanie innych odtwarzaczy jest włączone, rozpoczęcie sesji zdalnej może wstrzymać inne odtwarzacze, a uruchomienie dowolnego odtwarzacza może wstrzymać sesje zdalne.</value>
+    <comment>Opt-in behavior applies in both directions: remote sessions may pause other sessions and may be paused by them.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Title" xml:space="preserve">
+    <value>Traktuj tę sesję jako lokalną</value>
+    <comment>Behavior preference, not a statement of physical location. The choices are Automatic, Yes, and No.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Description" xml:space="preserve">
+    <value>Sesje lokalne uczestniczą w automatycznym wyborze, przełączaniu odtwarzaczy i wstrzymywaniu innych lokalnych odtwarzaczy. Opcja Automatycznie traktuje adresy pętli zwrotnej jako lokalne, a pozostałe jako zdalne. Ten wybór nie zmienia tego, które lokalne sesje VLC są zastępowane.</value>
+  </data>
+  <data name="Settings_Vlc_Treatment_Auto" xml:space="preserve">
+    <value>Automatycznie (na podstawie adresu URL serwera)</value>
+    <comment>Detect local playback behavior only for URLs that explicitly address this computer through loopback.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Local" xml:space="preserve">
+    <value>Tak</value>
+    <comment>Answer to Treat this session as local: always participate in local playback behavior.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
+    <value>Nie</value>
+    <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
+    <value>Multimedia Windows</value>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
+    <value>Wykrywaj muzykę i filmy z aplikacji takich jak Apple Music, Spotify i przeglądarki.</value>
+  </data>
+  <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
+    <value>Nie udało się odczytać zapisanych źródeł multimediów. Zostaną przywrócone automatycznie, gdy plik ustawień będzie dostępny do odczytu. Wybierz źródło, aby spróbować ponownie teraz.</value>
+  </data>
+  <data name="Settings_Backend_InvalidSavedSelection" xml:space="preserve">
+    <value>Nie udało się odczytać zapisanego wyboru dostawców. Sprawdź plik ustawień i ponownie wybierz dostawcę.</value>
+  </data>
+  <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
+    <value>Zapisany wybór dla tej grupy jest nieprawidłowy lub zawiera konflikty. Wybierz jednego dostawcę, aby go naprawić.</value>
+  </data>
+  <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
+    <value>Symulowane multimedia</value>
+    <comment>Opt-in simulated media provider for testing.</comment>
+  </data>
+  <data name="Settings_Backend_Dummy_Description" xml:space="preserve">
+    <value>Trzy symulowane odtwarzacze z losowymi utworami i grafikami. Dźwięk nie jest odtwarzany.</value>
+    <comment>Description of the dummy media provider.</comment>
+  </data>
+  <data name="Toast_PlaybackUnconfirmed" xml:space="preserve">
+    <value>Nie udało się potwierdzić odtwarzania.</value>
+  </data>
+  <data name="Toast_PlaybackAbandoned" xml:space="preserve">
+    <value>Żądanie odtwarzania zostało anulowane, ponieważ nie udało się potwierdzić wcześniejszej zmiany.</value>
+  </data>
+  <data name="MediaSources_NeedsAttention" xml:space="preserve">
+    <value>Wymaga uwagi</value>
+  </data>
+  <data name="MediaSources_Off" xml:space="preserve">
+    <value>Wyłączone</value>
+  </data>
+  <data name="MediaSources_WaitingForITunes" xml:space="preserve">
+    <value>Oczekiwanie na iTunes</value>
+  </data>
+  <data name="MediaSources_NotConnected" xml:space="preserve">
+    <value>Brak połączenia</value>
+  </data>
+  <data name="MediaSources_WaitingForPlayback" xml:space="preserve">
+    <value>Oczekiwanie na odtwarzanie</value>
+  </data>
+  <data name="MediaSources_Recommended" xml:space="preserve">
+    <value>Zalecane</value>
+  </data>
+  <data name="MediaSources_OptionalPlayers" xml:space="preserve">
+    <value>Opcjonalne odtwarzacze</value>
+  </data>
+  <data name="MediaSources_Troubleshooting" xml:space="preserve">
+    <value>Rozwiązywanie problemów</value>
+  </data>
+  <data name="MediaSources_WindowsGuidance" xml:space="preserve">
+    <value>Domyślnie włączone. Rozpocznij odtwarzanie w aplikacji obsługującej sterowanie multimediami Windows; jej odtwarzacz pojawi się w Sterowaniu multimediami. Apple Music korzysta z tego źródła i nie wymaga konfiguracji iTunes. Aby wypróbować tryb zgodności, włącz Multimedia Windows (zgodność) w sekcji Rozwiązywanie problemów.</value>
+  </data>
+  <data name="MediaSources_CompatibilityGuidance" xml:space="preserve">
+    <value>Wypróbuj ten tryb, jeśli Multimedia Windows nie mogą znaleźć odtwarzacza lub nim sterować. Aby wrócić, włącz Multimedia Windows w sekcji Zalecane. Zmiana trybu automatycznie wyłącza poprzedni.</value>
+  </data>
+  <data name="MediaSources_ITunesGuidance" xml:space="preserve">
+    <value>Opcjonalne i domyślnie wyłączone. Otwórz klasyczne iTunes na komputerze i wybierz Włącz. Aplikacja Apple Music korzysta z Multimediów Windows i nie potrzebuje tego źródła. Wyłącz to źródło, jeśli używasz integracji iTunes ze sterowaniem multimediami Windows od innego dostawcy.</value>
+  </data>
+  <data name="MediaSources_VlcGuidance" xml:space="preserve">
+    <value>Wybierz Konfiguruj, aby podać adres URL serwera i hasło interfejsu WWW VLC. Zapisz i włącz uruchamia źródło; Zapisz zachowuje obecny stan włączenia albo wyłączenia. Użyj polecenia Przetestuj zapisane połączenie w menu poleceń strony konfiguracji, aby sprawdzić ustawienia.</value>
+  </data>
+  <data name="MediaSources_DummyGuidance" xml:space="preserve">
+    <value>Źródło do celów programistycznych z symulowanymi utworami i grafikami. Włącz je, aby wypróbować interfejs bez odtwarzania dźwięku.</value>
+  </data>
+  <data name="MediaSources_RetryGuidance" xml:space="preserve">
+    <value>Sprawdź poniższe komunikaty, rozwiąż problem i wybierz Ponów próbę. Źródło pozostanie włączone.</value>
+  </data>
+  <data name="MediaSources_EnableGuidance" xml:space="preserve">
+    <value>Sprawdź poniższe komunikaty, a następnie wybierz Włącz, aby zapisać wybór i wypróbować to źródło.</value>
+  </data>
+  <data name="MediaSources_Actions" xml:space="preserve">
+    <value>Działania</value>
+  </data>
+  <data name="MediaSources_Retry" xml:space="preserve">
+    <value>Ponów próbę</value>
+  </data>
+  <data name="MediaSources_RetryFailed" xml:space="preserve">
+    <value>Nie udało się ponowić próby dla tego źródła multimediów. Sprawdź szczegóły i spróbuj ponownie.</value>
+  </data>
+  <data name="MediaSources_SaveAndEnable" xml:space="preserve">
+    <value>Zapisz i włącz</value>
+  </data>
+  <data name="MediaSources_Saved" xml:space="preserve">
+    <value>Zapisano ustawienia źródła multimediów.</value>
+  </data>
+  <data name="MediaSources_SavedAndEnabled" xml:space="preserve">
+    <value>Zapisano ustawienia i włączono źródło multimediów. Sprawdź stan połączenia na stronie Źródła multimediów.</value>
+  </data>
+  <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
+    <value>Ustawienia zostały zapisane, ale nie udało się włączyć źródła multimediów. Wróć do strony Źródła multimediów i ponownie wybierz Włącz.</value>
   </data>
 </root>

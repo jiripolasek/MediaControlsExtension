@@ -344,7 +344,7 @@ Mantén pulsada la tecla Mayús mientras activas un comando para hacer temporalm
     <value>Pausar otras sesiones en reproducción</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>Al reproducir una sesión, pausa automáticamente todas las demás sesiones.</value>
+    <value>Al iniciar una sesión local, pausar las demás sesiones locales. Las sesiones remotas solo participan si se incluyen a continuación.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
     <value>Mostrar la sesión multimedia actual en la página de inicio</value>
@@ -602,5 +602,342 @@ Los registros de diagnóstico pueden contener títulos multimedia, nombres de re
   </data>
   <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
     <value>No se pudo abrir GitHub Issues. Inténtelo de nuevo o abra el repositorio desde Configuración.</value>
+  </data>
+  <data name="Details_Provider" xml:space="preserve">
+    <value>Proveedor</value>
+  </data>
+  <data name="Command_NextTrack_Dock" xml:space="preserve">
+    <value>Siguiente</value>
+    <comment>Short Dock button label for skipping to the next track.</comment>
+  </data>
+  <data name="Command_PreviousTrack_Dock" xml:space="preserve">
+    <value>Anterior</value>
+    <comment>Short Dock button label for returning to the previous track.</comment>
+  </data>
+  <data name="WindowsMediaRecovery_Title" xml:space="preserve">
+    <value>Multimedia de Windows está desactivado</value>
+  </data>
+  <data name="WindowsMediaRecovery_Description" xml:space="preserve">
+    <value>Active la fuente recomendada Multimedia de Windows para detectar la reproducción de Apple Music, Spotify y los navegadores, o abra Fuentes multimedia para elegir otra fuente.</value>
+  </data>
+  <data name="WindowsMediaRecovery_Enable" xml:space="preserve">
+    <value>Activar Multimedia de Windows</value>
+  </data>
+  <data name="Toast_PauseOtherFailed" xml:space="preserve">
+    <value>No se pudo pausar otro reproductor.</value>
+  </data>
+  <data name="Toast_PauseOthersFailed" xml:space="preserve">
+    <value>No se pudieron pausar otros {0} reproductores.</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Title" xml:space="preserve">
+    <value>Mostrar etiquetas de reproducción en el Dock</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Subtitle" xml:space="preserve">
+    <value>Mostrar etiquetas en los botones de reproducción y navegación entre pistas. Active también las etiquetas de la banda Controles multimedia en la configuración del Dock de Command Palette.</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Title" xml:space="preserve">
+    <value>Mostrar el artista en el título del Dock</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Subtitle" xml:space="preserve">
+    <value>Incluir al artista junto al título de la pista en todos los tamaños del Dock, incluido el modo compacto.</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Title" xml:space="preserve">
+    <value>Permitir un título más ancho en el Dock</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Subtitle" xml:space="preserve">
+    <value>Dar más espacio horizontal a la etiqueta del contenido actual. Requiere una versión de Command Palette compatible con indicaciones de anchura del Dock.</value>
+  </data>
+  <data name="Settings_Group_MediaBackends" xml:space="preserve">
+    <value>Fuentes multimedia</value>
+  </data>
+  <data name="Settings_MediaBackends_Help" xml:space="preserve">
+    <value>Configure los proveedores multimedia desde la página Fuentes multimedia de Controles multimedia. Abra el menú de comandos de Controles multimedia y elija Fuentes multimedia.</value>
+  </data>
+  <data name="MediaSources_ManageProviders" xml:space="preserve">
+    <value>Elija una fuente para ver instrucciones de configuración y acciones. Active solo las fuentes que utilice.</value>
+  </data>
+  <data name="MediaSources_Configure" xml:space="preserve">
+    <value>Configurar</value>
+  </data>
+  <data name="MediaSources_Enable" xml:space="preserve">
+    <value>Activar</value>
+  </data>
+  <data name="MediaSources_Disable" xml:space="preserve">
+    <value>Desactivar</value>
+  </data>
+  <data name="MediaSources_DisableWindowsTitle" xml:space="preserve">
+    <value>¿Desactivar Multimedia de Windows?</value>
+  </data>
+  <data name="MediaSources_DisableWindowsDescription" xml:space="preserve">
+    <value>Apple Music, Spotify, la reproducción en navegadores y otras sesiones multimedia de Windows desaparecerán de Controles multimedia. Las fuentes VLC e iTunes activadas seguirán disponibles. Para cambiar de modo, cancele y active la otra fuente multimedia de Windows.</value>
+  </data>
+  <data name="MediaSources_DisableWindowsAction" xml:space="preserve">
+    <value>Desactivar Multimedia de Windows</value>
+  </data>
+  <data name="MediaSources_SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar la configuración de las fuentes multimedia. Compruebe el acceso al archivo de configuración e inténtelo de nuevo.</value>
+  </data>
+  <data name="MediaSources_TestConnection" xml:space="preserve">
+    <value>Probar la conexión guardada</value>
+  </data>
+  <data name="MediaSources_TestConnected" xml:space="preserve">
+    <value>Conectado a VLC. La configuración de conexión guardada funciona.</value>
+  </data>
+  <data name="MediaSources_TestFailed" xml:space="preserve">
+    <value>No se pudo conectar con VLC. Compruebe su interfaz web y la configuración de conexión guardada.</value>
+  </data>
+  <data name="MediaSources_TestSettingsChanged" xml:space="preserve">
+    <value>La configuración de conexión de VLC cambió durante la prueba. Vuelva a probar la conexión guardada.</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
+    <value>Multimedia de Windows (compatibilidad)</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
+    <value>Fuente multimedia alternativa de Windows para solucionar problemas.</value>
+  </data>
+  <data name="MediaSources_Title" xml:space="preserve">
+    <value>Fuentes multimedia</value>
+  </data>
+  <data name="MediaSources_Search" xml:space="preserve">
+    <value>Buscar fuentes multimedia</value>
+  </data>
+  <data name="MediaSources_Empty" xml:space="preserve">
+    <value>No hay fuentes multimedia coincidentes</value>
+  </data>
+  <data name="MediaSources_Manage" xml:space="preserve">
+    <value>Active o desactive las fuentes multimedia en Configuración.</value>
+  </data>
+  <data name="MediaSources_OpenSettings" xml:space="preserve">
+    <value>Abrir configuración</value>
+  </data>
+  <data name="MediaSources_Enabled" xml:space="preserve">
+    <value>Activado</value>
+  </data>
+  <data name="MediaSources_Disabled" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="MediaSources_Enablement" xml:space="preserve">
+    <value>Preferencia del usuario</value>
+  </data>
+  <data name="MediaSources_Lifecycle" xml:space="preserve">
+    <value>Estado del proveedor</value>
+  </data>
+  <data name="MediaSources_Connection" xml:space="preserve">
+    <value>Conexión</value>
+  </data>
+  <data name="MediaSources_AvailableSessions" xml:space="preserve">
+    <value>Sesiones disponibles</value>
+  </data>
+  <data name="MediaSources_ProviderMessage" xml:space="preserve">
+    <value>Mensaje del proveedor</value>
+  </data>
+  <data name="MediaSources_ConnectionMessage" xml:space="preserve">
+    <value>Mensaje de conexión</value>
+  </data>
+  <data name="MediaSources_OneSession" xml:space="preserve">
+    <value>{0} sesión</value>
+  </data>
+  <data name="MediaSources_SessionCount" xml:space="preserve">
+    <value>{0} sesiones</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Disabled" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Starting" xml:space="preserve">
+    <value>Iniciando</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Ready" xml:space="preserve">
+    <value>Listo</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Stopping" xml:space="preserve">
+    <value>Deteniendo</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Faulted" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="MediaSources_Connection_Unknown" xml:space="preserve">
+    <value>Desconocido</value>
+  </data>
+  <data name="MediaSources_Connection_Connecting" xml:space="preserve">
+    <value>Conectando</value>
+  </data>
+  <data name="MediaSources_Connection_Connected" xml:space="preserve">
+    <value>Conectado</value>
+  </data>
+  <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
+    <value>Desconectado</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
+    <value>Reproductor multimedia VLC</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
+    <value>Conectarse a un reproductor VLC 3 local o remoto mediante su interfaz web.</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
+    <value>Controlar iTunes de escritorio. Apple Music utiliza la fuente Multimedia de Windows.</value>
+  </data>
+  <data name="Settings_Group_Vlc" xml:space="preserve">
+    <value>Conexión de VLC</value>
+  </data>
+  <data name="Settings_Vlc_Help" xml:space="preserve">
+    <value>En VLC, active la interfaz web, establezca una contraseña HTTP de Lua y reinicie VLC. Si está en otro equipo, permita que la interfaz y el cortafuegos acepten conexiones desde este equipo. Introduzca la URL del servidor y la contraseña a continuación. Elija Guardar y activar para empezar a usar VLC, o Guardar para conservar su estado activado o desactivado. Use Probar la conexión guardada en el menú de comandos de esta página para comprobar la configuración guardada. Las conexiones HTTP están destinadas a redes de confianza; use HTTPS si el servidor lo admite.</value>
+    <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
+    <value>URL del servidor</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Description" xml:space="preserve">
+    <value>Por ejemplo, http://127.0.0.1:8080 o http://living-room:8080. Use la dirección raíz del servidor, sin ruta ni contraseña.</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Invalid" xml:space="preserve">
+    <value>Introduzca una URL de servidor HTTP o HTTPS válida sin ruta, consulta, fragmento ni contraseña incorporada.</value>
+  </data>
+  <data name="Settings_Vlc_Password_Title" xml:space="preserve">
+    <value>Contraseña HTTP</value>
+  </data>
+  <data name="Settings_Vlc_Password_Description" xml:space="preserve">
+    <value>Se guarda en el almacén de credenciales de Windows para esta URL de servidor. Déjelo en blanco para usar la contraseña guardada de ese servidor. Un servidor nuevo necesita su propia contraseña.</value>
+    <comment>Passwords are saved separately for each server URL. A blank input keeps only that server&apos;s saved password.</comment>
+  </data>
+  <data name="Settings_Vlc_Password_Placeholder" xml:space="preserve">
+    <value>Introduzca o sustituya la contraseña de VLC</value>
+  </data>
+  <data name="Settings_Vlc_Password_LoadFailed" xml:space="preserve">
+    <value>No se pudo leer la contraseña de VLC guardada en el almacén de credenciales de Windows. Vuelva a introducirla y guárdela.</value>
+  </data>
+  <data name="Settings_Vlc_Password_SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar la contraseña de VLC en el almacén de credenciales de Windows. La nueva contraseña no se ha aplicado. Intente guardarla de nuevo.</value>
+  </data>
+  <data name="Page_Section_RemoteSessions" xml:space="preserve">
+    <value>Sesiones remotas</value>
+    <comment>Section for sessions treated as remote for playback behavior, regardless of their physical location.</comment>
+  </data>
+  <data name="Session_Remote" xml:space="preserve">
+    <value>Remoto</value>
+    <comment>Short marker appended to a player&apos;s name when its session is treated as remote.</comment>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Title" xml:space="preserve">
+    <value>Incluir sesiones remotas al pausar otros reproductores</value>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Subtitle" xml:space="preserve">
+    <value>Si está activada la opción de pausar otros reproductores, iniciar una sesión remota puede pausar otros reproductores, e iniciar cualquier reproductor puede pausar sesiones remotas.</value>
+    <comment>Opt-in behavior applies in both directions: remote sessions may pause other sessions and may be paused by them.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Title" xml:space="preserve">
+    <value>Tratar esta sesión como local</value>
+    <comment>Behavior preference, not a statement of physical location. The choices are Automatic, Yes, and No.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Description" xml:space="preserve">
+    <value>Las sesiones locales participan en la selección automática, el cambio de reproductor y la pausa de otros reproductores locales. Automático trata las URL de bucle invertido como locales y todas las demás como remotas. Esta opción no cambia qué sesiones locales de VLC se sustituyen.</value>
+  </data>
+  <data name="Settings_Vlc_Treatment_Auto" xml:space="preserve">
+    <value>Automático (según la URL del servidor)</value>
+    <comment>Detect local playback behavior only for URLs that explicitly address this computer through loopback.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Local" xml:space="preserve">
+    <value>Sí</value>
+    <comment>Answer to Treat this session as local: always participate in local playback behavior.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
+    <value>No</value>
+    <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
+    <value>Multimedia de Windows</value>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
+    <value>Detectar música y vídeos de aplicaciones como Apple Music, Spotify y los navegadores.</value>
+  </data>
+  <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
+    <value>No se pudieron leer las fuentes multimedia guardadas. Se restaurarán automáticamente cuando se pueda leer el archivo de configuración. Elija una fuente para volver a intentarlo ahora.</value>
+  </data>
+  <data name="Settings_Backend_InvalidSavedSelection" xml:space="preserve">
+    <value>No se pudo leer la selección de proveedores guardada. Compruebe el archivo de configuración y vuelva a elegir un proveedor.</value>
+  </data>
+  <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
+    <value>La selección guardada de este grupo no es válida o contiene conflictos. Elija un proveedor para corregirla.</value>
+  </data>
+  <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
+    <value>Multimedia simulada</value>
+    <comment>Opt-in simulated media provider for testing.</comment>
+  </data>
+  <data name="Settings_Backend_Dummy_Description" xml:space="preserve">
+    <value>Tres reproductores simulados con pistas e imágenes aleatorias. No se reproduce audio.</value>
+    <comment>Description of the dummy media provider.</comment>
+  </data>
+  <data name="Toast_PlaybackUnconfirmed" xml:space="preserve">
+    <value>No se pudo confirmar la reproducción.</value>
+  </data>
+  <data name="Toast_PlaybackAbandoned" xml:space="preserve">
+    <value>La solicitud de reproducción se canceló porque no se pudo confirmar un cambio anterior.</value>
+  </data>
+  <data name="MediaSources_NeedsAttention" xml:space="preserve">
+    <value>Requiere atención</value>
+  </data>
+  <data name="MediaSources_Off" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="MediaSources_WaitingForITunes" xml:space="preserve">
+    <value>Esperando a iTunes</value>
+  </data>
+  <data name="MediaSources_NotConnected" xml:space="preserve">
+    <value>Sin conexión</value>
+  </data>
+  <data name="MediaSources_WaitingForPlayback" xml:space="preserve">
+    <value>Esperando reproducción</value>
+  </data>
+  <data name="MediaSources_Recommended" xml:space="preserve">
+    <value>Recomendado</value>
+  </data>
+  <data name="MediaSources_OptionalPlayers" xml:space="preserve">
+    <value>Reproductores opcionales</value>
+  </data>
+  <data name="MediaSources_Troubleshooting" xml:space="preserve">
+    <value>Solución de problemas</value>
+  </data>
+  <data name="MediaSources_WindowsGuidance" xml:space="preserve">
+    <value>Activado de forma predeterminada. Inicie la reproducción en una aplicación compatible con los controles multimedia de Windows; su reproductor aparecerá en Controles multimedia. Apple Music utiliza esta fuente y no necesita configurar iTunes. Para probar el modo de compatibilidad, active Multimedia de Windows (compatibilidad) en Solución de problemas.</value>
+  </data>
+  <data name="MediaSources_CompatibilityGuidance" xml:space="preserve">
+    <value>Pruebe este modo si Multimedia de Windows no encuentra o no puede controlar su reproductor. Para volver, active Multimedia de Windows en Recomendado. Al cambiar de modo, el anterior se desactiva automáticamente.</value>
+  </data>
+  <data name="MediaSources_ITunesGuidance" xml:space="preserve">
+    <value>Opcional y desactivado de forma predeterminada. Abra iTunes de escritorio y elija Activar. La aplicación Apple Music utiliza Multimedia de Windows y no necesita esta fuente. Desactive esta fuente si utiliza una integración de iTunes de terceros con los controles multimedia de Windows.</value>
+  </data>
+  <data name="MediaSources_VlcGuidance" xml:space="preserve">
+    <value>Elija Configurar para introducir la URL del servidor y la contraseña de la interfaz web de VLC. Guardar y activar inicia la fuente; Guardar conserva su estado activado o desactivado. Use Probar la conexión guardada en el menú de comandos de la página de configuración para comprobarla.</value>
+  </data>
+  <data name="MediaSources_DummyGuidance" xml:space="preserve">
+    <value>Fuente de desarrollo con pistas e imágenes simuladas. Actívela para probar la interfaz sin reproducir audio.</value>
+  </data>
+  <data name="MediaSources_RetryGuidance" xml:space="preserve">
+    <value>Revise los mensajes siguientes, resuelva el problema y elija Reintentar. La fuente seguirá activada.</value>
+  </data>
+  <data name="MediaSources_EnableGuidance" xml:space="preserve">
+    <value>Revise los mensajes siguientes y elija Activar para guardar su elección y probar esta fuente.</value>
+  </data>
+  <data name="MediaSources_Actions" xml:space="preserve">
+    <value>Acciones</value>
+  </data>
+  <data name="MediaSources_Retry" xml:space="preserve">
+    <value>Reintentar</value>
+  </data>
+  <data name="MediaSources_RetryFailed" xml:space="preserve">
+    <value>No se pudo reintentar esta fuente multimedia. Compruebe sus detalles e inténtelo de nuevo.</value>
+  </data>
+  <data name="MediaSources_SaveAndEnable" xml:space="preserve">
+    <value>Guardar y activar</value>
+  </data>
+  <data name="MediaSources_Saved" xml:space="preserve">
+    <value>Configuración de la fuente multimedia guardada.</value>
+  </data>
+  <data name="MediaSources_SavedAndEnabled" xml:space="preserve">
+    <value>Configuración guardada y fuente multimedia activada. Consulte el estado de conexión en Fuentes multimedia.</value>
+  </data>
+  <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
+    <value>Se guardó la configuración, pero no se pudo activar la fuente multimedia. Vuelva a Fuentes multimedia y elija Activar de nuevo.</value>
   </data>
 </root>

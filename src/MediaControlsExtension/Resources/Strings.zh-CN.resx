@@ -335,7 +335,7 @@
     <value>播放时暂停其他会话</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>播放某个会话时，自动暂停所有其他会话。</value>
+    <value>启动本地会话时暂停其他本地会话。远程会话仅在下方设置为包含时参与。</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
     <value>在主页显示当前媒体会话</value>
@@ -602,5 +602,342 @@ _版权所有 © Jiří Polášek_
   </data>
   <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
     <value>无法打开 GitHub Issues。请重试，或从“设置”中打开存储库。</value>
+  </data>
+  <data name="Details_Provider" xml:space="preserve">
+    <value>提供程序</value>
+  </data>
+  <data name="Command_NextTrack_Dock" xml:space="preserve">
+    <value>下一首</value>
+    <comment>Short Dock button label for skipping to the next track.</comment>
+  </data>
+  <data name="Command_PreviousTrack_Dock" xml:space="preserve">
+    <value>上一首</value>
+    <comment>Short Dock button label for returning to the previous track.</comment>
+  </data>
+  <data name="WindowsMediaRecovery_Title" xml:space="preserve">
+    <value>Windows 媒体已关闭</value>
+  </data>
+  <data name="WindowsMediaRecovery_Description" xml:space="preserve">
+    <value>启用推荐的 Windows 媒体源以发现 Apple Music、Spotify 和浏览器中的播放，或打开媒体源以选择其他来源。</value>
+  </data>
+  <data name="WindowsMediaRecovery_Enable" xml:space="preserve">
+    <value>启用 Windows 媒体</value>
+  </data>
+  <data name="Toast_PauseOtherFailed" xml:space="preserve">
+    <value>无法暂停另一个播放器。</value>
+  </data>
+  <data name="Toast_PauseOthersFailed" xml:space="preserve">
+    <value>无法暂停其他 {0} 个播放器。</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Title" xml:space="preserve">
+    <value>在停靠栏中显示播放标签</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Subtitle" xml:space="preserve">
+    <value>显示播放和曲目切换按钮的标签。还需在 Command Palette 的停靠栏设置中为媒体控制栏启用标签。</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Title" xml:space="preserve">
+    <value>在停靠栏标题中显示艺术家</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Subtitle" xml:space="preserve">
+    <value>在所有停靠栏尺寸中将艺术家显示在曲目标题旁，包括紧凑模式。</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Title" xml:space="preserve">
+    <value>允许更宽的停靠栏标题</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Subtitle" xml:space="preserve">
+    <value>为当前媒体标签提供更多横向空间。需要支持停靠栏宽度提示的 Command Palette 版本。</value>
+  </data>
+  <data name="Settings_Group_MediaBackends" xml:space="preserve">
+    <value>媒体源</value>
+  </data>
+  <data name="Settings_MediaBackends_Help" xml:space="preserve">
+    <value>在媒体控制的媒体源页面配置媒体提供程序。打开媒体控制的命令菜单，然后选择媒体源。</value>
+  </data>
+  <data name="MediaSources_ManageProviders" xml:space="preserve">
+    <value>选择来源以查看设置说明和操作。仅启用您使用的来源。</value>
+  </data>
+  <data name="MediaSources_Configure" xml:space="preserve">
+    <value>配置</value>
+  </data>
+  <data name="MediaSources_Enable" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="MediaSources_Disable" xml:space="preserve">
+    <value>禁用</value>
+  </data>
+  <data name="MediaSources_DisableWindowsTitle" xml:space="preserve">
+    <value>关闭 Windows 媒体？</value>
+  </data>
+  <data name="MediaSources_DisableWindowsDescription" xml:space="preserve">
+    <value>Apple Music、Spotify、浏览器播放和其他 Windows 媒体会话将从媒体控制中消失。已启用的 VLC 和 iTunes 来源仍可使用。若要切换模式，请取消并启用另一个 Windows 媒体源。</value>
+  </data>
+  <data name="MediaSources_DisableWindowsAction" xml:space="preserve">
+    <value>关闭 Windows 媒体</value>
+  </data>
+  <data name="MediaSources_SaveFailed" xml:space="preserve">
+    <value>无法保存媒体源设置。请检查设置文件的访问权限，然后重试。</value>
+  </data>
+  <data name="MediaSources_TestConnection" xml:space="preserve">
+    <value>测试已保存的连接</value>
+  </data>
+  <data name="MediaSources_TestConnected" xml:space="preserve">
+    <value>已连接到 VLC。保存的连接设置有效。</value>
+  </data>
+  <data name="MediaSources_TestFailed" xml:space="preserve">
+    <value>无法连接到 VLC。请检查其 Web 界面和已保存的连接设置。</value>
+  </data>
+  <data name="MediaSources_TestSettingsChanged" xml:space="preserve">
+    <value>测试期间 VLC 连接设置发生了变化。请重新测试已保存的连接。</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
+    <value>Windows 媒体（兼容模式）</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
+    <value>用于故障排除的备用 Windows 媒体源。</value>
+  </data>
+  <data name="MediaSources_Title" xml:space="preserve">
+    <value>媒体源</value>
+  </data>
+  <data name="MediaSources_Search" xml:space="preserve">
+    <value>搜索媒体源</value>
+  </data>
+  <data name="MediaSources_Empty" xml:space="preserve">
+    <value>没有匹配的媒体源</value>
+  </data>
+  <data name="MediaSources_Manage" xml:space="preserve">
+    <value>在设置中启用或禁用媒体源。</value>
+  </data>
+  <data name="MediaSources_OpenSettings" xml:space="preserve">
+    <value>打开设置</value>
+  </data>
+  <data name="MediaSources_Enabled" xml:space="preserve">
+    <value>已启用</value>
+  </data>
+  <data name="MediaSources_Disabled" xml:space="preserve">
+    <value>已禁用</value>
+  </data>
+  <data name="MediaSources_Enablement" xml:space="preserve">
+    <value>用户设置</value>
+  </data>
+  <data name="MediaSources_Lifecycle" xml:space="preserve">
+    <value>提供程序状态</value>
+  </data>
+  <data name="MediaSources_Connection" xml:space="preserve">
+    <value>连接</value>
+  </data>
+  <data name="MediaSources_AvailableSessions" xml:space="preserve">
+    <value>可用会话</value>
+  </data>
+  <data name="MediaSources_ProviderMessage" xml:space="preserve">
+    <value>提供程序消息</value>
+  </data>
+  <data name="MediaSources_ConnectionMessage" xml:space="preserve">
+    <value>连接消息</value>
+  </data>
+  <data name="MediaSources_OneSession" xml:space="preserve">
+    <value>{0} 个会话</value>
+  </data>
+  <data name="MediaSources_SessionCount" xml:space="preserve">
+    <value>{0} 个会话</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Disabled" xml:space="preserve">
+    <value>已禁用</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Starting" xml:space="preserve">
+    <value>正在启动</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Ready" xml:space="preserve">
+    <value>就绪</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Stopping" xml:space="preserve">
+    <value>正在停止</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Faulted" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="MediaSources_Connection_Unknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="MediaSources_Connection_Connecting" xml:space="preserve">
+    <value>正在连接</value>
+  </data>
+  <data name="MediaSources_Connection_Connected" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
+    <value>已断开连接</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
+    <value>VLC 媒体播放器</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
+    <value>通过 Web 界面连接到本地或远程 VLC 3 播放器。</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
+    <value>控制桌面版 iTunes。Apple Music 使用 Windows 媒体源。</value>
+  </data>
+  <data name="Settings_Group_Vlc" xml:space="preserve">
+    <value>VLC 连接</value>
+  </data>
+  <data name="Settings_Vlc_Help" xml:space="preserve">
+    <value>在 VLC 中启用 Web 界面并设置 Lua HTTP 密码，然后重启 VLC。如果 VLC 在另一台计算机上，请允许其界面和防火墙接受来自本机的连接。在下方输入服务器 URL 和密码。选择“保存并启用”以开始使用 VLC，或选择“保存”以保持当前的启用或禁用状态。使用此页面命令菜单中的“测试已保存的连接”检查保存的设置。HTTP 连接适用于可信网络；如果服务器支持 HTTPS，请使用 HTTPS。</value>
+    <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
+    <value>服务器 URL</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Description" xml:space="preserve">
+    <value>例如 http://127.0.0.1:8080 或 http://living-room:8080。请使用服务器根地址，不要包含路径或密码。</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Invalid" xml:space="preserve">
+    <value>请输入有效的 HTTP 或 HTTPS 服务器 URL，不要包含路径、查询、片段或嵌入的密码。</value>
+  </data>
+  <data name="Settings_Vlc_Password_Title" xml:space="preserve">
+    <value>HTTP 密码</value>
+  </data>
+  <data name="Settings_Vlc_Password_Description" xml:space="preserve">
+    <value>保存在 Windows 凭据保险箱中，与此服务器 URL 关联。留空以使用该服务器已保存的密码。新服务器需要自己的密码。</value>
+    <comment>Passwords are saved separately for each server URL. A blank input keeps only that server&apos;s saved password.</comment>
+  </data>
+  <data name="Settings_Vlc_Password_Placeholder" xml:space="preserve">
+    <value>输入或更改 VLC 密码</value>
+  </data>
+  <data name="Settings_Vlc_Password_LoadFailed" xml:space="preserve">
+    <value>无法从 Windows 凭据保险箱读取已保存的 VLC 密码。请重新输入密码并保存。</value>
+  </data>
+  <data name="Settings_Vlc_Password_SaveFailed" xml:space="preserve">
+    <value>无法将 VLC 密码保存到 Windows 凭据保险箱。新密码未生效。请尝试重新保存。</value>
+  </data>
+  <data name="Page_Section_RemoteSessions" xml:space="preserve">
+    <value>远程会话</value>
+    <comment>Section for sessions treated as remote for playback behavior, regardless of their physical location.</comment>
+  </data>
+  <data name="Session_Remote" xml:space="preserve">
+    <value>远程</value>
+    <comment>Short marker appended to a player&apos;s name when its session is treated as remote.</comment>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Title" xml:space="preserve">
+    <value>暂停其他播放器时包含远程会话</value>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Subtitle" xml:space="preserve">
+    <value>启用暂停其他播放器后，启动远程会话可暂停其他播放器，而启动任何播放器也可暂停远程会话。</value>
+    <comment>Opt-in behavior applies in both directions: remote sessions may pause other sessions and may be paused by them.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Title" xml:space="preserve">
+    <value>将此会话视为本地会话</value>
+    <comment>Behavior preference, not a statement of physical location. The choices are Automatic, Yes, and No.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Description" xml:space="preserve">
+    <value>本地会话参与自动选择、播放器切换以及暂停其他本地播放器。“自动”将环回 URL 视为本地，将其他 URL 视为远程。此选择不会改变要替换的本地 VLC 会话。</value>
+  </data>
+  <data name="Settings_Vlc_Treatment_Auto" xml:space="preserve">
+    <value>自动（根据服务器 URL）</value>
+    <comment>Detect local playback behavior only for URLs that explicitly address this computer through loopback.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Local" xml:space="preserve">
+    <value>是</value>
+    <comment>Answer to Treat this session as local: always participate in local playback behavior.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
+    <value>否</value>
+    <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
+    <value>Windows 媒体</value>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
+    <value>发现 Apple Music、Spotify 和浏览器等应用中的音乐和视频。</value>
+  </data>
+  <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
+    <value>无法读取已保存的媒体源。设置文件可读取时将自动恢复。选择来源以立即重试。</value>
+  </data>
+  <data name="Settings_Backend_InvalidSavedSelection" xml:space="preserve">
+    <value>无法读取已保存的提供程序选择。请检查设置文件，然后重新选择提供程序。</value>
+  </data>
+  <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
+    <value>此组已保存的选择无效或存在冲突。请选择一个提供程序进行修复。</value>
+  </data>
+  <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
+    <value>模拟媒体</value>
+    <comment>Opt-in simulated media provider for testing.</comment>
+  </data>
+  <data name="Settings_Backend_Dummy_Description" xml:space="preserve">
+    <value>三个模拟播放器，带有随机曲目和图片。不会播放音频。</value>
+    <comment>Description of the dummy media provider.</comment>
+  </data>
+  <data name="Toast_PlaybackUnconfirmed" xml:space="preserve">
+    <value>无法确认播放状态。</value>
+  </data>
+  <data name="Toast_PlaybackAbandoned" xml:space="preserve">
+    <value>由于无法确认先前的更改，播放请求已取消。</value>
+  </data>
+  <data name="MediaSources_NeedsAttention" xml:space="preserve">
+    <value>需要处理</value>
+  </data>
+  <data name="MediaSources_Off" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="MediaSources_WaitingForITunes" xml:space="preserve">
+    <value>正在等待 iTunes</value>
+  </data>
+  <data name="MediaSources_NotConnected" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="MediaSources_WaitingForPlayback" xml:space="preserve">
+    <value>正在等待播放</value>
+  </data>
+  <data name="MediaSources_Recommended" xml:space="preserve">
+    <value>推荐</value>
+  </data>
+  <data name="MediaSources_OptionalPlayers" xml:space="preserve">
+    <value>可选播放器</value>
+  </data>
+  <data name="MediaSources_Troubleshooting" xml:space="preserve">
+    <value>故障排除</value>
+  </data>
+  <data name="MediaSources_WindowsGuidance" xml:space="preserve">
+    <value>默认启用。在支持 Windows 媒体控制的应用中开始播放，其播放器就会出现在媒体控制中。Apple Music 使用此来源，无需设置 iTunes。若要尝试兼容模式，请在故障排除中启用 Windows 媒体（兼容模式）。</value>
+  </data>
+  <data name="MediaSources_CompatibilityGuidance" xml:space="preserve">
+    <value>如果 Windows 媒体无法找到或控制您的播放器，请尝试此模式。若要切换回原模式，请在推荐中启用 Windows 媒体。切换模式会自动关闭先前的模式。</value>
+  </data>
+  <data name="MediaSources_ITunesGuidance" xml:space="preserve">
+    <value>可选，默认关闭。打开桌面版 iTunes，然后选择“启用”。Apple Music 应用使用 Windows 媒体，不需要此来源。如果您使用第三方 iTunes 与 Windows 媒体控制集成功能，请禁用此来源。</value>
+  </data>
+  <data name="MediaSources_VlcGuidance" xml:space="preserve">
+    <value>选择“配置”以输入 VLC Web 界面的服务器 URL 和密码。“保存并启用”会启动来源；“保存”会保持当前的启用或禁用状态。使用配置页面命令菜单中的“测试已保存的连接”检查设置。</value>
+  </data>
+  <data name="MediaSources_DummyGuidance" xml:space="preserve">
+    <value>提供模拟曲目和图片的开发用来源。启用后可在不播放音频的情况下试用界面。</value>
+  </data>
+  <data name="MediaSources_RetryGuidance" xml:space="preserve">
+    <value>查看下方消息，解决问题后选择“重试”。来源将保持启用。</value>
+  </data>
+  <data name="MediaSources_EnableGuidance" xml:space="preserve">
+    <value>查看下方消息，然后选择“启用”以保存选择并尝试此来源。</value>
+  </data>
+  <data name="MediaSources_Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="MediaSources_Retry" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="MediaSources_RetryFailed" xml:space="preserve">
+    <value>无法重试此媒体源。请检查其详细信息，然后重试。</value>
+  </data>
+  <data name="MediaSources_SaveAndEnable" xml:space="preserve">
+    <value>保存并启用</value>
+  </data>
+  <data name="MediaSources_Saved" xml:space="preserve">
+    <value>媒体源设置已保存。</value>
+  </data>
+  <data name="MediaSources_SavedAndEnabled" xml:space="preserve">
+    <value>设置已保存，媒体源已启用。请在媒体源中查看连接状态。</value>
+  </data>
+  <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
+    <value>设置已保存，但无法启用媒体源。请返回媒体源并再次选择“启用”。</value>
   </data>
 </root>

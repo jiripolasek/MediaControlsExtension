@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Connection_RequestCanceled" xml:space="preserve">
+    <value>Żądanie VLC zostało anulowane; jego wynik jest nieznany.</value>
+    <comment>A playback command was canceled before its response arrived.</comment>
+  </data>
+  <data name="Connection_SettingsChanged" xml:space="preserve">
+    <value>Ustawienia połączenia VLC zostały zmienione.</value>
+    <comment>A previous connection is being replaced after a settings change.</comment>
+  </data>
+  <data name="Connection_ObservationCanceled" xml:space="preserve">
+    <value>Odczyt stanu VLC został anulowany.</value>
+    <comment>A request to read the player's current state was canceled.</comment>
+  </data>
+  <data name="Connection_InvalidEndpoint" xml:space="preserve">
+    <value>Podaj adres URL serwera HTTP lub HTTPS z prawidłowym portem, bez ścieżki i osadzonego hasła.</value>
+    <comment>The configured server URL is invalid. HTTP and HTTPS are protocol names.</comment>
+  </data>
+  <data name="Connection_PasswordRequired" xml:space="preserve">
+    <value>Wprowadź hasło HTTP VLC w ustawieniach połączenia.</value>
+  </data>
+  <data name="Connection_PasswordRejected" xml:space="preserve">
+    <value>VLC odrzucił hasło HTTP. Sprawdź hasło w VLC i w ustawieniach połączenia.</value>
+  </data>
+  <data name="Connection_AccessDenied" xml:space="preserve">
+    <value>VLC odmówił dostępu HTTP. Sprawdź reguły dostępu dla tego komputera i skonfigurowane hasło.</value>
+    <comment>This computer is the computer running Media Controls, which may differ from the VLC server.</comment>
+  </data>
+  <data name="Connection_InvalidJson" xml:space="preserve">
+    <value>VLC zwrócił nieprawidłowy JSON. Sprawdź, czy ten adres URL serwera należy do interfejsu HTTP VLC.</value>
+  </data>
+  <data name="Connection_Timeout" xml:space="preserve">
+    <value>VLC nie odpowiedział na czas. Dostawca automatycznie połączy się ponownie.</value>
+  </data>
+  <data name="Connection_Unreachable" xml:space="preserve">
+    <value>Nie można uzyskać dostępu do VLC. Sprawdź adres URL serwera, interfejs WWW, dostęp do sieci oraz certyfikat HTTPS, jeśli jest używany.</value>
+  </data>
+  <data name="Protocol_UnsupportedVersion" xml:space="preserve">
+    <value>Ten dostawca wymaga interfejsu HTTP API VLC 3 (wersja 3).</value>
+    <comment>Both VLC 3 and HTTP API version 3 are required; keep the version numbers.</comment>
+  </data>
+  <data name="Protocol_UnknownPlaybackState" xml:space="preserve">
+    <value>VLC zwrócił nieznany stan odtwarzania.</value>
+  </data>
+</root>

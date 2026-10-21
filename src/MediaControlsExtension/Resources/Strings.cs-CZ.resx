@@ -449,7 +449,7 @@ Podržte Shift při aktivaci příkazu, abyste dočasně provedli opak.</value>
     <value>Pozastavit ostatní relace při přehrávání</value>
   </data>
   <data name="Settings_PauseOthersOnPlay_Subtitle" xml:space="preserve">
-    <value>Při přehrávání relace automaticky pozastavit všechny ostatní relace.</value>
+    <value>Při spuštění místní relace pozastavit ostatní místní relace. Vzdálené relace se účastní pouze při zahrnutí níže.</value>
   </data>
   <data name="Settings_ShowCurrentMediaAtTopLevel_Title" xml:space="preserve">
     <value>Zobrazit aktuální mediální relaci na domovské stránce</value>
@@ -602,5 +602,342 @@ Diagnostické protokoly mohou obsahovat názvy médií, názvy přehrávačů a 
   </data>
   <data name="ReportProblem_OpenGitHub_Failed" xml:space="preserve">
     <value>GitHub Issues se nepodařilo otevřít. Zkuste to znovu nebo otevřete úložiště z Nastavení.</value>
+  </data>
+  <data name="Details_Provider" xml:space="preserve">
+    <value>Poskytovatel</value>
+  </data>
+  <data name="Command_NextTrack_Dock" xml:space="preserve">
+    <value>Další</value>
+    <comment>Short Dock button label for skipping to the next track.</comment>
+  </data>
+  <data name="Command_PreviousTrack_Dock" xml:space="preserve">
+    <value>Předchozí</value>
+    <comment>Short Dock button label for returning to the previous track.</comment>
+  </data>
+  <data name="WindowsMediaRecovery_Title" xml:space="preserve">
+    <value>Média Windows jsou vypnutá</value>
+  </data>
+  <data name="WindowsMediaRecovery_Description" xml:space="preserve">
+    <value>Povolte doporučený zdroj Média Windows pro zjišťování přehrávání z Apple Music, Spotify a prohlížečů, nebo otevřete Zdroje médií a vyberte jiný zdroj.</value>
+  </data>
+  <data name="WindowsMediaRecovery_Enable" xml:space="preserve">
+    <value>Povolit Média Windows</value>
+  </data>
+  <data name="Toast_PauseOtherFailed" xml:space="preserve">
+    <value>Nepodařilo se pozastavit jiný přehrávač.</value>
+  </data>
+  <data name="Toast_PauseOthersFailed" xml:space="preserve">
+    <value>Nepodařilo se pozastavit další přehrávače: {0}.</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Title" xml:space="preserve">
+    <value>Zobrazit popisky přehrávání v Docku</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Subtitle" xml:space="preserve">
+    <value>Zobrazit popisky tlačítek přehrávání a přepínání skladeb. Popisky povolte také pro pás Ovládání médií v nastavení Docku v Command Palette.</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Title" xml:space="preserve">
+    <value>Zobrazit umělce v názvu v Docku</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Subtitle" xml:space="preserve">
+    <value>Přidat umělce k názvu skladby ve všech velikostech Docku včetně kompaktního režimu.</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Title" xml:space="preserve">
+    <value>Povolit širší název v Docku</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Subtitle" xml:space="preserve">
+    <value>Poskytnout popisku aktuálního média více místa na šířku. Vyžaduje verzi Command Palette, která podporuje požadavky na šířku popisků v Docku.</value>
+  </data>
+  <data name="Settings_Group_MediaBackends" xml:space="preserve">
+    <value>Zdroje médií</value>
+  </data>
+  <data name="Settings_MediaBackends_Help" xml:space="preserve">
+    <value>Poskytovatele médií nastavíte na stránce Zdroje médií v Ovládání médií. Otevřete nabídku příkazů Ovládání médií a zvolte Zdroje médií.</value>
+  </data>
+  <data name="MediaSources_ManageProviders" xml:space="preserve">
+    <value>Vyberte zdroj a zobrazte pokyny k nastavení a dostupné akce. Povolte jen zdroje, které používáte.</value>
+  </data>
+  <data name="MediaSources_Configure" xml:space="preserve">
+    <value>Nastavit</value>
+  </data>
+  <data name="MediaSources_Enable" xml:space="preserve">
+    <value>Povolit</value>
+  </data>
+  <data name="MediaSources_Disable" xml:space="preserve">
+    <value>Zakázat</value>
+  </data>
+  <data name="MediaSources_DisableWindowsTitle" xml:space="preserve">
+    <value>Vypnout Média Windows?</value>
+  </data>
+  <data name="MediaSources_DisableWindowsDescription" xml:space="preserve">
+    <value>Apple Music, Spotify, přehrávání v prohlížečích a další relace médií Windows zmizí z Ovládání médií. Povolené zdroje VLC a iTunes zůstanou dostupné. Chcete-li přepnout režim, zrušte tuto akci a povolte druhý zdroj médií Windows.</value>
+  </data>
+  <data name="MediaSources_DisableWindowsAction" xml:space="preserve">
+    <value>Vypnout Média Windows</value>
+  </data>
+  <data name="MediaSources_SaveFailed" xml:space="preserve">
+    <value>Nastavení zdrojů médií se nepodařilo uložit. Zkontrolujte přístup k souboru nastavení a zkuste to znovu.</value>
+  </data>
+  <data name="MediaSources_TestConnection" xml:space="preserve">
+    <value>Otestovat uložené připojení</value>
+  </data>
+  <data name="MediaSources_TestConnected" xml:space="preserve">
+    <value>Připojeno k VLC. Uložené nastavení připojení funguje.</value>
+  </data>
+  <data name="MediaSources_TestFailed" xml:space="preserve">
+    <value>K VLC se nepodařilo připojit. Zkontrolujte jeho webové rozhraní a uložené nastavení připojení.</value>
+  </data>
+  <data name="MediaSources_TestSettingsChanged" xml:space="preserve">
+    <value>Nastavení připojení k VLC se během testu změnilo. Otestujte uložené připojení znovu.</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
+    <value>Média Windows (kompatibilita)</value>
+  </data>
+  <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
+    <value>Alternativní zdroj médií Windows pro řešení potíží.</value>
+  </data>
+  <data name="MediaSources_Title" xml:space="preserve">
+    <value>Zdroje médií</value>
+  </data>
+  <data name="MediaSources_Search" xml:space="preserve">
+    <value>Hledat zdroje médií</value>
+  </data>
+  <data name="MediaSources_Empty" xml:space="preserve">
+    <value>Žádné odpovídající zdroje médií</value>
+  </data>
+  <data name="MediaSources_Manage" xml:space="preserve">
+    <value>Zdroje médií můžete povolit nebo zakázat v Nastavení.</value>
+  </data>
+  <data name="MediaSources_OpenSettings" xml:space="preserve">
+    <value>Otevřít nastavení</value>
+  </data>
+  <data name="MediaSources_Enabled" xml:space="preserve">
+    <value>Povoleno</value>
+  </data>
+  <data name="MediaSources_Disabled" xml:space="preserve">
+    <value>Zakázáno</value>
+  </data>
+  <data name="MediaSources_Enablement" xml:space="preserve">
+    <value>Volba uživatele</value>
+  </data>
+  <data name="MediaSources_Lifecycle" xml:space="preserve">
+    <value>Stav poskytovatele</value>
+  </data>
+  <data name="MediaSources_Connection" xml:space="preserve">
+    <value>Připojení</value>
+  </data>
+  <data name="MediaSources_AvailableSessions" xml:space="preserve">
+    <value>Dostupné relace</value>
+  </data>
+  <data name="MediaSources_ProviderMessage" xml:space="preserve">
+    <value>Zpráva poskytovatele</value>
+  </data>
+  <data name="MediaSources_ConnectionMessage" xml:space="preserve">
+    <value>Zpráva o připojení</value>
+  </data>
+  <data name="MediaSources_OneSession" xml:space="preserve">
+    <value>{0} relace</value>
+  </data>
+  <data name="MediaSources_SessionCount" xml:space="preserve">
+    <value>Počet relací: {0}</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Disabled" xml:space="preserve">
+    <value>Zakázáno</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Starting" xml:space="preserve">
+    <value>Spouštění</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Ready" xml:space="preserve">
+    <value>Připraveno</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Stopping" xml:space="preserve">
+    <value>Zastavování</value>
+  </data>
+  <data name="MediaSources_Lifecycle_Faulted" xml:space="preserve">
+    <value>Selhání</value>
+  </data>
+  <data name="MediaSources_Connection_Unknown" xml:space="preserve">
+    <value>Neznámé</value>
+  </data>
+  <data name="MediaSources_Connection_Connecting" xml:space="preserve">
+    <value>Připojování</value>
+  </data>
+  <data name="MediaSources_Connection_Connected" xml:space="preserve">
+    <value>Připojeno</value>
+  </data>
+  <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
+    <value>Odpojeno</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
+    <value>Přehrávač VLC</value>
+  </data>
+  <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
+    <value>Připojení k místnímu nebo vzdálenému přehrávači VLC 3 přes jeho webové rozhraní.</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
+    <value>iTunes</value>
+  </data>
+  <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
+    <value>Ovládání desktopového iTunes. Apple Music používá zdroj Média Windows.</value>
+  </data>
+  <data name="Settings_Group_Vlc" xml:space="preserve">
+    <value>Připojení k VLC</value>
+  </data>
+  <data name="Settings_Vlc_Help" xml:space="preserve">
+    <value>Ve VLC povolte webové rozhraní, nastavte heslo Lua HTTP a restartujte VLC. U jiného počítače povolte v rozhraní a bráně firewall připojení z tohoto počítače. Níže zadejte adresu URL serveru a heslo. Volbou Uložit a povolit začnete používat VLC; volba Uložit zachová jeho aktuální povolení nebo zakázání. Uložené nastavení ověříte příkazem Otestovat uložené připojení v nabídce této stránky. Připojení HTTP jsou určena pro důvěryhodné sítě; pokud server podporuje HTTPS, použijte jej.</value>
+    <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
+    <value>Adresa URL serveru</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Description" xml:space="preserve">
+    <value>Například http://127.0.0.1:8080 nebo http://living-room:8080. Použijte kořenovou adresu serveru bez cesty a hesla.</value>
+  </data>
+  <data name="Settings_Vlc_Endpoint_Invalid" xml:space="preserve">
+    <value>Zadejte platnou adresu URL serveru HTTP nebo HTTPS bez cesty, dotazu, fragmentu a vloženého hesla.</value>
+  </data>
+  <data name="Settings_Vlc_Password_Title" xml:space="preserve">
+    <value>Heslo HTTP</value>
+  </data>
+  <data name="Settings_Vlc_Password_Description" xml:space="preserve">
+    <value>Ukládá se do úložiště přihlašovacích údajů Windows pro tuto adresu URL serveru. Prázdné pole zachová heslo uložené pro tento server. Nový server potřebuje vlastní heslo.</value>
+    <comment>Passwords are saved separately for each server URL. A blank input keeps only that server&apos;s saved password.</comment>
+  </data>
+  <data name="Settings_Vlc_Password_Placeholder" xml:space="preserve">
+    <value>Zadejte nebo změňte heslo VLC</value>
+  </data>
+  <data name="Settings_Vlc_Password_LoadFailed" xml:space="preserve">
+    <value>Uložené heslo VLC se nepodařilo přečíst z úložiště přihlašovacích údajů Windows. Zadejte heslo znovu a uložte jej.</value>
+  </data>
+  <data name="Settings_Vlc_Password_SaveFailed" xml:space="preserve">
+    <value>Heslo VLC se nepodařilo uložit do úložiště přihlašovacích údajů Windows. Nové heslo nebylo použito. Zkuste jej uložit znovu.</value>
+  </data>
+  <data name="Page_Section_RemoteSessions" xml:space="preserve">
+    <value>Vzdálené relace</value>
+    <comment>Section for sessions treated as remote for playback behavior, regardless of their physical location.</comment>
+  </data>
+  <data name="Session_Remote" xml:space="preserve">
+    <value>Vzdálené</value>
+    <comment>Short marker appended to a player&apos;s name when its session is treated as remote.</comment>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Title" xml:space="preserve">
+    <value>Zahrnout vzdálené relace při pozastavování ostatních přehrávačů</value>
+  </data>
+  <data name="Settings_IncludeRemoteSessionsInPauseOthers_Subtitle" xml:space="preserve">
+    <value>Pokud je zapnuto pozastavování ostatních přehrávačů, spuštění vzdálené relace může pozastavit jiné přehrávače a spuštění libovolného přehrávače může pozastavit vzdálené relace.</value>
+    <comment>Opt-in behavior applies in both directions: remote sessions may pause other sessions and may be paused by them.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Title" xml:space="preserve">
+    <value>Považovat tuto relaci za místní</value>
+    <comment>Behavior preference, not a statement of physical location. The choices are Automatic, Yes, and No.</comment>
+  </data>
+  <data name="Settings_Vlc_TreatAsLocal_Description" xml:space="preserve">
+    <value>Místní relace se účastní automatického výběru, přepínání přehrávačů a pozastavování ostatních místních přehrávačů. Automatická volba považuje adresy zpětné smyčky za místní a ostatní adresy za vzdálené. Tato volba nemění, které místní relace VLC se nahrazují.</value>
+  </data>
+  <data name="Settings_Vlc_Treatment_Auto" xml:space="preserve">
+    <value>Automaticky (podle adresy URL serveru)</value>
+    <comment>Detect local playback behavior only for URLs that explicitly address this computer through loopback.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Local" xml:space="preserve">
+    <value>Ano</value>
+    <comment>Answer to Treat this session as local: always participate in local playback behavior.</comment>
+  </data>
+  <data name="Settings_Vlc_Treatment_Remote" xml:space="preserve">
+    <value>Ne</value>
+    <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
+    <value>Média Windows</value>
+  </data>
+  <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
+    <value>Zjišťování hudby a videa z aplikací jako Apple Music, Spotify a prohlížeče.</value>
+  </data>
+  <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
+    <value>Uložené zdroje médií se nepodařilo přečíst. Automaticky se obnoví, jakmile bude soubor nastavení čitelný. Vyberte zdroj a zkuste to znovu hned.</value>
+  </data>
+  <data name="Settings_Backend_InvalidSavedSelection" xml:space="preserve">
+    <value>Uložený výběr poskytovatele se nepodařilo přečíst. Zkontrolujte soubor nastavení a znovu vyberte poskytovatele.</value>
+  </data>
+  <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
+    <value>Uložený výběr této skupiny je neplatný nebo obsahuje konflikty. Výběrem jednoho poskytovatele jej opravíte.</value>
+  </data>
+  <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
+    <value>Simulovaná média</value>
+    <comment>Opt-in simulated media provider for testing.</comment>
+  </data>
+  <data name="Settings_Backend_Dummy_Description" xml:space="preserve">
+    <value>Tři simulované přehrávače s náhodnými skladbami a obrázky. Nepřehrává se žádný zvuk.</value>
+    <comment>Description of the dummy media provider.</comment>
+  </data>
+  <data name="Toast_PlaybackUnconfirmed" xml:space="preserve">
+    <value>Přehrávání se nepodařilo potvrdit.</value>
+  </data>
+  <data name="Toast_PlaybackAbandoned" xml:space="preserve">
+    <value>Požadavek na přehrávání byl zrušen, protože se nepodařilo potvrdit předchozí změnu.</value>
+  </data>
+  <data name="MediaSources_NeedsAttention" xml:space="preserve">
+    <value>Vyžaduje pozornost</value>
+  </data>
+  <data name="MediaSources_Off" xml:space="preserve">
+    <value>Vypnuto</value>
+  </data>
+  <data name="MediaSources_WaitingForITunes" xml:space="preserve">
+    <value>Čekání na iTunes</value>
+  </data>
+  <data name="MediaSources_NotConnected" xml:space="preserve">
+    <value>Nepřipojeno</value>
+  </data>
+  <data name="MediaSources_WaitingForPlayback" xml:space="preserve">
+    <value>Čekání na přehrávání</value>
+  </data>
+  <data name="MediaSources_Recommended" xml:space="preserve">
+    <value>Doporučené</value>
+  </data>
+  <data name="MediaSources_OptionalPlayers" xml:space="preserve">
+    <value>Volitelné přehrávače</value>
+  </data>
+  <data name="MediaSources_Troubleshooting" xml:space="preserve">
+    <value>Řešení potíží</value>
+  </data>
+  <data name="MediaSources_WindowsGuidance" xml:space="preserve">
+    <value>Ve výchozím nastavení povoleno. Spusťte přehrávání v aplikaci podporující ovládání médií Windows; její přehrávač se objeví v Ovládání médií. Apple Music používá tento zdroj a nevyžaduje nastavení iTunes. Chcete-li vyzkoušet režim kompatibility, v části Řešení potíží povolte Média Windows (kompatibilita).</value>
+  </data>
+  <data name="MediaSources_CompatibilityGuidance" xml:space="preserve">
+    <value>Tento režim vyzkoušejte, pokud Média Windows nenajdou nebo nedokážou ovládat váš přehrávač. Zpět přepnete povolením zdroje Média Windows v části Doporučené. Přepnutím režimu se předchozí režim automaticky vypne.</value>
+  </data>
+  <data name="MediaSources_ITunesGuidance" xml:space="preserve">
+    <value>Volitelný zdroj, ve výchozím nastavení vypnutý. Otevřete desktopové iTunes a zvolte Povolit. Aplikace Apple Music používá Média Windows a tento zdroj nepotřebuje. Pokud používáte integraci iTunes s ovládáním médií Windows od třetí strany, tento zdroj zakažte.</value>
+  </data>
+  <data name="MediaSources_VlcGuidance" xml:space="preserve">
+    <value>Volbou Nastavit zadáte adresu URL serveru a heslo webového rozhraní VLC. Uložit a povolit spustí zdroj; Uložit zachová jeho aktuální povolení nebo zakázání. Nastavení ověříte příkazem Otestovat uložené připojení v nabídce konfigurační stránky.</value>
+  </data>
+  <data name="MediaSources_DummyGuidance" xml:space="preserve">
+    <value>Vývojový zdroj se simulovanými skladbami a obrázky. Povolte jej a vyzkoušejte rozhraní bez přehrávání zvuku.</value>
+  </data>
+  <data name="MediaSources_RetryGuidance" xml:space="preserve">
+    <value>Přečtěte si zprávy níže, vyřešte problém a zvolte Zkusit znovu. Zdroj zůstane povolený.</value>
+  </data>
+  <data name="MediaSources_EnableGuidance" xml:space="preserve">
+    <value>Přečtěte si zprávy níže a zvolte Povolit. Tím uložíte svou volbu a vyzkoušíte tento zdroj.</value>
+  </data>
+  <data name="MediaSources_Actions" xml:space="preserve">
+    <value>Akce</value>
+  </data>
+  <data name="MediaSources_Retry" xml:space="preserve">
+    <value>Zkusit znovu</value>
+  </data>
+  <data name="MediaSources_RetryFailed" xml:space="preserve">
+    <value>Tento zdroj médií se nepodařilo znovu spustit. Zkontrolujte jeho podrobnosti a zkuste to znovu.</value>
+  </data>
+  <data name="MediaSources_SaveAndEnable" xml:space="preserve">
+    <value>Uložit a povolit</value>
+  </data>
+  <data name="MediaSources_Saved" xml:space="preserve">
+    <value>Nastavení zdroje médií bylo uloženo.</value>
+  </data>
+  <data name="MediaSources_SavedAndEnabled" xml:space="preserve">
+    <value>Nastavení bylo uloženo a zdroj médií povolen. Stav připojení najdete na stránce Zdroje médií.</value>
+  </data>
+  <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
+    <value>Nastavení bylo uloženo, ale zdroj médií se nepodařilo povolit. Vraťte se na stránku Zdroje médií a znovu zvolte Povolit.</value>
   </data>
 </root>

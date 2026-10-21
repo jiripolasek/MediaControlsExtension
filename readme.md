@@ -5,9 +5,9 @@
 
 </div>
 
-Take full control of your media playback without leaving your workflow. Media Controls for [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) brings Windows media sessions and system audio controls together in the Command Palette and Dock.
+Control music and video playback, switch between players, and adjust system volume from [PowerToys Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) and its Dock.
 
-The extension works with desktop apps, Microsoft Store apps, and browser tabs that publish a Windows Global System Media Transport Controls (GSMTC) session. It also includes optional direct media sources for [desktop iTunes](docs/user/itunes-backend.md) and [VLC 3](docs/user/vlc-backend.md), which you can enable from Media sources.
+Version 0.40 brings Windows media and direct player integrations into one media-source system. Windows media controls now run separately from the extension for better stability and recovery. These changes provide the foundation for desktop iTunes and local or remote VLC 3 support.
 
 <div align="center">
 <img src="./art/screenshot_01.png" alt="Screenshot" />
@@ -15,17 +15,21 @@ The extension works with desktop apps, Microsoft Store apps, and browser tabs th
 
 ## Features
 
-- **Playback controls** — Play, pause, stop, skip tracks, and change shuffle or repeat mode when the active player makes those actions available.
-- **Multiple media sessions** — Browse every active session, switch to its application, and move between players. Optionally pause other sessions when starting a new one.
-- **Rich media details** — View title, artist, album, artwork, player, track length, playback state, and additional metadata supplied by the player.
-- **System volume controls** — See the volume of the default Windows playback device, mute or unmute, adjust the level, or jump to 0%, 25%, 50%, 75%, or 100%.
-- **Command Palette integration** — Put Now Playing and volume actions on the home page, surface media commands in global search, keep the palette open for consecutive actions, and show action notifications.
-- **Dock controls** — Add a compact media band with current playback and optional previous/next controls, plus a system volume band in the flyout.
+- **Playback controls** — Play, pause, stop, skip tracks, and change shuffle or repeat mode when supported by the player.
+- **Multiple players** — See what's playing across your apps and browser tabs, switch between players, and optionally pause other players when starting playback.
+- **Now playing details** — See the track, artist, album, and artwork, with a details page for additional metadata.
+- **System volume** — Adjust or mute the default Windows playback device directly from Command Palette.
+- **Quick access** — Control playback from the home page, find media commands in global search, or use keyboard shortcuts.
+- **Dock integration** — Keep the current track, playback controls, and system volume within reach from the Dock.
 - **Personalization** — Choose separate icon themes for the Command Palette and Dock, use album art in the session list, configure which commands appear on each surface, and choose what the first dock item does (bring the app to front, open the main page, or open media details).
 
-Popular compatible players include Spotify, Apple Music, foobar2000, Media Player, VLC UWP, and media websites running in Edge, Chrome, other Chromium-based browsers, or Firefox. Exact controls and metadata depend on what each player exposes to Windows.
+## Supported players
 
-See [Media sources setup](docs/user/media-sources.md) to choose and configure sources, or the [player compatibility guide](docs/user/GSMTC-Compatibility.md) for the feature matrix, browser notes, and optional integrations. For a version-by-version history of changes, see the [changelog](CHANGELOG.md).
+Media Controls works with apps and browser tabs that support Windows media controls, including Spotify, Apple Music, foobar2000, Media Player, VLC UWP, and media websites in Edge, Chrome, and Firefox. Available controls and track details depend on the player.
+
+You can also enable direct support for [desktop iTunes](docs/user/itunes-backend.md) or connect to [VLC 3](docs/user/vlc-backend.md), including a VLC player on another computer on your network. Set up these optional integrations from **Media sources** in the Media Controls command menu.
+
+See [Media sources setup](docs/user/media-sources.md) for configuration and troubleshooting, the [player compatibility guide](docs/user/GSMTC-Compatibility.md) for supported features, and the [changelog](CHANGELOG.md) for release notes.
 
 ## Installation
 
@@ -33,7 +37,7 @@ See [Media sources setup](docs/user/media-sources.md) to choose and configure so
 
 ### Microsoft Store installation (recommended)
 
-<a href="https://apps.microsoft.com/detail/9N3BQ81G19K7"><img alt="alt_text" width="240px" src="https://get.microsoft.com/images/en-us%20dark.svg" /></a>
+<a href="https://apps.microsoft.com/detail/9N3BQ81G19K7"><img alt="Get it from Microsoft" width="240px" src="https://get.microsoft.com/images/en-us%20dark.svg" /></a>
 
 ### Command Palette
 

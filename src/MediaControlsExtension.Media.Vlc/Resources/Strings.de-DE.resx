@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Connection_RequestCanceled" xml:space="preserve">
+    <value>Die VLC-Anforderung wurde abgebrochen; ihr Ergebnis ist unbekannt.</value>
+    <comment>A playback command was canceled before its response arrived.</comment>
+  </data>
+  <data name="Connection_SettingsChanged" xml:space="preserve">
+    <value>Die VLC-Verbindungseinstellungen wurden geändert.</value>
+    <comment>A previous connection is being replaced after a settings change.</comment>
+  </data>
+  <data name="Connection_ObservationCanceled" xml:space="preserve">
+    <value>Das Lesen des VLC-Status wurde abgebrochen.</value>
+    <comment>A request to read the player's current state was canceled.</comment>
+  </data>
+  <data name="Connection_InvalidEndpoint" xml:space="preserve">
+    <value>Geben Sie eine HTTP- oder HTTPS-Server-URL mit gültigem Port und ohne Pfad oder eingebettetes Passwort ein.</value>
+    <comment>The configured server URL is invalid. HTTP and HTTPS are protocol names.</comment>
+  </data>
+  <data name="Connection_PasswordRequired" xml:space="preserve">
+    <value>Geben Sie das VLC-HTTP-Passwort in den Verbindungseinstellungen ein.</value>
+  </data>
+  <data name="Connection_PasswordRejected" xml:space="preserve">
+    <value>VLC hat das HTTP-Passwort abgelehnt. Prüfen Sie das Passwort in VLC und in den Verbindungseinstellungen.</value>
+  </data>
+  <data name="Connection_AccessDenied" xml:space="preserve">
+    <value>VLC hat den HTTP-Zugriff verweigert. Prüfen Sie die Zugriffsregeln für diesen Computer und das konfigurierte Passwort.</value>
+    <comment>This computer is the computer running Media Controls, which may differ from the VLC server.</comment>
+  </data>
+  <data name="Connection_InvalidJson" xml:space="preserve">
+    <value>VLC hat ungültiges JSON zurückgegeben. Prüfen Sie, ob diese Server-URL zur HTTP-Oberfläche von VLC gehört.</value>
+  </data>
+  <data name="Connection_Timeout" xml:space="preserve">
+    <value>VLC hat nicht rechtzeitig geantwortet. Der Anbieter stellt die Verbindung automatisch wieder her.</value>
+  </data>
+  <data name="Connection_Unreachable" xml:space="preserve">
+    <value>VLC ist nicht erreichbar. Prüfen Sie Server-URL, Weboberfläche, Netzwerkzugriff und gegebenenfalls das HTTPS-Zertifikat.</value>
+  </data>
+  <data name="Protocol_UnsupportedVersion" xml:space="preserve">
+    <value>Dieser Anbieter erfordert die HTTP-API von VLC 3 (Version 3).</value>
+    <comment>Both VLC 3 and HTTP API version 3 are required; keep the version numbers.</comment>
+  </data>
+  <data name="Protocol_UnknownPlaybackState" xml:space="preserve">
+    <value>VLC hat einen unbekannten Wiedergabestatus zurückgegeben.</value>
+  </data>
+</root>
