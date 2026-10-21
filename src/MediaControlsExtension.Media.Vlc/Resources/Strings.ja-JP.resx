@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Connection_RequestCanceled" xml:space="preserve">
+    <value>VLC のリクエストはキャンセルされました。結果は不明です。</value>
+    <comment>A playback command was canceled before its response arrived.</comment>
+  </data>
+  <data name="Connection_SettingsChanged" xml:space="preserve">
+    <value>VLC の接続設定が変更されました。</value>
+    <comment>A previous connection is being replaced after a settings change.</comment>
+  </data>
+  <data name="Connection_ObservationCanceled" xml:space="preserve">
+    <value>VLC の状態の読み取りはキャンセルされました。</value>
+    <comment>A request to read the player's current state was canceled.</comment>
+  </data>
+  <data name="Connection_InvalidEndpoint" xml:space="preserve">
+    <value>有効なポートを指定した HTTP または HTTPS のサーバー URL を入力してください。パスや埋め込みパスワードは含めないでください。</value>
+    <comment>The configured server URL is invalid. HTTP and HTTPS are protocol names.</comment>
+  </data>
+  <data name="Connection_PasswordRequired" xml:space="preserve">
+    <value>接続設定に VLC の HTTP パスワードを入力してください。</value>
+  </data>
+  <data name="Connection_PasswordRejected" xml:space="preserve">
+    <value>VLC が HTTP パスワードを拒否しました。VLC と接続設定のパスワードを確認してください。</value>
+  </data>
+  <data name="Connection_AccessDenied" xml:space="preserve">
+    <value>VLC が HTTP アクセスを拒否しました。このコンピューターのアクセス規則と設定したパスワードを確認してください。</value>
+    <comment>This computer is the computer running Media Controls, which may differ from the VLC server.</comment>
+  </data>
+  <data name="Connection_InvalidJson" xml:space="preserve">
+    <value>VLC が無効な JSON を返しました。このサーバー URL が VLC の HTTP インターフェイスのものか確認してください。</value>
+  </data>
+  <data name="Connection_Timeout" xml:space="preserve">
+    <value>VLC が時間内に応答しませんでした。プロバイダーは自動的に再接続します。</value>
+  </data>
+  <data name="Connection_Unreachable" xml:space="preserve">
+    <value>VLC にアクセスできません。サーバー URL、Web インターフェイス、ネットワークアクセス、および使用している場合は HTTPS 証明書を確認してください。</value>
+  </data>
+  <data name="Protocol_UnsupportedVersion" xml:space="preserve">
+    <value>このプロバイダーには VLC 3 の HTTP API (バージョン 3) が必要です。</value>
+    <comment>Both VLC 3 and HTTP API version 3 are required; keep the version numbers.</comment>
+  </data>
+  <data name="Protocol_UnknownPlaybackState" xml:space="preserve">
+    <value>VLC が不明な再生状態を返しました。</value>
+  </data>
+</root>

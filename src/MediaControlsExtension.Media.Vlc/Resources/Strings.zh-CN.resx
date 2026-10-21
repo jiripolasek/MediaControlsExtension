@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Connection_RequestCanceled" xml:space="preserve">
+    <value>VLC 请求已取消，结果未知。</value>
+    <comment>A playback command was canceled before its response arrived.</comment>
+  </data>
+  <data name="Connection_SettingsChanged" xml:space="preserve">
+    <value>VLC 连接设置已更改。</value>
+    <comment>A previous connection is being replaced after a settings change.</comment>
+  </data>
+  <data name="Connection_ObservationCanceled" xml:space="preserve">
+    <value>读取 VLC 状态的请求已取消。</value>
+    <comment>A request to read the player's current state was canceled.</comment>
+  </data>
+  <data name="Connection_InvalidEndpoint" xml:space="preserve">
+    <value>请输入带有效端口的 HTTP 或 HTTPS 服务器 URL，不要包含路径或嵌入的密码。</value>
+    <comment>The configured server URL is invalid. HTTP and HTTPS are protocol names.</comment>
+  </data>
+  <data name="Connection_PasswordRequired" xml:space="preserve">
+    <value>请在连接设置中输入 VLC HTTP 密码。</value>
+  </data>
+  <data name="Connection_PasswordRejected" xml:space="preserve">
+    <value>VLC 拒绝了 HTTP 密码。请检查 VLC 和连接设置中的密码。</value>
+  </data>
+  <data name="Connection_AccessDenied" xml:space="preserve">
+    <value>VLC 拒绝了 HTTP 访问。请检查此计算机的访问规则和配置的密码。</value>
+    <comment>This computer is the computer running Media Controls, which may differ from the VLC server.</comment>
+  </data>
+  <data name="Connection_InvalidJson" xml:space="preserve">
+    <value>VLC 返回了无效的 JSON。请检查此服务器 URL 是否属于 VLC 的 HTTP 界面。</value>
+  </data>
+  <data name="Connection_Timeout" xml:space="preserve">
+    <value>VLC 未及时响应。提供程序将自动重新连接。</value>
+  </data>
+  <data name="Connection_Unreachable" xml:space="preserve">
+    <value>无法访问 VLC。请检查服务器 URL、Web 界面、网络访问权限，以及使用 HTTPS 时的证书。</value>
+  </data>
+  <data name="Protocol_UnsupportedVersion" xml:space="preserve">
+    <value>此提供程序需要 VLC 3 的 HTTP API（版本 3）。</value>
+    <comment>Both VLC 3 and HTTP API version 3 are required; keep the version numbers.</comment>
+  </data>
+  <data name="Protocol_UnknownPlaybackState" xml:space="preserve">
+    <value>VLC 返回了未知的播放状态。</value>
+  </data>
+</root>

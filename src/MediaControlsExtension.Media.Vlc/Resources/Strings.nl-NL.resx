@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Connection_RequestCanceled" xml:space="preserve">
+    <value>Het VLC-verzoek is geannuleerd; het resultaat is onbekend.</value>
+    <comment>A playback command was canceled before its response arrived.</comment>
+  </data>
+  <data name="Connection_SettingsChanged" xml:space="preserve">
+    <value>De VLC-verbindingsinstellingen zijn gewijzigd.</value>
+    <comment>A previous connection is being replaced after a settings change.</comment>
+  </data>
+  <data name="Connection_ObservationCanceled" xml:space="preserve">
+    <value>Het lezen van de VLC-status is geannuleerd.</value>
+    <comment>A request to read the player's current state was canceled.</comment>
+  </data>
+  <data name="Connection_InvalidEndpoint" xml:space="preserve">
+    <value>Voer een HTTP- of HTTPS-server-URL in met een geldige poort, zonder pad of ingesloten wachtwoord.</value>
+    <comment>The configured server URL is invalid. HTTP and HTTPS are protocol names.</comment>
+  </data>
+  <data name="Connection_PasswordRequired" xml:space="preserve">
+    <value>Voer het VLC-HTTP-wachtwoord in de verbindingsinstellingen in.</value>
+  </data>
+  <data name="Connection_PasswordRejected" xml:space="preserve">
+    <value>VLC heeft het HTTP-wachtwoord geweigerd. Controleer het wachtwoord in VLC en in de verbindingsinstellingen.</value>
+  </data>
+  <data name="Connection_AccessDenied" xml:space="preserve">
+    <value>VLC heeft HTTP-toegang geweigerd. Controleer de toegangsregels voor deze computer en het ingestelde wachtwoord.</value>
+    <comment>This computer is the computer running Media Controls, which may differ from the VLC server.</comment>
+  </data>
+  <data name="Connection_InvalidJson" xml:space="preserve">
+    <value>VLC heeft ongeldige JSON teruggestuurd. Controleer of deze server-URL bij de HTTP-interface van VLC hoort.</value>
+  </data>
+  <data name="Connection_Timeout" xml:space="preserve">
+    <value>VLC heeft niet op tijd gereageerd. De provider maakt automatisch opnieuw verbinding.</value>
+  </data>
+  <data name="Connection_Unreachable" xml:space="preserve">
+    <value>Kan VLC niet bereiken. Controleer de server-URL, de webinterface, de netwerktoegang en het HTTPS-certificaat indien van toepassing.</value>
+  </data>
+  <data name="Protocol_UnsupportedVersion" xml:space="preserve">
+    <value>Deze provider vereist de HTTP-API van VLC 3 (versie 3).</value>
+    <comment>Both VLC 3 and HTTP API version 3 are required; keep the version numbers.</comment>
+  </data>
+  <data name="Protocol_UnknownPlaybackState" xml:space="preserve">
+    <value>VLC heeft een onbekende afspeelstatus teruggestuurd.</value>
+  </data>
+</root>
