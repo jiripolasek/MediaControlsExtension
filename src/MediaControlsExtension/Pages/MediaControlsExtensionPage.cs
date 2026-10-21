@@ -18,6 +18,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private readonly IconSurface _iconSurface;
     private readonly Lock _refreshLock = new();
     private readonly bool _isBandPage;
+    private readonly WindowsMediaRecoveryItem? _windowsMediaRecoveryItem;
     private readonly Separator _playbackSectionSeparator = new(Strings.Page_Section_Playback!);
     private readonly Separator _systemVolumeSectionSeparator = new(Strings.Page_Section_SystemVolume!);
     private readonly Separator _mediaSessionsSectionSeparator = new(Strings.Page_Section_MediaSessions!);
@@ -44,7 +45,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         MediaCommandResultFactory resultFactory,
         IIconService iconService,
         ILoggerFactory loggerFactory,
-        DockHeadCommandTargets? dockHeadCommandTargets = null)
+        DockHeadCommandTargets? dockHeadCommandTargets = null,
+        WindowsMediaRecoveryItem? windowsMediaRecoveryItem = null)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(viewModels);
@@ -56,6 +58,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         ArgumentNullException.ThrowIfNull(loggerFactory);
 
         this._isBandPage = dockHeadCommandTargets is not null;
+        this._windowsMediaRecoveryItem = windowsMediaRecoveryItem;
         this._iconSurface = this._isBandPage
             ? IconSurface.Dock
             : IconSurface.CommandPalette;
@@ -152,6 +155,11 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
             this._prevTrackCurrentSessionItem.Subtitle = string.Empty;
         }
 
+        if (this._windowsMediaRecoveryItem is not null)
+        {
+            this._mediaService.BackendsChanged += this.MediaServiceOnBackendsChanged;
+        }
+
         this.UpdateStatus();
         this.RebuildSessionItems();
         this.SetCurrentSession(this._mediaService.CurrentSession);
@@ -168,6 +176,8 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     {
         this.RebuildSessionItems();
     }
+
+    private void MediaServiceOnBackendsChanged(object? sender, EventArgs args) => this.RebuildAndRaiseIfChanged();
 
     private void MediaServiceOnCurrentSessionChanged(object? sender, EventArgs args)
     {
@@ -383,17 +393,24 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         List<IListItem> items = [];
 
         var sectionStart = items.Count;
-        items.Add(this._playPauseCurrentSessionItem);
-        if (this._settingsManager.ShowSkipCommands)
+        if (this._items.Count == 0 && this._windowsMediaRecoveryItem is { IsNeeded: true } recovery)
         {
-            items.Add(this._nextTrackCurrentSessionItem);
-            items.Add(this._prevTrackCurrentSessionItem);
+            items.Add(recovery);
         }
+        else
+        {
+            items.Add(this._playPauseCurrentSessionItem);
+            if (this._settingsManager.ShowSkipCommands)
+            {
+                items.Add(this._nextTrackCurrentSessionItem);
+                items.Add(this._prevTrackCurrentSessionItem);
+            }
 
-        InsertSectionSeparatorIfNotEmpty(
-            items,
-            sectionStart,
-            this._playbackSectionSeparator);
+            InsertSectionSeparatorIfNotEmpty(
+                items,
+                sectionStart,
+                this._playbackSectionSeparator);
+        }
 
         sectionStart = items.Count;
         if (this._settingsManager.EnableVolumeControls && this._volumeItem is not null)
@@ -482,6 +499,10 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
         this._mediaService.StatusChanged -= this.MediaServiceOnStatusChanged;
         this._mediaService.SessionsChanged -= this.MediaServiceOnSessionsChanged;
         this._mediaService.CurrentSessionChanged -= this.MediaServiceOnCurrentSessionChanged;
+        if (this._windowsMediaRecoveryItem is not null)
+        {
+            this._mediaService.BackendsChanged -= this.MediaServiceOnBackendsChanged;
+        }
         this.SetCurrentSession(null);
         this._settingsManager.Settings.SettingsChanged -= this.SettingsOnSettingsChanged;
         this._nextTrackCurrentSessionItem?.Dispose();

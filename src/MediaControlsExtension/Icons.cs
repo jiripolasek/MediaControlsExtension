@@ -59,6 +59,12 @@ internal static class Icons
     public static IconInfo DetailedLoggingDisabled { get; } = new(SegoeFluentIconGlyphs.Checkbox);
     public static IconInfo Save { get; } = new(SegoeFluentIconGlyphs.Save);
     public static IconInfo OpenInNewWindow { get; } = new(SegoeFluentIconGlyphs.OpenInNewWindow);
+
+    public static IconInfo WindowsMediaSource { get; } = IconHelpers.FromRelativePath(@"Assets\Providers\Windows.svg");
+    public static IconInfo ITunesSource { get; } = IconHelpers.FromRelativePath(@"Assets\Providers\ITunes.svg");
+    public static IconInfo VlcSource { get; } = IconHelpers.FromRelativePath(@"Assets\Providers\Vlc.svg");
+    public static IconInfo EnableMediaSource { get; } = new(SegoeFluentIconGlyphs.CheckboxComposite);
+    public static IconInfo DisableMediaSource { get; } = new(SegoeFluentIconGlyphs.Checkbox);
 }
 
 internal static class SegoeFluentIconGlyphs

@@ -2,8 +2,10 @@
 
 Media Controls runs Windows GSMTC in its own worker process by default. This
 isolates native Windows media failures from the extension. Open **Media sources**
-from the Media Controls command menu to change modes. Selecting either Windows
-media provider disables the other. Both can also be disabled.
+from the Media Controls command menu to change modes. **Windows media**, under
+Recommended, uses the worker. **Windows media (compatibility)**, under Troubleshooting,
+runs inside the extension. Enabling either source disables the other. Both can also
+be disabled. See [Media sources setup](media-sources.md) for the full workflow.
 
 On upgrade, legacy Windows-media enablement moves to the worker. Disabled Windows
 media stays disabled. An explicit choice already made between internal and worker
@@ -21,8 +23,8 @@ it cannot reconnect to a replacement extension. Media applications run separatel
 
 If the worker fails, sessions become unavailable while Media Controls attempts up
 to three replacements. Commands with uncertain outcomes are not repeated. Recovery
-does not enable internal GSMTC automatically. If recovery stops, disable and enable
-the worker provider to retry. If switching reports that the previous provider
+does not enable internal GSMTC automatically. If recovery stops, choose **Retry**
+on the failed source in Media sources. If switching reports that the previous provider
 failed to stop, reload the extension before trying again.
 
 Conflicting saved mode choices leave the Windows media group inactive and show a

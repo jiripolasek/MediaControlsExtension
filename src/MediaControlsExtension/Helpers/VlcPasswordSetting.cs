@@ -20,6 +20,7 @@ internal sealed class VlcPasswordSetting : Setting<string>
     private string? _error;
 
     public string Password => Volatile.Read(ref this._password);
+    public string? Error => Volatile.Read(ref this._error);
 
     public VlcPasswordSetting(string key, string label, string description, string placeholder,
         Func<string> loadPassword, Action<string> savePassword, Action<string>? reportError = null,

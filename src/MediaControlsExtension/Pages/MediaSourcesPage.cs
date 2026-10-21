@@ -26,6 +26,7 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
     private readonly Action<string, bool> _setEnabled;
     private readonly Func<string, string?>? _getConfigurationDiagnostic;
     private readonly IReadOnlyDictionary<string, ICommand> _configurationPages;
+    private readonly IReadOnlyDictionary<string, string> _sourceDescriptions;
     private readonly Dictionary<string, MediaSourceStatusItem> _rows = new(StringComparer.Ordinal);
     private TypedEventHandler<object, IItemsChangedEventArgs>? _itemsChanged;
     private IListItem[] _items = [];
@@ -36,7 +37,8 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
     private long _lastAppliedRefresh;
 
     public MediaSourcesPage(IMediaService mediaService, Action<string, bool> setEnabled,
-        IReadOnlyDictionary<string, ICommand> configurationPages, ILoggerFactory loggerFactory, Func<string, string?>? getConfigurationDiagnostic = null)
+        IReadOnlyDictionary<string, ICommand> configurationPages, ILoggerFactory loggerFactory,
+        Func<string, string?>? getConfigurationDiagnostic = null, IReadOnlyDictionary<string, string>? sourceDescriptions = null)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         ArgumentNullException.ThrowIfNull(setEnabled);
@@ -46,6 +48,7 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
         this._getConfigurationDiagnostic = getConfigurationDiagnostic;
         this._setEnabled = setEnabled;
         this._configurationPages = configurationPages;
+        this._sourceDescriptions = sourceDescriptions ?? new Dictionary<string, string>();
         this._logger = loggerFactory.CreateLogger<MediaSourcesPage>();
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols.sources";
         this.Name = Text("Title");
@@ -181,8 +184,9 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
         {
             var states = this._mediaService.Backends.Select(state => this._getConfigurationDiagnostic?.Invoke(state.Id) is { } diagnostic
                 ? state with { DiagnosticMessage = diagnostic, Status = MediaBackendLifecycleStatus.Faulted }
-                : state).ToImmutableArray();
-            var presentations = states.Select(MediaSourceStatusPresentation.FromState).ToArray();
+                : state).OrderBy(static state => MediaSourceStatusPresentation.SectionOrder(state.Id)).ToImmutableArray();
+            var presentations = states.Select(state => MediaSourceStatusPresentation.FromState(state,
+                this._sourceDescriptions.GetValueOrDefault(state.Id, Text("ManageProviders")))).ToArray();
             List<(MediaSourceStatusItem Item, MediaSourceStatusChanges Changes)> changedRows = [];
             bool itemsChanged;
             lock (this._stateLock)
@@ -296,9 +300,24 @@ internal sealed partial class MediaSourcesPage : Page, IListPage, IDisposable
     internal static string Text(string key) => Strings.ResourceManager.GetString($"MediaSources_{key}", Strings.Culture) ?? key;
 }
 
-internal sealed record MediaSourceStatusPresentation(string Title, string Subtitle, ImmutableArray<(string Label, string Value)> Facts)
+internal enum MediaSourceStatusTone
 {
-    public static MediaSourceStatusPresentation FromState(MediaBackendState state)
+    Disabled,
+    Enabled,
+    Attention,
+}
+
+internal sealed record MediaSourceStatusPresentation(string Title, string Subtitle, string Status, MediaSourceStatusTone Tone,
+    string Section, string Guidance, bool CanRetry, ImmutableArray<(string Label, string Value)> Facts)
+{
+    public static int SectionOrder(string id) => id switch
+    {
+        "gsmtc.worker" => 0,
+        "gsmtc" or "dummy.worker" => 2,
+        _ => 1,
+    };
+
+    public static MediaSourceStatusPresentation FromState(MediaBackendState state, string description)
     {
         var enabled = MediaSourcesPage.Text(state.IsEnabled ? "Enabled" : "Disabled");
         var lifecycle = MediaSourcesPage.Text($"Lifecycle_{state.Status}");
@@ -311,10 +330,6 @@ internal sealed record MediaSourceStatusPresentation(string Title, string Subtit
         facts.Add((MediaSourcesPage.Text("Lifecycle"), lifecycle));
         facts.Add((MediaSourcesPage.Text("Connection"), connection));
         facts.Add((MediaSourcesPage.Text("AvailableSessions"), count));
-        if (state.ExclusiveGroup is not null)
-        {
-            facts.Add((MediaSourcesPage.Text("ExclusiveSelection"), MediaSourcesPage.Text("ExclusiveSelectionDescription")));
-        }
         if (!string.IsNullOrWhiteSpace(state.DiagnosticMessage))
         {
             facts.Add((MediaSourcesPage.Text("ProviderMessage"), state.DiagnosticMessage));
@@ -337,7 +352,49 @@ internal sealed record MediaSourceStatusPresentation(string Title, string Subtit
             facts.Add((profile.DisplayName, value));
         }
 
-        return new(state.DisplayName, $"{enabled} | {lifecycle} | {connection} | {sessions}", facts.ToImmutable());
+        var status = state switch
+        {
+            { Status: MediaBackendLifecycleStatus.Faulted } => MediaSourcesPage.Text("NeedsAttention"),
+            { Status: MediaBackendLifecycleStatus.Stopping } => MediaSourcesPage.Text("Lifecycle_Stopping"),
+            { IsEnabled: false } => MediaSourcesPage.Text("Off"),
+            { Status: MediaBackendLifecycleStatus.Starting } => MediaSourcesPage.Text("Lifecycle_Starting"),
+            { Connection.Status: MediaConnectionStatus.Connecting } => MediaSourcesPage.Text("Connection_Connecting"),
+            { Id: "itunes", Connection.Status: MediaConnectionStatus.Disconnected } => MediaSourcesPage.Text("WaitingForITunes"),
+            { Connection.Status: MediaConnectionStatus.Disconnected } => MediaSourcesPage.Text("NotConnected"),
+            { AvailableSessionCount: > 0 } => sessions,
+            _ => MediaSourcesPage.Text("WaitingForPlayback"),
+        };
+        var section = MediaSourcesPage.Text(SectionOrder(state.Id) switch
+        {
+            0 => "Recommended",
+            2 => "Troubleshooting",
+            _ => "OptionalPlayers",
+        });
+        var guidance = MediaSourcesPage.Text(state.Id switch
+        {
+            "gsmtc.worker" => "WindowsGuidance",
+            "gsmtc" => "CompatibilityGuidance",
+            "itunes" => "ITunesGuidance",
+            "vlc" => "VlcGuidance",
+            "dummy.worker" => "DummyGuidance",
+            _ => "ManageProviders",
+        });
+        var canRetry = state.IsEnabled && state.Status == MediaBackendLifecycleStatus.Faulted;
+        if (state.Status == MediaBackendLifecycleStatus.Faulted)
+        {
+            guidance = $"{guidance}\n\n{MediaSourcesPage.Text(canRetry ? "RetryGuidance" : "EnableGuidance")}";
+        }
+
+        var tone = state switch
+        {
+            { Status: MediaBackendLifecycleStatus.Faulted } => MediaSourceStatusTone.Attention,
+            { IsEnabled: false } => MediaSourceStatusTone.Disabled,
+            { Status: MediaBackendLifecycleStatus.Ready, Id: not "itunes", Connection.Status: MediaConnectionStatus.Disconnected }
+                => MediaSourceStatusTone.Attention,
+            _ => MediaSourceStatusTone.Enabled,
+        };
+
+        return new(state.DisplayName, description, status, tone, section, guidance, canRetry, facts.ToImmutable());
     }
 }
 
@@ -349,32 +406,44 @@ internal enum MediaSourceStatusChanges
     Subtitle = 2,
     Details = 4,
     Enablement = 8,
+    Tags = 16,
+    Actions = 32,
 }
 
 internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
 {
-    private sealed record State(MediaSourceStatusPresentation Presentation, IDetails Details, bool Enabled);
+    private sealed record State(MediaSourceStatusPresentation Presentation, IDetails Details, ITag[] Tags, bool Enabled);
     private State _state;
     private readonly MediaSourceToggleCommand _toggle;
+    private readonly MediaSourceRetryCommand _retry;
+    private readonly ICommand? _configurationPage;
 
     public MediaSourceStatusItem(MediaBackendState backend, MediaSourceStatusPresentation presentation,
         Action<string, bool> setEnabled, Action refreshInactiveState, ICommand? configurationPage, IIconInfo? icon, ILogger logger)
     {
-        this._state = new(presentation, CreateDetails(presentation), backend.IsEnabled);
         this._toggle = new MediaSourceToggleCommand(backend.Id, backend.IsEnabled, setEnabled, refreshInactiveState, logger);
+        this._retry = new MediaSourceRetryCommand(backend.Id, setEnabled, refreshInactiveState, this.CanRetry, logger);
+        this._configurationPage = configurationPage;
+        this._state = new(presentation, this.CreateDetails(presentation),
+            [CreateStatusTag(presentation, backend.IsEnabled)], backend.IsEnabled);
         this.Command = configurationPage ?? this._toggle;
-        this.Icon = icon;
-        this.MoreCommands = configurationPage is null
-            ? [new CommandContextItem(this._toggle)]
-            : [new CommandContextItem(this._toggle), new CommandContextItem(configurationPage)];
+        this.Icon = backend.Id switch
+        {
+            "gsmtc" or "gsmtc.worker" => Icons.WindowsMediaSource,
+            "itunes" => Icons.ITunesSource,
+            "vlc" => Icons.VlcSource,
+            "dummy.worker" => Icons.ReportProblem,
+            _ => icon,
+        };
+        this.UpdateActions();
     }
 
     // CommandItem reads Title before the derived constructor initializes the state.
     public override string Title => Volatile.Read(ref this._state)?.Presentation.Title ?? string.Empty;
     public override string Subtitle => Volatile.Read(ref this._state).Presentation.Subtitle;
     public IDetails? Details => Volatile.Read(ref this._state).Details;
-    public ITag[] Tags => [];
-    public string Section => string.Empty;
+    public ITag[] Tags => Volatile.Read(ref this._state).Tags;
+    public string Section => Volatile.Read(ref this._state).Presentation.Section;
     public string TextToSuggest => string.Empty;
 
     public MediaSourceStatusChanges Apply(MediaSourceStatusPresentation presentation, bool enabled)
@@ -391,7 +460,20 @@ internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
             changes |= MediaSourceStatusChanges.Subtitle;
         }
 
+        if (presentation.Status != previous.Presentation.Status || presentation.Tone != previous.Presentation.Tone ||
+            previous.Enabled != enabled)
+        {
+            changes |= MediaSourceStatusChanges.Tags;
+        }
+
+        if (presentation.CanRetry != previous.Presentation.CanRetry)
+        {
+            changes |= MediaSourceStatusChanges.Actions;
+        }
+
         var detailsChanged = changes.HasFlag(MediaSourceStatusChanges.Title) ||
+            changes.HasFlag(MediaSourceStatusChanges.Subtitle) || changes.HasFlag(MediaSourceStatusChanges.Actions) ||
+            presentation.Guidance != previous.Presentation.Guidance ||
             !presentation.Facts.AsSpan().SequenceEqual(previous.Presentation.Facts.AsSpan());
         if (detailsChanged)
         {
@@ -405,7 +487,9 @@ internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
 
         if (changes != MediaSourceStatusChanges.None)
         {
-            Volatile.Write(ref this._state, new(presentation, detailsChanged ? CreateDetails(presentation) : previous.Details, enabled));
+            Volatile.Write(ref this._state, new(presentation,
+                detailsChanged ? this.CreateDetails(presentation) : previous.Details,
+                changes.HasFlag(MediaSourceStatusChanges.Tags) ? [CreateStatusTag(presentation, enabled)] : previous.Tags, enabled));
         }
 
         return changes;
@@ -423,6 +507,16 @@ internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
             this.OnPropertyChanged(nameof(this.Title));
         }
 
+        if (changes.HasFlag(MediaSourceStatusChanges.Actions))
+        {
+            this.UpdateActions();
+        }
+
+        if (changes.HasFlag(MediaSourceStatusChanges.Tags))
+        {
+            this.OnPropertyChanged(nameof(this.Tags));
+        }
+
         if (changes.HasFlag(MediaSourceStatusChanges.Subtitle))
         {
             this.OnPropertyChanged(nameof(this.Subtitle));
@@ -434,15 +528,107 @@ internal sealed partial class MediaSourceStatusItem : CommandItem, IListItem
         }
     }
 
-    private static Details CreateDetails(MediaSourceStatusPresentation presentation) => new()
+    private bool CanRetry() => Volatile.Read(ref this._state).Presentation.CanRetry;
+
+    private static Tag CreateStatusTag(MediaSourceStatusPresentation presentation, bool enabled) => new(presentation.Status)
+    {
+        Foreground = ColorHelpers.FromRgb(255, 255, 255),
+        Background = presentation.Tone switch
+        {
+            MediaSourceStatusTone.Enabled => ColorHelpers.FromRgb(16, 124, 16),
+            MediaSourceStatusTone.Attention => ColorHelpers.FromRgb(138, 87, 0),
+            _ => ColorHelpers.FromRgb(96, 94, 92),
+        },
+        ToolTip = $"{MediaSourcesPage.Text(enabled ? "Enabled" : "Disabled")}: {presentation.Status}",
+    };
+
+    // Command Palette inserts the primary command before MoreCommands.
+    private void UpdateActions() => this.MoreCommands =
+        [.. this.GetCommands(Volatile.Read(ref this._state).Presentation.CanRetry).Skip(1)
+            .Select(static command => new CommandContextItem(command))];
+
+    private ICommand[] GetCommands(bool canRetry)
+    {
+        var commands = new List<ICommand> { this._configurationPage ?? this._toggle };
+        if (this._configurationPage is not null)
+        {
+            commands.Add(this._toggle);
+        }
+
+        if (canRetry)
+        {
+            commands.Add(this._retry);
+        }
+
+        return [.. commands];
+    }
+
+    private Details CreateDetails(MediaSourceStatusPresentation presentation) => new()
     {
         Title = presentation.Title,
-        Metadata = [.. presentation.Facts.Select(static fact => new DetailsElement
-        {
-            Key = fact.Label,
-            Data = new DetailsLink { Text = fact.Value },
-        })],
+        Body = $"{presentation.Subtitle}\n\n{presentation.Guidance}",
+        Metadata =
+        [
+            new DetailsElement
+            {
+                Key = MediaSourcesPage.Text("Actions"),
+                Data = new DetailsCommands { Commands = this.GetCommands(presentation.CanRetry) },
+            },
+            .. presentation.Facts.Select(static fact => new DetailsElement
+            {
+                Key = fact.Label,
+                Data = new DetailsLink { Text = fact.Value },
+            }),
+        ],
     };
+}
+
+internal sealed partial class MediaSourceRetryCommand : InvokableCommand
+{
+    private static readonly Action<ILogger, Exception?> RetryFailed = LoggerMessage.Define(
+        LogLevel.Warning, new EventId(1, nameof(RetryFailed)), "Could not retry the media source.");
+    private readonly string _id;
+    private readonly Action<string, bool> _setEnabled;
+    private readonly Action _refreshInactiveState;
+    private readonly Func<bool> _canRetry;
+    private readonly ILogger _logger;
+
+    public MediaSourceRetryCommand(string id, Action<string, bool> setEnabled, Action refreshInactiveState,
+        Func<bool> canRetry, ILogger logger)
+    {
+        this._id = id;
+        this._setEnabled = setEnabled;
+        this._refreshInactiveState = refreshInactiveState;
+        this._canRetry = canRetry;
+        this._logger = logger;
+        this.Id = $"com.jpsoftworks.cmdpal.mediacontrols.sources.{id}.retry";
+        this.Name = MediaSourcesPage.Text("Retry");
+        this.Icon = new IconInfo("\uE72C");
+    }
+
+    public override ICommandResult Invoke()
+    {
+        try
+        {
+            this._refreshInactiveState();
+            if (this._canRetry())
+            {
+                this._setEnabled(this._id, true);
+                this._refreshInactiveState();
+            }
+
+            return CommandResult.KeepOpen();
+        }
+        catch (Exception ex)
+        {
+            RetryFailed(this._logger, ex);
+            return CommandResult.ShowToast(new ToastArgs
+            {
+                Message = MediaSourcesPage.Text("RetryFailed"),
+                Result = CommandResult.KeepOpen(),
+            });
+        }
+    }
 }
 
 internal sealed partial class MediaSourceToggleCommand : InvokableCommand
@@ -469,14 +655,34 @@ internal sealed partial class MediaSourceToggleCommand : InvokableCommand
     {
         Volatile.Write(ref this._enabled, enabled);
         this.Name = MediaSourcesPage.Text(enabled ? "Disable" : "Enable");
+        this.Icon = enabled ? Icons.DisableMediaSource : Icons.EnableMediaSource;
     }
 
-    public override ICommandResult Invoke()
+    public override ICommandResult Invoke() => this.ChangeEnablement(confirmedDisable: false);
+
+    private CommandResult ChangeEnablement(bool confirmedDisable)
     {
         try
         {
             this._refreshInactiveState();
-            var enabled = !Volatile.Read(ref this._enabled);
+            var wasEnabled = Volatile.Read(ref this._enabled);
+            if (confirmedDisable && !wasEnabled)
+            {
+                return CommandResult.KeepOpen();
+            }
+
+            var enabled = !wasEnabled;
+            if (!enabled && !confirmedDisable && this._id is "gsmtc" or "gsmtc.worker")
+            {
+                return CommandResult.Confirm(new ConfirmationArgs
+                {
+                    Title = MediaSourcesPage.Text("DisableWindowsTitle"),
+                    Description = MediaSourcesPage.Text("DisableWindowsDescription"),
+                    PrimaryCommand = new ConfirmedDisableCommand(this),
+                    IsPrimaryCommandCritical = true,
+                });
+            }
+
             this._setEnabled(this._id, enabled);
             this._refreshInactiveState();
             return CommandResult.KeepOpen();
@@ -490,5 +696,20 @@ internal sealed partial class MediaSourceToggleCommand : InvokableCommand
                 Result = CommandResult.KeepOpen(),
             });
         }
+    }
+
+    private sealed partial class ConfirmedDisableCommand : InvokableCommand
+    {
+        private readonly MediaSourceToggleCommand _toggle;
+
+        public ConfirmedDisableCommand(MediaSourceToggleCommand toggle)
+        {
+            this._toggle = toggle;
+            this.Id = $"{toggle.Id}.confirm-disable";
+            this.Name = MediaSourcesPage.Text("DisableWindowsAction");
+            this.Icon = Icons.DisableMediaSource;
+        }
+
+        public override ICommandResult Invoke() => this._toggle.ChangeEnablement(confirmedDisable: true);
     }
 }

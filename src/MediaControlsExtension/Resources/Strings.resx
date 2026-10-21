@@ -339,6 +339,15 @@
   <data name="EmptyContent_Subtitle" xml:space="preserve">
     <value>No media sources are currently available. Please ensure that you have media applications running that support media controls.</value>
   </data>
+  <data name="WindowsMediaRecovery_Title" xml:space="preserve">
+    <value>Windows media is turned off</value>
+  </data>
+  <data name="WindowsMediaRecovery_Description" xml:space="preserve">
+    <value>Enable the recommended Windows media source to discover Apple Music, Spotify, and browser playback, or open Media sources to choose another source.</value>
+  </data>
+  <data name="WindowsMediaRecovery_Enable" xml:space="preserve">
+    <value>Enable Windows media</value>
+  </data>
   <data name="NowPlaying_NothingPlaying" xml:space="preserve">
     <value>Nothing is playing right now</value>
   </data>
@@ -648,7 +657,7 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <value>Configure media providers from the Media sources page in Media Controls. Open the Media Controls command menu and choose Media sources.</value>
   </data>
   <data name="MediaSources_ManageProviders" xml:space="preserve">
-    <value>Select a media source to configure it, or use its command menu to enable or disable it.</value>
+    <value>Choose a source to see setup guidance and actions. Enable only the sources you use.</value>
   </data>
   <data name="MediaSources_Configure" xml:space="preserve">
     <value>Configure</value>
@@ -658,6 +667,15 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="MediaSources_Disable" xml:space="preserve">
     <value>Disable</value>
+  </data>
+  <data name="MediaSources_DisableWindowsTitle" xml:space="preserve">
+    <value>Turn off Windows media?</value>
+  </data>
+  <data name="MediaSources_DisableWindowsDescription" xml:space="preserve">
+    <value>Apple Music, Spotify, browser playback, and other Windows media sessions will disappear from Media Controls. Enabled VLC and iTunes sources will remain available. To switch modes, cancel and enable the other Windows media source instead.</value>
+  </data>
+  <data name="MediaSources_DisableWindowsAction" xml:space="preserve">
+    <value>Turn off Windows media</value>
   </data>
   <data name="MediaSources_SaveFailed" xml:space="preserve">
     <value>Could not save media source settings. Check access to the settings file and try again.</value>
@@ -675,10 +693,10 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <value>VLC connection settings changed during the test. Test the saved connection again.</value>
   </data>
   <data name="Settings_Backend_Gsmtc_Title" xml:space="preserve">
-    <value>Windows media sessions (internal)</value>
+    <value>Windows media (compatibility)</value>
   </data>
   <data name="Settings_Backend_Gsmtc_Description" xml:space="preserve">
-    <value>Run Windows media sessions inside the extension for troubleshooting. Native Windows media failures can affect the extension.</value>
+    <value>Alternative Windows media source for troubleshooting.</value>
   </data>
   <data name="MediaSources_Title" xml:space="preserve">
     <value>Media sources</value>
@@ -756,19 +774,19 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <value>VLC media player</value>
   </data>
   <data name="Settings_Backend_Vlc_Description" xml:space="preserve">
-    <value>Control one local or remote VLC 3 player through its Web interface.</value>
+    <value>Connect to a local or remote VLC 3 player through its Web interface.</value>
   </data>
   <data name="Settings_Backend_ITunes_Title" xml:space="preserve">
     <value>iTunes</value>
   </data>
   <data name="Settings_Backend_ITunes_Description" xml:space="preserve">
-    <value>Controls desktop iTunes through its COM interface.</value>
+    <value>Control desktop iTunes. Apple Music uses the Windows media source.</value>
   </data>
   <data name="Settings_Group_Vlc" xml:space="preserve">
     <value>VLC connection</value>
   </data>
   <data name="Settings_Vlc_Help" xml:space="preserve">
-    <value>In VLC, enable the Web interface and set a Lua HTTP password, then restart VLC. For another computer, allow the interface and firewall to accept connections from this computer. Save its server URL and password below, then use Test saved connection from this page's command menu. Enable or disable VLC from Media sources. HTTP connections are intended for trusted networks; use HTTPS when your server provides it.</value>
+    <value>In VLC, enable the Web interface and set a Lua HTTP password, then restart VLC. For another computer, allow the interface and firewall to accept connections from this computer. Enter the server URL and password below. Choose Save and enable to start using VLC, or Save to keep its current enabled or disabled state. Use Test saved connection from this page&apos;s command menu to check the saved settings. HTTP connections are intended for trusted networks; use HTTPS when your server provides it.</value>
     <comment>Use the translations of MediaSources_TestConnection and MediaSources_Title for the command and page names.</comment>
   </data>
   <data name="Settings_Vlc_Endpoint_Title" xml:space="preserve">
@@ -831,10 +849,10 @@ Diagnostic logs can contain media titles, player names, and technical error deta
     <comment>Answer to Treat this session as local: always use remote playback behavior.</comment>
   </data>
   <data name="Settings_Backend_GsmtcWorker_Title" xml:space="preserve">
-    <value>Windows media sessions (worker)</value>
+    <value>Windows media</value>
   </data>
   <data name="Settings_Backend_GsmtcWorker_Description" xml:space="preserve">
-    <value>Default Windows media provider. Run sessions in a separate process to isolate native Windows media failures. Selecting this provider replaces the internal provider.</value>
+    <value>Discover music and video from apps such as Apple Music, Spotify, and browsers.</value>
   </data>
   <data name="Settings_Backend_UnreadableSettings" xml:space="preserve">
     <value>Could not read saved media sources. They will be restored automatically when the settings file is readable. Choose a source to retry now.</value>
@@ -844,12 +862,6 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="Settings_Backend_ConflictingSelection" xml:space="preserve">
     <value>The saved selection for this group is invalid or conflicting. Choose one provider to repair it.</value>
-  </data>
-  <data name="MediaSources_ExclusiveSelection" xml:space="preserve">
-    <value>Provider selection</value>
-  </data>
-  <data name="MediaSources_ExclusiveSelectionDescription" xml:space="preserve">
-    <value>Enabling this provider disables the other provider in its group. Switching waits for the previous provider to stop.</value>
   </data>
   <data name="Settings_Backend_Dummy_Title" xml:space="preserve">
     <value>Dummy media</value>
@@ -864,5 +876,71 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="Toast_PlaybackAbandoned" xml:space="preserve">
     <value>The playback request was canceled because an earlier change could not be confirmed.</value>
+  </data>
+  <data name="MediaSources_NeedsAttention" xml:space="preserve">
+    <value>Needs attention</value>
+  </data>
+  <data name="MediaSources_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="MediaSources_WaitingForITunes" xml:space="preserve">
+    <value>Waiting for iTunes</value>
+  </data>
+  <data name="MediaSources_NotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="MediaSources_WaitingForPlayback" xml:space="preserve">
+    <value>Waiting for playback</value>
+  </data>
+  <data name="MediaSources_Recommended" xml:space="preserve">
+    <value>Recommended</value>
+  </data>
+  <data name="MediaSources_OptionalPlayers" xml:space="preserve">
+    <value>Optional players</value>
+  </data>
+  <data name="MediaSources_Troubleshooting" xml:space="preserve">
+    <value>Troubleshooting</value>
+  </data>
+  <data name="MediaSources_WindowsGuidance" xml:space="preserve">
+    <value>Enabled by default. Start playback in an app that supports Windows media controls; its player will appear in Media Controls. Apple Music uses this source and needs no iTunes setup. To try compatibility mode, enable Windows media (compatibility) under Troubleshooting.</value>
+  </data>
+  <data name="MediaSources_CompatibilityGuidance" xml:space="preserve">
+    <value>Try this mode if Windows media cannot find or control your player. To switch back, enable Windows media under Recommended. Switching modes turns off the previous mode automatically.</value>
+  </data>
+  <data name="MediaSources_ITunesGuidance" xml:space="preserve">
+    <value>Optional and off by default. Open desktop iTunes, then choose Enable. The Apple Music app uses Windows media and does not need this source. Disable this source if you use a third-party iTunes integration with Windows media controls.</value>
+  </data>
+  <data name="MediaSources_VlcGuidance" xml:space="preserve">
+    <value>Choose Configure to enter the server URL and password for VLC&apos;s Web interface. Save and enable starts the source; Save keeps your current enabled or disabled choice. Use Test saved connection from the configuration page&apos;s command menu to check setup.</value>
+  </data>
+  <data name="MediaSources_DummyGuidance" xml:space="preserve">
+    <value>A development source with simulated tracks and artwork. Enable it to try the interface without playing audio.</value>
+  </data>
+  <data name="MediaSources_RetryGuidance" xml:space="preserve">
+    <value>Check the messages below, resolve the problem, then choose Retry. Your enabled choice is preserved.</value>
+  </data>
+  <data name="MediaSources_EnableGuidance" xml:space="preserve">
+    <value>Check the messages below, then choose Enable to save your choice and try this source.</value>
+  </data>
+  <data name="MediaSources_Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="MediaSources_Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="MediaSources_RetryFailed" xml:space="preserve">
+    <value>Could not retry this media source. Check its details and try again.</value>
+  </data>
+  <data name="MediaSources_SaveAndEnable" xml:space="preserve">
+    <value>Save and enable</value>
+  </data>
+  <data name="MediaSources_Saved" xml:space="preserve">
+    <value>Media source settings saved.</value>
+  </data>
+  <data name="MediaSources_SavedAndEnabled" xml:space="preserve">
+    <value>Settings saved and media source enabled. Check Media sources for connection status.</value>
+  </data>
+  <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
+    <value>Settings were saved, but the media source could not be enabled. Return to Media sources and try Enable again.</value>
   </data>
 </root>

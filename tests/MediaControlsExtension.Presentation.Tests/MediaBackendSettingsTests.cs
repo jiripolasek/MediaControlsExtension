@@ -334,7 +334,9 @@ public sealed class MediaBackendSettingsTests
         var form = (IFormContent)page.GetContent().Single();
         Assert.DoesNotContain("existing-secret", form.TemplateJson);
         var input = new JsonObject { [VlcPort] = "8090", [VlcPassword] = "new-secret", [VlcEnabled] = "true" };
-        Assert.AreEqual(CommandResultKind.KeepOpen, form.SubmitForm(input.ToJsonString(), "{}").Kind);
+        var result = form.SubmitForm(input.ToJsonString(), "{}");
+        Assert.AreEqual(CommandResultKind.ShowToast, result.Kind);
+        Assert.AreEqual(CommandResultKind.KeepOpen, Assert.IsInstanceOfType<ToastArgs>(result.Args).Result!.Kind);
         Assert.AreEqual("8090", appliedPort);
         Assert.AreEqual("new-secret", savedPassword);
         Assert.AreEqual("gsmtc", backends.EnabledIds.Single());
