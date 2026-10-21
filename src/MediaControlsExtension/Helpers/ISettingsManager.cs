@@ -21,6 +21,7 @@ internal interface ISettingsManager
     bool EnableVolumeControls { get; }
     bool ShowSkipCommands { get; }
     bool ShowSkipCommandsInDockBand { get; }
+    bool ShowPlaybackLabelsInDockBand { get; }
     bool ShowVolumeAdjustmentCommandsInDockBand { get; }
     bool ShowArtistInDockTitle { get; }
     bool AllowWiderDockTitle { get; }

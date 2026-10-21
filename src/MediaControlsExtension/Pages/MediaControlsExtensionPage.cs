@@ -109,9 +109,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 dockHeadCommandTargets)
             : null;
 
-        // Do not reuse the named track commands from the now-playing item here.
-        // ListItem.Title falls back to Command.Name when set to an empty string,
-        // which would make the skip-track labels reappear in the dock.
+        // Keep command names empty so hidden dock labels cannot fall back to them.
         this._nextTrackCurrentSessionItem = new(
             new CurrentSessionCommand(
                 this._mediaService,
@@ -145,15 +143,7 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
                 VolumeListItemPresentation.Page,
                 this._loggerFactory);
 
-        if (this._isBandPage)
-        {
-            this._playPauseCurrentSessionItem.Title = string.Empty;
-            this._playPauseCurrentSessionItem.Subtitle = string.Empty;
-            this._nextTrackCurrentSessionItem.Title = string.Empty;
-            this._nextTrackCurrentSessionItem.Subtitle = string.Empty;
-            this._prevTrackCurrentSessionItem.Title = string.Empty;
-            this._prevTrackCurrentSessionItem.Subtitle = string.Empty;
-        }
+        this.UpdateTrackNavigationLabels();
 
         if (this._windowsMediaRecoveryItem is not null)
         {
@@ -305,7 +295,21 @@ internal sealed partial class MediaControlsExtensionPage : ListPage, IDisposable
     private void SettingsOnSettingsChanged(object sender, Settings args)
     {
         this.ShowDetails = !this._isBandPage && this._settingsManager.ShowDetails;
+        this.UpdateTrackNavigationLabels();
         this.UpdateCurrentMediaItems();
+    }
+
+    private void UpdateTrackNavigationLabels()
+    {
+        var showLabels = !this._isBandPage || this._settingsManager.ShowPlaybackLabelsInDockBand;
+        var nextTitle = this._isBandPage
+            ? Strings.ResourceManager.GetString("Command_NextTrack_Dock", Strings.Culture)!
+            : Strings.Command_NextTrack;
+        var previousTitle = this._isBandPage
+            ? Strings.ResourceManager.GetString("Command_PreviousTrack_Dock", Strings.Culture)!
+            : Strings.Command_PreviousTrack;
+        this._nextTrackCurrentSessionItem.Title = showLabels ? nextTitle : string.Empty;
+        this._prevTrackCurrentSessionItem.Title = showLabels ? previousTitle : string.Empty;
     }
 
     private void UpdateTrackNavigationIcons()
