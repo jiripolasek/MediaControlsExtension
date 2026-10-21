@@ -69,6 +69,8 @@ namespace JPSoftworks.MediaControlsExtension.Presentation.Tests
         public bool ShowSkipCommands => false;
         public bool ShowSkipCommandsInDockBand => false;
         public bool ShowVolumeAdjustmentCommandsInDockBand => false;
+        public bool ShowArtistInDockTitle => false;
+        public bool AllowWiderDockTitle => false;
         public DockCurrentMediaActionMode DockCurrentMediaAction => DockCurrentMediaActionMode.Default;
         public string CommandPaletteIconThemeId => "default";
         public string DockIconThemeId => "default";

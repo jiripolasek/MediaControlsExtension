@@ -542,6 +542,18 @@
     <value>Choose icons for the Command Palette Dock.</value>
     <comment>Command Palette Dock is a product UI surface, not a harbor or ship dock.</comment>
   </data>
+  <data name="Settings_ShowArtistInDockTitle_Title" xml:space="preserve">
+    <value>Show artist in dock title</value>
+  </data>
+  <data name="Settings_ShowArtistInDockTitle_Subtitle" xml:space="preserve">
+    <value>Include the artist alongside the track title in all Dock sizes, including compact mode.</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Title" xml:space="preserve">
+    <value>Allow wider dock title</value>
+  </data>
+  <data name="Settings_AllowWiderDockTitle_Subtitle" xml:space="preserve">
+    <value>Give the current media label more horizontal space. Requires a Command Palette version that supports dock width hints.</value>
+  </data>
   <data name="Settings_DockCurrentMediaAction_Title" xml:space="preserve">
     <value>Current media item action</value>
     <comment>Current media item means the now-playing entry displayed in the Command Palette Dock.</comment>
