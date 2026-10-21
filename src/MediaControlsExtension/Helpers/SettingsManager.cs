@@ -129,6 +129,20 @@ internal sealed class SettingsManager : ISettingsManager
         Strings.Settings_ShowVolumeAdjustmentCommandsInDock_Subtitle!,
         false);
 
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Persisted keys are independent of property names")]
+    private readonly ToggleSetting _showArtistInDockTitle = new(
+        Namespaced("ShowArtistInDockTitle"),
+        Resource("Settings_ShowArtistInDockTitle_Title"),
+        Resource("Settings_ShowArtistInDockTitle_Subtitle"),
+        false);
+
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Persisted keys are independent of property names")]
+    private readonly ToggleSetting _allowWiderDockTitle = new(
+        Namespaced("AllowWiderDockTitle"),
+        Resource("Settings_AllowWiderDockTitle_Title"),
+        Resource("Settings_AllowWiderDockTitle_Subtitle"),
+        false);
+
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ChoiceSetSetting _dockCurrentMediaAction = new(
         Namespaced("DockCurrentMediaAction"),
@@ -183,6 +197,10 @@ internal sealed class SettingsManager : ISettingsManager
     public bool ShowVolumeAdjustmentCommandsInDockBand =>
         this._showVolumeAdjustmentCommandsInDockBand.Value;
 
+    public bool ShowArtistInDockTitle => this._showArtistInDockTitle.Value;
+
+    public bool AllowWiderDockTitle => this._allowWiderDockTitle.Value;
+
     public DockCurrentMediaActionMode DockCurrentMediaAction
     {
         get
@@ -234,6 +252,8 @@ internal sealed class SettingsManager : ISettingsManager
             Namespaced("Layout.Dock"),
             Strings.Settings_Group_Dock!));
         this.Settings.Add(this._dockIconTheme);
+        this.Settings.Add(this._showArtistInDockTitle);
+        this.Settings.Add(this._allowWiderDockTitle);
         this.Settings.Add(this._dockCurrentMediaAction);
         this.Settings.Add(this._showSkipCommandsInDockBand);
         this.Settings.Add(this._showVolumeAdjustmentCommandsInDockBand);

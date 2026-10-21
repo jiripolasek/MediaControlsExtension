@@ -8,6 +8,11 @@ namespace JPSoftworks.MediaControlsExtension.Pages;
 
 internal sealed partial class DockHeadItem : ListItemBase, IDisposable
 {
+    // Publish newer dock hints through the existing SDK's extended attributes.
+    private const string DockMaxLabelWidthAttribute = "Microsoft.CommandPalette.Dock.MaxLabelWidth";
+    private const string DockLabelWidthPropertyName = "DockLabelWidth";
+    private const double ExpandedDockLabelWidth = 300;
+
     private readonly IMediaService _mediaService;
     private readonly MediaSessionViewModelCache _viewModels;
     private readonly SettingsManager _settingsManager;
@@ -168,6 +173,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                 return;
             }
 
+            this.UpdateLabelWidth();
             var primaryCommand = this.ResolvePrimaryCommand(viewModel);
             this.Command = primaryCommand;
             if (viewModel is not { IsAvailable: true })
@@ -184,7 +190,9 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             else
             {
                 var properties = viewModel.MediaProperties;
-                this.Title = properties.Title;
+                this.Title = this._settingsManager.ShowArtistInDockTitle
+                    ? StringHelper.JoinNonEmpty(" - ", (string?[])[properties.Title, properties.Artist])
+                    : properties.Title;
                 this.Subtitle = StringHelper.JoinNonEmpty(
                     " • ",
                     (string?[])
@@ -214,6 +222,27 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
                     : this._mediaContextCommandsWithSwitchToApplication;
             }
         }
+    }
+
+    private void UpdateLabelWidth()
+    {
+        var properties = this.GetProperties();
+        if (this._settingsManager.AllowWiderDockTitle)
+        {
+            if (properties.TryGetValue(DockMaxLabelWidthAttribute, out var currentWidth) &&
+                Equals(currentWidth, ExpandedDockLabelWidth))
+            {
+                return;
+            }
+
+            properties[DockMaxLabelWidthAttribute] = ExpandedDockLabelWidth;
+        }
+        else if (!properties.Remove(DockMaxLabelWidthAttribute))
+        {
+            return;
+        }
+
+        this.OnPropertyChanged(DockLabelWidthPropertyName);
     }
 
     private ICommand ResolvePrimaryCommand(MediaSessionViewModel? viewModel)
