@@ -4,10 +4,16 @@
 //
 // ------------------------------------------------------------
 
+using System.Globalization;
+
 namespace JPSoftworks.MediaControlsExtension.Pages;
 
 internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
 {
+    private const string DockTitleWidthAttribute = "Microsoft.CommandPalette.Dock.TitleWidth";
+    private const string DockLabelWidthPropertyName = "DockLabelWidth";
+    private const double MaxPlaybackLabelLengthRatio = 1.5;
+
     private readonly IMediaService _mediaService;
     private readonly MediaSessionViewModelCache _viewModels;
 #if FF_ENABLE_FULL_METADATA_PAGE
@@ -43,6 +49,8 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
     internal CurrentSessionCommand NextTrackCommand => this._nextTrackCommand;
 
     internal CurrentSessionCommand PreviousTrackCommand => this._previousTrackCommand;
+
+    private bool ShowPlaybackLabel => !this._isBandPage || this._settingsManager.ShowPlaybackLabelsInDockBand;
 
     public override IDetails? Details
     {
@@ -148,7 +156,7 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             .Skip(1).SkipWhile(static item => item is Separator).ToArray();
         this._mediaContextCommandsWithoutActivation = this._mediaContextCommandsWithoutMetadataOrActivation;
 
-        this.Title = this._isBandPage ? string.Empty : Strings.Command_PlayPause!;
+        this.Title = this.ShowPlaybackLabel ? Strings.Command_PlayPause! : string.Empty;
         this.UpdateIcon(this._iconService.GetIcon(ThemedIcon.PlayPause, this._iconSurface));
 
         // Subscribe first, then seed by re-reading inside the lock: a handler that
@@ -233,13 +241,15 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 return;
             }
 
+            var showLabel = this.ShowPlaybackLabel;
+            this.UpdateLabelWidth(this._isBandPage && showLabel && viewModel is { IsAvailable: true });
             if (viewModel is not { IsAvailable: true })
             {
-                this.Title = this._isBandPage ? string.Empty : Strings.NowPlaying_NothingPlaying!;
+                this.Title = showLabel ? Strings.NowPlaying_NothingPlaying! : string.Empty;
                 this.Icon = this._iconService.GetIcon(ThemedIcon.NoMedia, this._iconSurface);
                 this.Subtitle = string.Empty;
 
-                this.Command = this._playPauseCommand = this._playPauseCommand.WithPresentation(null, showName: !this._isBandPage);
+                this.Command = this._playPauseCommand = this._playPauseCommand.WithPresentation(null, showName: showLabel);
 #if FF_ENABLE_FULL_METADATA_PAGE
                 this.UpdateMetadataPage(null);
 #endif
@@ -252,13 +262,11 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
                 this.UpdateNavigationCommandIcons();
                 this.Command = this._playPauseCommand = this._playPauseCommand.WithPresentation(
                     viewModel.Session,
-                    showName: !this._isBandPage);
+                    showName: showLabel);
                 var playbackAction = this._playPauseCommand.Presentation;
                 var properties = viewModel.MediaProperties;
 
-                this.Title = this._isBandPage
-                    ? string.Empty
-                    : playbackAction.CommandName;
+                this.Title = showLabel ? playbackAction.CommandName : string.Empty;
                 this.Subtitle = this._isBandPage
                     ? string.Empty
                     : StringHelper.JoinNonEmpty(
@@ -287,6 +295,49 @@ internal sealed partial class NowPlayingListItem : ListItemBase, IDisposable
             this.OnPropertyChanged(nameof(this.Details));
             this.DetailsChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    private void UpdateLabelWidth(bool stabilize)
+    {
+        var widthHint = stabilize ? GetPlaybackLabelWidthHint() : null;
+        var properties = this.GetProperties();
+        if (widthHint is null)
+        {
+            if (!properties.Remove(DockTitleWidthAttribute))
+            {
+                return;
+            }
+        }
+        else
+        {
+            if (properties.TryGetValue(DockTitleWidthAttribute, out var currentWidth) && Equals(currentWidth, widthHint))
+            {
+                return;
+            }
+
+            properties[DockTitleWidthAttribute] = widthHint;
+        }
+
+        this.OnPropertyChanged(DockLabelWidthPropertyName);
+    }
+
+    private static string? GetPlaybackLabelWidthHint()
+    {
+        var playLabel = Strings.Command_Play!;
+        var pauseLabel = Strings.Command_Pause!;
+        var stopLabel = Strings.Command_Stop!;
+        var playLength = new StringInfo(playLabel).LengthInTextElements;
+        var pauseLength = new StringInfo(pauseLabel).LengthInTextElements;
+        var stopLength = new StringInfo(stopLabel).LengthInTextElements;
+        var shortest = Math.Min(playLength, Math.Min(pauseLength, stopLength));
+        var longest = Math.Max(playLength, Math.Max(pauseLength, stopLength));
+        if (shortest == 0 || longest > shortest * MaxPlaybackLabelLengthRatio)
+        {
+            return null;
+        }
+
+        // Separate sample lines let the host measure the widest label in its own font.
+        return $"text:{playLabel}\n{pauseLabel}\n{stopLabel}";
     }
 
     private bool UpdateDetails(MediaSessionViewModel? viewModel)

@@ -223,6 +223,10 @@
   <data name="Command_NextTrack" xml:space="preserve">
     <value>Next Track</value>
   </data>
+  <data name="Command_NextTrack_Dock" xml:space="preserve">
+    <value>Next</value>
+    <comment>Short Dock button label for skipping to the next track.</comment>
+  </data>
   <data name="Command_PlayPause" xml:space="preserve">
     <value>Play / Pause</value>
   </data>
@@ -261,6 +265,10 @@
   </data>
   <data name="Command_PreviousTrack" xml:space="preserve">
     <value>Previous Track</value>
+  </data>
+  <data name="Command_PreviousTrack_Dock" xml:space="preserve">
+    <value>Previous</value>
+    <comment>Short Dock button label for returning to the previous track.</comment>
   </data>
   <data name="Command_ToggleRepeat" xml:space="preserve">
     <value>Toggle Repeat</value>
@@ -512,6 +520,12 @@
   </data>
   <data name="Settings_ShowSkipCommandsInDock_Subtitle" xml:space="preserve">
     <value>Display &#x201C;Next Track&#x201D; and &#x201C;Previous Track&#x201D; in the Dock.</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Title" xml:space="preserve">
+    <value>Show playback labels in Dock</value>
+  </data>
+  <data name="Settings_ShowPlaybackLabelsInDock_Subtitle" xml:space="preserve">
+    <value>Show labels for playback and track navigation buttons. Also enable labels for the Media Controls band in Command Palette's Dock settings.</value>
   </data>
   <data name="Settings_ShowVolumeAdjustmentCommandsInDock_Title" xml:space="preserve">
     <value>Show volume adjustment buttons</value>

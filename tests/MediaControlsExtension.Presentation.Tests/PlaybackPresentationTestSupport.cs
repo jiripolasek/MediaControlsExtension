@@ -68,6 +68,7 @@ namespace JPSoftworks.MediaControlsExtension.Presentation.Tests
         public bool EnableVolumeControls => false;
         public bool ShowSkipCommands => false;
         public bool ShowSkipCommandsInDockBand => false;
+        public bool ShowPlaybackLabelsInDockBand => false;
         public bool ShowVolumeAdjustmentCommandsInDockBand => false;
         public bool ShowArtistInDockTitle => false;
         public bool AllowWiderDockTitle => false;

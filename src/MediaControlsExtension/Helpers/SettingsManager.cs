@@ -122,6 +122,13 @@ internal sealed class SettingsManager : ISettingsManager
         Strings.Settings_ShowSkipCommandsInDock_Subtitle!,
         true);
 
+    [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Persisted keys are independent of property names")]
+    private readonly ToggleSetting _showPlaybackLabelsInDockBand = new(
+        Namespaced("ShowPlaybackLabelsInDockBand"),
+        Resource("Settings_ShowPlaybackLabelsInDock_Title"),
+        Resource("Settings_ShowPlaybackLabelsInDock_Subtitle"),
+        false);
+
     [SuppressMessage("Maintainability", "CA1507:Use nameof to express symbol names", Justification = "Settings key is independent to ensure its compatible")]
     private readonly ToggleSetting _showVolumeAdjustmentCommandsInDockBand = new(
         Namespaced("ShowVolumeAdjustmentCommandsInDockBand"),
@@ -194,6 +201,8 @@ internal sealed class SettingsManager : ISettingsManager
 
     public bool ShowSkipCommandsInDockBand => _showSkipCommandsInDockBand.Value;
 
+    public bool ShowPlaybackLabelsInDockBand => this._showPlaybackLabelsInDockBand.Value;
+
     public bool ShowVolumeAdjustmentCommandsInDockBand =>
         this._showVolumeAdjustmentCommandsInDockBand.Value;
 
@@ -256,6 +265,7 @@ internal sealed class SettingsManager : ISettingsManager
         this.Settings.Add(this._allowWiderDockTitle);
         this.Settings.Add(this._dockCurrentMediaAction);
         this.Settings.Add(this._showSkipCommandsInDockBand);
+        this.Settings.Add(this._showPlaybackLabelsInDockBand);
         this.Settings.Add(this._showVolumeAdjustmentCommandsInDockBand);
         this.Settings.Add(new SettingsGroupHeader(
             Namespaced("Layout.CommandBehavior"),
