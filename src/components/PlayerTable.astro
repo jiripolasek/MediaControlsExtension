@@ -1,0 +1,70 @@
+---
+import { availabilityLabels, integrationLabels, playerFeatures, type PlayerGroup } from "../data/players";
+
+interface Props { group: PlayerGroup; }
+const { group } = Astro.props;
+
+function noteParts(value: string) {
+  const parts: { text: string; href?: string }[] = [];
+  let position = 0;
+  for (const match of value.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g)) {
+    parts.push({ text: value.slice(position, match.index) });
+    parts.push({ text: match[1], href: match[2] });
+    position = match.index! + match[0].length;
+  }
+  parts.push({ text: value.slice(position) });
+  return parts;
+}
+---
+
+<div class="player-table-scroll" role="region" aria-labelledby={`${group.id}-title`} tabindex="0">
+  <table class="player-table">
+    <caption class="sr-only">{group.title}: Windows media integration and usual feature availability.</caption>
+    <thead>
+      <tr><th scope="col">Player</th><th scope="col">Windows media</th>{playerFeatures.map((feature) => <th scope="col">{feature}</th>)}</tr>
+    </thead>
+    <tbody>
+      {group.players.map((player) => (
+        <tr>
+          <th scope="row">
+            {player.url ? <a class="player-name" href={player.url}>{player.name}</a> : <span class="player-name">{player.name}</span>}
+            {player.direct && <a class="player-direct-link" href={`#${player.direct}`} aria-label={`View the direct ${player.name} source`}>Direct source available</a>}
+            <details class="player-notes"><summary>Notes and setup</summary><p>{noteParts(player.notes).map((part) => part.href ? <a href={part.href}>{part.text}</a> : part.text)}</p></details>
+          </th>
+          <td><span class={`integration integration-${player.integration}`}>{integrationLabels[player.integration]}</span></td>
+          {player.features.map((availability) => <td><span class={`availability availability-${availability}`}>{availabilityLabels[availability]}</span></td>)}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .player-table-scroll { width: 100%; overflow-x: auto; border-block: 1px solid var(--line); scrollbar-color: var(--subtle) var(--panel); }
+  .player-table { width: 100%; min-width: 960px; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; line-height: 1.6; }
+  th, td { padding: 18px 12px; text-align: center; vertical-align: top; border-bottom: 1px solid var(--line); }
+  thead th { color: var(--subtle); font-weight: 500; background: var(--hover); padding-block: 19px; }
+  th:first-child { width: 27%; text-align: left; padding-left: 16px; }
+  th:nth-child(2) { width: 13%; }
+  tbody th { font-weight: 400; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  .player-name { display: block; color: var(--text-soft); font-size: 1rem; font-weight: 500; }
+  a.player-name:hover { color: var(--accent-text); }
+  .player-direct-link { display: inline-block; color: var(--accent-text); margin-top: 6px; font-size: 0.875rem; }
+  .player-direct-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .availability-usual { color: var(--success); }
+  .availability-varies { color: var(--warning); }
+  .availability-uncommon { color: var(--muted); }
+  .integration { color: var(--text-soft); }
+  .integration-plugin, .integration-conditional { color: var(--warning); }
+  .player-notes { margin-top: 8px; }
+  .player-notes summary { width: fit-content; color: var(--subtle); font-size: 0.875rem; }
+  .player-notes summary:hover { color: var(--text-soft); }
+  .player-notes p { margin-top: 12px; color: var(--subtle); font-size: 0.875rem; line-height: 1.7; font-weight: 400; }
+  .player-notes p a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+  @media (max-width: 760px) {
+    .player-table { min-width: 920px; }
+    th, td { padding-inline: 10px; }
+    th:first-child { padding-left: 12px; }
+  }
+</style>

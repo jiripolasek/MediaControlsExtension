@@ -1,0 +1,21 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import { Content as PrivacyPolicy } from "../content/privacy.md";
+import { withBase } from "../data/site";
+---
+
+<Layout title="Privacy policy - Media Controls" description="The shared privacy policy for Media Controls for Command Palette, its browser companions, and this website: data access, connections, storage, diagnostics, and your controls." path="privacy/">
+  <article id="top" class="document wrap prose">
+    <a href={withBase()} class="text-link"><Icon name="previous" size={16} /> Back to Media Controls</a>
+    <p class="eyebrow">PRIVACY POLICY</p>
+    <h1>Your media.<br /><em>Your computer.</em></h1>
+    <p class="document-intro">How the Command Palette extension, browser companions, and this website handle your information.</p>
+    <nav class="document-links" aria-label="Privacy topics">
+      <a href="#command-palette-extension">Command Palette extension <Icon name="down" size={16} /></a>
+      <a href="#browser-companions">Browser companions <Icon name="down" size={16} /></a>
+      <a href="#website">Website <Icon name="down" size={16} /></a>
+    </nav>
+    <PrivacyPolicy />
+  </article>
+</Layout>

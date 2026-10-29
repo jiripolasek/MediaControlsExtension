@@ -1,0 +1,37 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import BrowserIcon from "../components/BrowserIcon.astro";
+import { browsers, site, withBase } from "../data/site";
+---
+
+<Layout title="Browser companions - Media Controls" description="The browser companion for Media Controls on Windows. Setup, permissions, and desktop connection for Microsoft Edge, Google Chrome, and Mozilla Firefox." path="companions/">
+  <article id="top" class="document wrap">
+    <a href={withBase()} class="text-link"><Icon name="previous" size={16} /> Back to Media Controls</a>
+    <p class="eyebrow">THE BROWSER COMPANIONS</p>
+    <h1>Every tab.<br /><em>Within reach.</em></h1>
+    <p class="document-intro">The browser companion for Media Controls on Windows. Bring individual media tabs into Command Palette and the Dock, with playback controls in your browser's toolbar.</p>
+    <aside class="preview-notice"><span class="status-light"></span><div><strong>Currently in developer preview</strong><p>Chrome Web Store, Microsoft Edge Add-ons, and Firefox Add-ons listings are planned. Preview setup needs a Media Controls build that includes the Browser companion source. The current Store release may not include it.</p></div></aside>
+    <div class="document-columns"><section><h2>A little closer to your tabs.</h2><p>See individual media tabs with their titles, artwork, and playback controls. Open the exact tab you want, even when it's in another browser window.</p><p>Popup controls remain usable while the desktop connection is unavailable.</p></section><section><h2>Connected on your PC.</h2><p>The desktop bridge is included in compatible Media Controls builds and starts when the browser connects. No separate desktop helper download or account is needed.</p><p>Media details and current page URLs are shared with that local bridge. Artwork and favicon requests can contact image providers. <a class="text-link" href={withBase("privacy/")}>Read the privacy policy <Icon name="arrow" size={16} /></a></p></section></div>
+    <nav class="document-links" aria-label="Companion help">
+      <a href="#setup">Desktop setup <Icon name="down" size={16} /></a>
+      <a href={withBase("support/")}>Connection help and removal <Icon name="arrow" size={16} /></a>
+    </nav>
+    <section id="setup" class="setup-section">
+      <h2>Start with the desktop app.</h2>
+      <ol>
+        <li>Install <a href={site.powerToys}>PowerToys with Command Palette</a> and a <a href={site.releases}>Media Controls build</a> whose release notes include Browser companion. Older desktop releases may not contain the bridge.</li>
+        <li>Install the companion in every browser profile you use for media. See your browser's preview instructions below while store listings are pending.</li>
+        <li>Open <strong>Media Controls &gt; Media sources &gt; Browser companion &gt; Configure</strong> in Command Palette and choose <strong>Enable browser integration</strong>. Chrome and Edge preview builds need the extension IDs registered through <strong>Advanced &gt; Developer setup</strong>, as described below.</li>
+        <li>Reload the extension and existing media tabs. Check the popup for <strong>Desktop service connected</strong>, then start playing media with sound enabled.</li>
+      </ol>
+      <p>Keep <strong>Windows media</strong> enabled for automatic fallback. Setup runs under your Windows account and does not require administrator access.</p>
+    </section>
+    <nav class="browser-jump-links" aria-label="Choose browser">{browsers.map((browser) => <a href={`#${browser.id}`}><BrowserIcon name={browser.id} />{browser.name}<Icon name="down" size={16} /></a>)}</nav>
+    <section id="edge" class="setup-section"><p class="eyebrow">01 / MICROSOFT EDGE</p><h2>Set up Edge.</h2><p>Use Edge 119 or later. The Microsoft Edge Add-ons listing is pending.</p><details class="preview-install"><summary>Install the developer preview</summary><ol><li>From a <a href={site.repository}>companion-enabled source checkout</a>, open <code>edge://extensions</code>, turn on <strong>Developer mode</strong>, and choose <strong>Load unpacked</strong>. Select <code>src/BrowserCompanion/extension</code>, then copy its extension ID.</li><li>In Media Controls, open <strong>Media sources &gt; Browser companion &gt; Configure &gt; Advanced</strong>. Paste the ID into <strong>Developer setup</strong> and choose <strong>Save developer setup</strong>.</li><li>Reload the extension and your media tabs. Open the popup and look for <strong>Desktop service connected</strong>.</li></ol></details></section>
+    <section id="chrome" class="setup-section"><p class="eyebrow">02 / GOOGLE CHROME</p><h2>Set up Chrome.</h2><p>Use Chrome 119 or later. The Chrome Web Store listing is pending.</p><details class="preview-install"><summary>Install the developer preview</summary><p>Follow the <a href="#edge">Edge preview steps</a>, opening <code>chrome://extensions</code> instead. Use the extension ID shown by Chrome.</p><p>Using both browsers? Enter both extension IDs in Developer setup, separated by commas. Keep an unpacked extension's folder in place so its ID remains stable.</p></details></section>
+    <section id="firefox" class="setup-section"><p class="eyebrow">03 / MOZILLA FIREFOX</p><h2>Set up Firefox.</h2><p>Use Firefox 153 or later. A signed Firefox Add-ons release isn't available yet. Allow the requested site access and local data transfer so the companion can share media details with Media Controls.</p><details class="preview-install"><summary>Install the temporary developer preview</summary><p>From a companion-enabled source checkout, create the Firefox extension:</p><pre><code>.\eng\Build-BrowserExtension.ps1 -Browser Firefox -OutputDirectory artifacts\BrowserCompanion\firefox-extension</code></pre><ol><li>Open <code>about:debugging#/runtime/this-firefox</code> and choose <strong>Load Temporary Add-on</strong>.</li><li>Select <code>manifest.json</code> in the generated Firefox extension folder.</li><li>In Media Controls, open <strong>Media sources &gt; Browser companion &gt; Configure</strong> and choose <strong>Enable browser integration</strong>. No extension ID entry is needed for Firefox.</li><li>Reload existing media tabs. Temporary add-ons need to be loaded again after restarting Firefox.</li></ol></details></section>
+    <section class="setup-section"><h2>A few things to know.</h2><ul><li>Start playing something with sound to make an HTML media player appear. Once found, it stays available when paused or muted.</li><li>The popup can control tabs even when the desktop bridge is disconnected.</li><li>Private browsing and browser-internal pages aren't supported.</li><li>Available buttons and media details depend on the website.</li><li>To disconnect the desktop bridge, use <strong>Configure &gt; Advanced &gt; Remove browser integration</strong>. Remove the browser add-on separately.</li></ul><p><a href={withBase("privacy/")} class="text-link">Read the privacy details <Icon name="arrow" size={16} /></a></p></section>
+    <div class="document-end"><h2>Follow along.</h2><p>Preview builds, source, and release news live on GitHub.</p><a href={site.repository} class="button button-primary">Visit the project <Icon name="arrow" size={18} /></a></div>
+  </article>
+</Layout>

@@ -1,0 +1,174 @@
+---
+import Icon from "../components/Icon.astro";
+import ThemeControl from "../components/ThemeControl.astro";
+import ThemeScript from "../components/ThemeScript.astro";
+import { site, withBase } from "../data/site";
+import soraLatin from "@fontsource-variable/sora/files/sora-latin-wght-normal.woff2?url";
+import "@fontsource-variable/sora";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  path?: string;
+  home?: boolean;
+}
+
+const { title = "Media Controls - Your media, at your command", description = site.description, path = "", home = false } = Astro.props;
+const canonical = new URL(withBase(path), Astro.site);
+const socialImage = new URL(withBase("images/social.png"), Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#080e11" />
+    <meta name="color-scheme" content="light dark" />
+    <ThemeScript />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={withBase("logo.svg")} />
+    <link rel="preload" href={soraLatin} as="font" type="font/woff2" crossorigin="anonymous" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content="Media Controls for PowerToys Command Palette" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title}</title>
+  </head>
+  <body id="page-top">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href={withBase()} aria-label="Media Controls home">
+        <img src={withBase("logo.svg")} alt="" width="35" height="35" />
+        <span>Media Controls<span class="brand-byline">by Ji&#345;&#237; Pol&#225;&#353;ek</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation" data-scroll-nav={home ? "" : undefined}>
+        <a href={`${withBase()}#features`}>The extension</a>
+        <a href={`${withBase()}#companions`} aria-current={path === "companions/" ? "page" : undefined}>Companions</a>
+        <a href={withBase("players/")} aria-current={path === "players/" ? "page" : undefined}>Players</a>
+        <a class="nav-faq" href={`${withBase()}#questions`}>FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a class="header-download" href={`${withBase()}#download`}>Get Media Controls <Icon name="arrow" size={16} /></a>
+        <ThemeControl />
+      </div>
+    </header>
+    <main id="main" class:list={{ "inner-page": !home }}>
+      <slot />
+    </main>
+    <footer class="site-footer wrap">
+      <div class="footer-top">
+        <a class="brand" href={withBase()}><img src={withBase("logo.svg")} alt="" width="32" height="32" /><span>Media Controls</span></a>
+        <p>A little more control. A little less interruption.</p>
+        <a class="text-link" href="#page-top">Back to top <Icon name="arrow" size={16} /></a>
+      </div>
+      <div class="footer-bottom">
+        <p>Made by <a href={site.author}>Ji&#345;&#237; Pol&#225;&#353;ek</a> <span class="footer-dot">/</span> Free &amp; open source</p>
+        <nav aria-label="Footer navigation">
+          <a href={site.repository}>GitHub</a>
+          <a href={site.releases}>Releases</a>
+          <a href={withBase("players/")}>Supported players</a>
+          <a href={withBase("support/")}>Support</a>
+          <a href={withBase("privacy/")}>Privacy</a>
+          <a href={site.author}>jiripolasek.com <Icon name="arrow" size={13} /></a>
+        </nav>
+      </div>
+    </footer>
+    <script>
+      const header = document.querySelector<HTMLElement>(".site-header");
+      const navigation = document.querySelector<HTMLElement>(".main-nav");
+      if (header && navigation) {
+        const links = Array.from(navigation.querySelectorAll<HTMLAnchorElement>("a"));
+        const sections = navigation.hasAttribute("data-scroll-nav")
+          ? Array.from(document.querySelectorAll<HTMLElement>("main > section"))
+          : [];
+        let framePending = false;
+        let previousNavigationWidth = 0;
+
+        const updateHeader = () => {
+          header.classList.toggle("is-scrolled", window.scrollY > 2);
+          if (sections.length) {
+            const visibleTop = header.getBoundingClientRect().bottom;
+            let visibleSection: HTMLElement | undefined;
+            let largestOverlap = 0;
+            sections.forEach((section) => {
+              const bounds = section.getBoundingClientRect();
+              const overlap = Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, visibleTop);
+              if (overlap > largestOverlap) {
+                largestOverlap = overlap;
+                visibleSection = section;
+              }
+            });
+            const activeId = visibleSection?.id === "top" ? "features" : visibleSection?.id;
+            links.forEach((link) => {
+              if (activeId && link.hash === `#${activeId}`) {
+                link.setAttribute("aria-current", "location");
+              } else {
+                link.removeAttribute("aria-current");
+              }
+            });
+          }
+
+          const current = links.find((link) => link.hasAttribute("aria-current") && link.offsetWidth > 0);
+          if (current) {
+            const bounds = current.getBoundingClientRect();
+            const navBounds = navigation.getBoundingClientRect();
+            navigation.style.setProperty("--nav-pill-duration", previousNavigationWidth === navBounds.width ? "220ms" : "0ms");
+            previousNavigationWidth = navBounds.width;
+            navigation.style.setProperty("--nav-pill-x", `${bounds.left - navBounds.left - navigation.clientLeft}px`);
+            navigation.style.setProperty("--nav-pill-y", `${bounds.top - navBounds.top - navigation.clientTop}px`);
+            navigation.style.setProperty("--nav-pill-width", `${bounds.width}px`);
+            navigation.style.setProperty("--nav-pill-height", `${bounds.height}px`);
+            navigation.dataset.active = "";
+          } else {
+            delete navigation.dataset.active;
+          }
+        };
+
+        const scheduleHeaderUpdate = () => {
+          if (!framePending) {
+            framePending = true;
+            window.requestAnimationFrame(() => {
+              framePending = false;
+              updateHeader();
+            });
+          }
+        };
+
+        updateHeader();
+        window.addEventListener("scroll", scheduleHeaderUpdate, { passive: true });
+        window.addEventListener("resize", scheduleHeaderUpdate);
+        window.addEventListener("pageshow", scheduleHeaderUpdate);
+        document.fonts.ready.then(scheduleHeaderUpdate);
+        const resizeObserver = new ResizeObserver(scheduleHeaderUpdate);
+        resizeObserver.observe(navigation);
+        const main = document.querySelector("main");
+        if (main) resizeObserver.observe(main);
+      }
+
+      const revealElements = document.querySelectorAll<HTMLElement>("[data-reveal]");
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.08 });
+        revealElements.forEach((element) => {
+          if (element.getBoundingClientRect().top > window.innerHeight) {
+            element.classList.add("will-reveal");
+            observer.observe(element);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

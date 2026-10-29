@@ -1,0 +1,132 @@
+---
+import { Image, getImage } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import MicrosoftStoreIcon from "../components/MicrosoftStoreIcon.astro";
+import BrowserIcon from "../components/BrowserIcon.astro";
+import FeatureScreenshots from "../components/FeatureScreenshots.astro";
+import background from "../assets/media-controls-background.jpg";
+import desktop from "../assets/media-controls-desktop.png";
+import authorLogo from "../assets/jiri-polasek.png";
+import { browsers, site, withBase } from "../data/site";
+
+const heroBackground = await getImage({ src: background, width: 1920, format: "webp", quality: 85 });
+const authorMark = await getImage({ src: authorLogo, width: 152, format: "webp" });
+const features = [
+  { icon: "keyboard", title: "Keep your hands on the keyboard.", copy: "Play, pause, and skip tracks from Command Palette. Your next track is just a command away." },
+  { icon: "layers", title: "All your players, together.", copy: "See what's playing across desktop apps and browser tabs. Choose the player you want to control." },
+  { icon: "dock", title: "A home in your Dock.", copy: "Keep the current track, playback buttons, and system volume within reach while you work." },
+];
+const questions = [
+  { question: "What do I need to get started?", answer: "A Windows PC with Microsoft PowerToys and Command Palette enabled. Install Media Controls, open Command Palette, and search for Media Controls." },
+  { question: "Which music and video players work?", answer: "Apps and browser tabs that support Windows media controls, including Spotify, Apple Music, Media Player, and many websites. Optional integrations support desktop iTunes and local or remote VLC 3. Available controls and metadata depend on the player.", link: { href: withBase("players/"), label: "See supported players" } },
+  { question: "Do I need a browser companion?", answer: "Many sites already work through Windows media controls. The optional companions give you individual media tabs, direct tab activation, and controls in the browser popup. They are currently available as a developer preview." },
+  { question: "Is it free?", answer: "Yes. Media Controls is free and open source under the Apache 2.0 license. You can explore the source, report an issue, or contribute on GitHub." },
+];
+---
+
+<Layout home>
+  <section class="hero" id="top" aria-labelledby="hero-title" style={`--hero-art: url('${heroBackground.src}')`}>
+    <div class="hero-inner wrap">
+      <div class="hero-copy">
+        <p class="eyebrow hero-entrance">FOR POWERTOYS COMMAND PALETTE</p>
+        <h1 id="hero-title" class="hero-entrance">Media{" "}<br />Controls<span class="title-period">.</span></h1>
+        <p class="hero-tagline hero-entrance">Your media. At your command.</p>
+        <p class="hero-description hero-entrance">The next track. A little less volume. That video in another tab. Keep it all within reach, and stay in your flow.</p>
+        <div class="hero-actions hero-entrance">
+          <a class="button button-primary" href={site.store}><MicrosoftStoreIcon size={22} /> Get the extension <Icon name="arrow" size={17} /></a>
+          <a class="hero-secondary" href="#install-alternatives">Other install options <Icon name="down" size={16} /></a>
+        </div>
+        <p class="hero-footnote hero-entrance">Free &amp; open source <span></span> Made for Windows</p>
+      </div>
+      <figure class="hero-product hero-entrance">
+        <a href={withBase("preview/")} aria-label="View the full Media Controls screenshot">
+          <Image src={desktop} alt="Media Controls in PowerToys Command Palette: playback commands, volume, multiple players, track details, and Dock controls." widths={[600, 840, 1260]} sizes="(max-width: 760px) 92vw, 53vw" format="webp" loading="eager" fetchpriority="high" />
+        </a>
+      </figure>
+    </div>
+  </section>
+
+  <section id="features" class="section wrap" aria-labelledby="features-title">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">LESS REACHING. MORE LISTENING.</p>
+      <h2 id="features-title">Stay in the moment.<br /><em>We'll handle the music.</em></h2>
+      <p>Your media controls belong where you're already working.</p>
+    </div>
+    <div class="features-layout">
+      <div class="feature-list" data-reveal>
+        {features.map((feature, index) => (
+          <article class="feature">
+            <span class="feature-icon"><Icon name={feature.icon} size={23} /></span>
+            <div><span class="feature-number">0{index + 1}</span><h3>{feature.title}</h3><p>{feature.copy}</p></div>
+          </article>
+        ))}
+      </div>
+      <div data-reveal><FeatureScreenshots /></div>
+    </div>
+    <div class="compatibility" data-reveal><span>AT HOME WITH YOUR FAVORITES</span><p>Spotify <span>/</span> Apple Music <span>/</span> YouTube <span>/</span> VLC <span>/</span> iTunes <span>/</span> and more</p><small>Player support and available controls vary.</small><a class="text-link" href={withBase("players/")}>See supported players <Icon name="right" size={16} /></a></div>
+  </section>
+
+  <section id="companions" class="companions-section" aria-labelledby="companions-title">
+    <div class="wrap">
+      <div class="companions-heading" data-reveal>
+        <div><p class="eyebrow">MEET THE BROWSER COMPANIONS</p><h2 id="companions-title">More tabs.<br /><em>Less hide-and-seek.</em></h2></div>
+        <div class="companions-intro"><p>Find the tab that's playing. Control it from the popup, or bring it into Command Palette alongside your desktop players.</p><a class="text-link" href={withBase("companions/")}>Explore the companions <Icon name="right" size={18} /></a></div>
+      </div>
+      <div class="browser-workflow" data-reveal>
+        <div class="workflow-source"><div class="browser-stack">{browsers.map((browser) => <BrowserIcon name={browser.id} />)}</div><span>Your media tabs</span></div>
+        <div class="connection-line"><span></span><span></span><span></span></div>
+        <div class="workflow-target"><img src={withBase("logo.svg")} width="62" height="62" alt="" /><div><strong>One familiar place.</strong><span>Command Palette &amp; the Dock</span></div></div>
+        <div class="workflow-caption"><Icon name="check" size={16} /><span>A local connection.<br />No account needed.</span></div>
+      </div>
+      <div class="browser-list" data-reveal>
+        {browsers.map((browser) => (
+          <a class="browser-link" href={browser.storeUrl ?? withBase(`companions/#${browser.id}`)}>
+            <BrowserIcon name={browser.id} />
+            <div><h3>{browser.name}</h3><span>Developer preview</span></div>
+            <Icon name="arrow" size={20} />
+          </a>
+        ))}
+      </div>
+      <p class="companion-note">Store listings are on the way. Preview setup is available for Chrome, Edge, and Firefox.</p>
+    </div>
+  </section>
+
+  <section id="download" class="download-section wrap" aria-labelledby="download-title">
+    <div class="download-copy" data-reveal><p class="eyebrow">MAKE YOURSELF AT HOME</p><h2 id="download-title">A better rhythm<br />for your <em>desktop.</em></h2><p>Install Media Controls, open Command Palette,<br class="desktop-break" /> and let your media fit around you.</p></div>
+    <div class="install-options" data-reveal>
+      <p class="eyebrow">GET MEDIA CONTROLS</p>
+      <a class="button button-primary install-store" href={site.store}><MicrosoftStoreIcon size={22} /> Get from Microsoft Store <Icon name="arrow" size={17} /></a>
+      <p class="download-requirement">Free &amp; open source. Requires <a href={site.powerToys}>Microsoft PowerToys <Icon name="arrow" size={12} /></a>.</p>
+      <div class="install-alternatives" id="install-alternatives" tabindex="-1">
+        <details class="install-terminal">
+          <summary class="install-link"><span><strong>Install with WinGet</strong><span>Copy a PowerShell command</span></span><Icon name="down" size={19} /></summary>
+          <div class="terminal"><div class="terminal-header"><span>PowerShell</span><span>_</span></div><div class="terminal-command"><span aria-hidden="true">&gt;</span><code id="winget-command">{site.winget}</code><button type="button" class="icon-button copy-command" aria-label="Copy WinGet installation command" data-copy-command><Icon name="copy" size={18} /></button></div><p class="copy-feedback" role="status" aria-live="polite"></p></div>
+        </details>
+        <a class="install-link" href={site.releases}><div><strong>Download from GitHub</strong><span>MSIX packages and release notes</span></div><Icon name="arrow" /></a>
+      </div>
+    </div>
+  </section>
+
+  <section id="questions" class="faq-section wrap" aria-labelledby="faq-title">
+    <div data-reveal><p class="eyebrow">A FEW USEFUL THINGS</p><h2 id="faq-title">Before you<br /><em>press play.</em></h2></div>
+    <div class="faq-list" data-reveal>{questions.map(({ question, answer, link }) => <details><summary>{question}<span class="faq-plus" aria-hidden="true"></span></summary><p>{answer}{link && <a class="faq-answer-link" href={link.href}>{link.label} <Icon name="right" size={16} /></a>}</p></details>)}</div>
+  </section>
+
+  <section class="creator wrap" data-reveal><span class="creator-mark" style={`--creator-logo: url('${authorMark.src}')`} aria-hidden="true"></span><div><p class="eyebrow">AN INDEPENDENT LITTLE PROJECT</p><p>Made with care by <a href={site.author}>Ji&#345;&#237; Pol&#225;&#353;ek</a>.<br /><span>For people who like their tools to get out of the way.</span></p></div><a href={site.repository} class="text-link">Say hello on GitHub <Icon name="arrow" size={18} /></a></section>
+</Layout>
+
+<script>
+  const copyButton = document.querySelector<HTMLButtonElement>("[data-copy-command]");
+  copyButton?.addEventListener("click", async () => {
+    const command = document.querySelector("#winget-command")!.textContent!;
+    const feedback = document.querySelector(".copy-feedback")!;
+    try {
+      await navigator.clipboard.writeText(command);
+      feedback.textContent = "Copied. Ready for your terminal.";
+      copyButton.setAttribute("aria-label", "Copy WinGet installation command again");
+    } catch {
+      feedback.textContent = "Select the command above and copy it with Ctrl+C.";
+    }
+  });
+</script>

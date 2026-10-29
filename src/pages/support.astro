@@ -1,0 +1,60 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import { site, withBase } from "../data/site";
+---
+
+<Layout title="Support - Media Controls Companion" description="Set up the Media Controls browser companion, fix connection problems, manage site access, and remove the desktop integration." path="support/">
+  <article id="top" class="document wrap">
+    <a href={withBase()} class="text-link"><Icon name="previous" size={16} /> Back to Media Controls</a>
+    <p class="eyebrow">SUPPORT</p>
+    <h1>A little help.<br /><em>Back to your media.</em></h1>
+    <p class="document-intro">The browser extension is a companion to Media Controls on Windows. Start with a desktop build that includes Browser companion and PowerToys Command Palette.</p>
+    <nav class="document-links" aria-label="Support topics">
+      <a href={withBase("companions/#setup")}>Set up the companion <Icon name="arrow" size={16} /></a>
+      <a href="#connection">Connection help <Icon name="down" size={16} /></a>
+      <a href="#remove">Remove integration <Icon name="down" size={16} /></a>
+    </nav>
+
+    <section id="connection" class="setup-section">
+      <h2>Connect to the desktop.</h2>
+      <p>In Command Palette, open <strong>Media Controls &gt; Media sources &gt; Browser companion &gt; Configure</strong> and choose <strong>Enable browser integration</strong>. Reload the browser extension and existing media tabs, then check its popup for <strong>Desktop service connected</strong>.</p>
+      <p><strong>Browser integration enabled</strong> in desktop setup confirms registration. The popup shows whether the connection is live. Keep <strong>Windows media</strong> enabled for automatic fallback.</p>
+      <div class="help-list">
+        <details><summary>Desktop disconnected or host not found <Icon name="plus" size={17} /></summary><p>Check that your installed Media Controls build includes <strong>Browser companion</strong>. Older Store releases may not contain the bridge. Run <strong>Enable browser integration</strong>, then use <strong>Reconnect to desktop service</strong> in the popup. Open <strong>Connection help</strong> there to see the specific error.</p></details>
+        <details><summary>Access forbidden <Icon name="plus" size={17} /></summary><p>For preview and review builds, copy the exact extension ID from your browser into <strong>Configure &gt; Advanced &gt; Developer setup</strong> and choose <strong>Save developer setup</strong>. Include IDs for both Chrome and Edge if you use both, separated by commas. Moving an unpacked extension can change its ID. Firefox does not need manual ID entry.</p></details>
+        <details><summary>The host exits or fails to start <Icon name="plus" size={17} /></summary><p>In Windows Settings, open <strong>App execution aliases</strong> and check that <code>MediaControlsBrowserBridge.exe</code> is enabled. Reconnect from the popup. If an old error remains after changing setup, save your work, fully exit the browser including background processes, and reopen it.</p></details>
+      </div>
+    </section>
+
+    <section id="players" class="setup-section">
+      <h2>A tab or control is missing.</h2>
+      <ul>
+        <li>Reload media tabs after installing or updating the companion. Start playing something with sound enabled so an HTML media player can be discovered.</li>
+        <li>Check the companion's site access in your browser's extension settings. In Firefox, allow access to the sites you want to control.</li>
+        <li>Muted autoplay previews and preloaded HTML players stay hidden. Once found, a player remains available when paused or muted.</li>
+        <li>Private browsing and browser-internal pages are excluded. Available controls and details depend on the website.</li>
+        <li>Install the companion in every browser profile you use for media. Windows fallback cannot distinguish profiles of the same browser installation.</li>
+      </ul>
+      <p><a class="text-link" href={withBase("players/")}>Check supported players <Icon name="arrow" size={16} /></a></p>
+    </section>
+
+    <section id="remove" class="setup-section">
+      <h2>Remove the integration.</h2>
+      <ol>
+        <li>Before uninstalling the desktop app, open <strong>Media Controls &gt; Media sources &gt; Browser companion &gt; Configure &gt; Advanced</strong>.</li>
+        <li>Choose <strong>Remove browser integration</strong>. This disconnects the bridge, removes its browser registrations and launcher files, and disables the source.</li>
+        <li>Remove <strong>Media Controls Companion</strong> in each browser profile's extension manager. This also clears the extension's locally stored profile identifier.</li>
+      </ol>
+      <p>Uninstalling Media Controls alone can leave inactive registration entries and launcher files behind. If you already uninstalled it, reinstall a compatible build and use the removal action. Windows media remains available when enabled.</p>
+      <p><a class="text-link" href={withBase("privacy/")}>Read the privacy policy <Icon name="arrow" size={16} /></a></p>
+    </section>
+
+    <section id="feedback" class="document-end">
+      <h2>Still stuck?</h2>
+      <p>Check existing reports or open an issue on GitHub. Include your Windows, browser, companion, and Media Controls versions, the connection error, and steps to reproduce it. GitHub requires an account to post.</p>
+      <p>Issues are public. Remove private URLs and personal media details, and review logs or screenshots before sharing them.</p>
+      <a href={site.issues} class="button button-primary">Get help on GitHub <Icon name="arrow" size={18} /></a>
+    </section>
+  </article>
+</Layout>

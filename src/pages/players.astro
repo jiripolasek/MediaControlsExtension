@@ -1,0 +1,121 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import PlayerTable from "../components/PlayerTable.astro";
+import { playerGroups } from "../data/players";
+import { site, withBase } from "../data/site";
+
+const guides = `${site.repository}/blob/main/docs/user/`;
+---
+
+<Layout title="Supported players - Media Controls" description="Player compatibility for Media Controls: music apps, video players, browser media, optional iTunes and VLC sources, and per-player feature availability." path="players/">
+  <article id="top" class="document wrap players-page">
+    <a href={withBase()} class="text-link"><Icon name="previous" size={16} /> Back to Media Controls</a>
+    <p class="eyebrow">PLAYER COMPATIBILITY</p>
+    <h1>Supported <em>players.</em></h1>
+    <p class="document-intro">Find your player and the controls it can share with Command Palette. Playback buttons, track details, and artwork depend on the app and what's playing.</p>
+    <p class="players-explainer">The tables cover Windows media (GSMTC). Desktop iTunes and VLC 3 also have <a href="#direct-sources">optional direct sources</a>.</p>
+
+    <nav class="players-nav" aria-label="Player categories">
+      <a href="#music">Music</a><a href="#video">Video</a><a href="#browsers">Browsers &amp; websites</a><a href="#direct-sources">iTunes &amp; VLC</a><a href="#troubleshooting">Connection help</a>
+    </nav>
+
+    <div class="availability-legend" aria-label="Feature availability legend">
+      <p><strong class="usually">Usually</strong><span>Usually provided by the player.</span></p>
+      <p><strong class="varies">Varies</strong><span>Depends on settings or content.</span></p>
+      <p><strong>Not usually</strong><span>Usually not exposed to Windows.</span></p>
+    </div>
+    <p class="players-scope">A practical guide from the project documentation. Player versions, settings, browser behavior, and content can change the result.</p>
+
+    {playerGroups.map((group) => (
+      <section class="player-group" id={group.id} aria-labelledby={`${group.id}-title`}>
+        <div class="player-group-heading"><div><h2 id={`${group.id}-title`}>{group.title}</h2><p>{group.description}</p></div><span class="table-scroll-hint">Scroll the table for all features <Icon name="right" size={16} /></span></div>
+        <PlayerTable group={group} />
+      </section>
+    ))}
+
+    <section class="browser-support-note">
+      <h2>Browser support has two parts.</h2>
+      <p>The browser connects media to Windows. The website provides metadata and actions through its Media Session API. Two websites can expose different controls in the same browser, and one site can behave differently across browsers.</p>
+      <p>The optional browser companions add individual media tabs, exact tab switching, and controls in a browser popup. They are currently in developer preview.</p>
+      <a href={withBase("companions/")} class="text-link">Meet the browser companions <Icon name="right" size={18} /></a>
+    </section>
+
+    <section class="direct-sources" id="direct-sources" aria-labelledby="direct-title">
+      <p class="eyebrow">OPTIONAL DIRECT SOURCES</p>
+      <h2 id="direct-title">Desktop iTunes and VLC 3.</h2>
+      <p>Enable these sources from <strong>Media sources</strong> in the Media Controls command menu. Both support playback controls, track details, artwork, track length, shuffle, and repeat without a third-party media-control plugin.</p>
+      <div class="direct-player-columns">
+        <section id="itunes"><h3>Classic desktop iTunes</h3><p>Open iTunes, choose <strong>Media sources &gt; iTunes &gt; Enable</strong>, and start playback or select a track. The source connects to iTunes on this computer and is off by default.</p><p>The newer Apple Music app uses Windows media controls.</p><a href={`${guides}itunes-backend.md`} class="text-link">iTunes setup guide <Icon name="arrow" size={16} /></a></section>
+        <section id="vlc"><h3>VLC 3, local or remote</h3><p>Enable VLC's Web interface and set its HTTP password. In <strong>Media sources &gt; VLC media player</strong>, configure the server URL and password, then choose <strong>Save and enable</strong>.</p><p>Connect to one VLC 3 player on this PC or another computer on your network.</p><a href={`${guides}vlc-backend.md`} class="text-link">VLC setup guide <Icon name="arrow" size={16} /></a></section>
+      </div>
+      <p class="direct-player-note">While enabled, direct iTunes and local loopback VLC sources replace duplicate Windows media sessions for those players.</p>
+    </section>
+
+    <section class="player-help" id="troubleshooting" aria-labelledby="help-title">
+      <h2 id="help-title">Missing a player or control?</h2>
+      <ol>
+        <li>Start playback in the app or browser tab at least once. Some players don't publish a session while idle.</li>
+        <li>Check the player's settings for media keys, system media controls, background activity, or operating-system integration.</li>
+        <li>For a website, try the same content in Edge, Chrome, or Firefox. Both browser and website support matter.</li>
+        <li>Check whether Windows can see the media session. A player without one needs a separate source or a compatible plugin.</li>
+        <li>Update the player, browser, and extension. For a community plugin, check its supported player version and architecture.</li>
+      </ol>
+      <p>System volume works separately from player compatibility. Volume and mute commands control the default Windows playback device, even when no media session is available.</p>
+      <p>For a compatibility report, include the player and version, your Windows version, whether playback is native or browser-based, and which controls or metadata are missing.</p>
+      <div class="player-help-links"><a href={`${site.repository}/issues`} class="text-link">Report a compatibility issue <Icon name="arrow" size={16} /></a><a href={`${guides}media-sources.md`} class="text-link">Media sources setup <Icon name="arrow" size={16} /></a></div>
+    </section>
+
+    <p class="compatibility-source">Based on the project's <a href={`${guides}GSMTC-Compatibility.md`}>player compatibility guide</a>. Community plugins are maintained separately; follow their linked setup and compatibility instructions.</p>
+  </article>
+</Layout>
+
+<style>
+  .players-page { max-width: 1280px; }
+  .players-page > .text-link:first-child { margin-bottom: 32px; }
+  .players-page h1 { font-size: clamp(43px, 5.6vw, 72px); }
+  .players-explainer { max-width: 860px; margin-top: 20px; }
+  .players-explainer a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; }
+  .players-nav { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-block: 20px; margin-top: 22px; border-block: 1px solid var(--line); font-size: 0.875rem; color: var(--text-soft); }
+  .players-nav a:hover { color: var(--accent-text); }
+  .availability-legend { display: flex; flex-wrap: wrap; gap: 18px 40px; margin-top: 28px; }
+  .availability-legend > p { display: grid; gap: 4px; margin: 0; }
+  .availability-legend strong, .availability-legend span { font-size: 0.875rem; }
+  .availability-legend .usually { color: var(--success); }
+  .availability-legend .varies { color: var(--warning); }
+  .players-page .players-scope { font-size: 0.875rem; margin-top: 22px; }
+  .player-group { padding-top: 42px; }
+  .player-group-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+  .player-group-heading h2 { margin-bottom: 12px; }
+  .player-group-heading p { max-width: 620px; }
+  .table-scroll-hint { display: none; align-items: center; gap: 9px; color: var(--subtle); font-size: 0.875rem; flex-shrink: 0; }
+  .browser-support-note { max-width: 840px; padding-block: 42px 55px; }
+  .browser-support-note > a { margin-top: 22px; }
+  .direct-sources { border-block: 1px solid var(--line); padding-block: 48px; }
+  .direct-sources > .eyebrow { margin-bottom: 18px; }
+  .direct-sources > p:not(.eyebrow) { max-width: 850px; }
+  .direct-player-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 60px; margin-top: 35px; }
+  .direct-player-columns h3 { font-size: 22px; letter-spacing: -0.025em; margin-bottom: 16px; }
+  .direct-player-columns a { margin-top: 20px; }
+  .players-page .direct-player-note { font-size: 0.875rem; margin-top: 30px; }
+  .player-help { padding-block: 50px 35px; max-width: 900px; }
+  .player-help ol { padding-left: 24px; margin-bottom: 25px; }
+  .player-help li { padding-left: 5px; }
+  .player-help li + li { margin-top: 14px; }
+  .player-help-links { display: flex; flex-wrap: wrap; gap: 20px 35px; margin-top: 26px; }
+  .players-page .compatibility-source { font-size: 0.875rem; border-top: 1px solid var(--line); padding-top: 28px; }
+  .compatibility-source a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 4px; }
+  @media (max-width: 1040px) {
+    .player-group-heading { align-items: start; flex-direction: column; gap: 16px; }
+    .table-scroll-hint { display: flex; }
+  }
+  @media (max-width: 760px) {
+    .players-nav { gap: 12px 22px; margin-top: 25px; }
+    .availability-legend { display: grid; gap: 18px; }
+    .player-group { padding-top: 42px; }
+    .table-scroll-hint { flex-shrink: 1; }
+    .direct-player-columns { grid-template-columns: minmax(0, 1fr); gap: 35px; }
+    .direct-sources { padding-block: 35px; }
+    .player-help { padding-top: 40px; }
+  }
+</style>

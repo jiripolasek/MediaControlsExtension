@@ -1,0 +1,63 @@
+<script is:inline>
+  (() => {
+    const storageKey = "media-controls-theme";
+    const themes = ["light", "dark", "auto"];
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+    let preference = "auto";
+
+    function readPreference() {
+      try {
+        return localStorage.getItem(storageKey) ?? "auto";
+      } catch {
+        return "auto";
+      }
+    }
+
+    function getTheme() {
+      return preference === "auto" ? (systemTheme.matches ? "dark" : "light") : preference;
+    }
+
+    function applyTheme(value = "auto") {
+      preference = themes.includes(value) ? value : "auto";
+      const resolved = getTheme();
+      document.documentElement.classList.toggle("dark", resolved === "dark");
+      document.documentElement.dataset.theme = preference;
+      document.documentElement.dataset.resolvedTheme = resolved;
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#080e11" : "#f6f5ef");
+      document.querySelectorAll("[data-theme-toggle]").forEach((control) => {
+        const next = resolved === "light" ? "dark" : "light";
+        const label = `Theme: ${resolved}. Switch to ${next} theme`;
+        control.setAttribute("aria-label", label);
+        control.setAttribute("title", label);
+      });
+    }
+
+    function setPreference(value = "auto") {
+      applyTheme(value);
+      try {
+        localStorage.setItem(storageKey, preference);
+      } catch {
+        // Keep the current theme when storage is unavailable.
+      }
+    }
+
+    Object.assign(window, {
+      astroThemeToggle: {
+        getTheme,
+        setTheme: setPreference,
+      },
+    });
+    applyTheme(readPreference());
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("[data-theme-control]").forEach((control) => control.removeAttribute("hidden"));
+      applyTheme(preference);
+    }, { once: true });
+
+    systemTheme.addEventListener("change", () => {
+      if (preference === "auto") applyTheme(preference);
+    });
+    window.addEventListener("storage", (event) => {
+      if (event.key === storageKey || event.key === null) applyTheme(readPreference());
+    });
+  })();
+</script>

@@ -1,0 +1,17 @@
+---
+import { Image } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import Icon from "../components/Icon.astro";
+import screenshot from "../assets/media-controls-desktop.png";
+import { withBase } from "../data/site";
+---
+
+<Layout title="A closer look - Media Controls" path="preview/">
+  <section id="top" class="document wrap preview-page">
+    <a href={withBase()} class="text-link"><Icon name="previous" size={16} /> Back to Media Controls</a>
+    <p class="eyebrow">A CLOSER LOOK</p>
+    <h1>Your media, <em>together.</em></h1>
+    <p class="document-intro">Playback commands, your active players, track details, and a place in the Dock.</p>
+    <Image src={screenshot} alt="Full screenshot of Media Controls, showing Command Palette and the Dock with playback commands, media sessions, and track details." width={1260} format="webp" class="full-preview" loading="eager" />
+  </section>
+</Layout>

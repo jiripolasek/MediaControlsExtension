@@ -1,0 +1,27 @@
+---
+import Icon from "./Icon.astro";
+---
+
+<div class="theme-control" data-theme-control hidden>
+  <button type="button" class="theme-toggle" aria-label="Switch color theme" data-theme-toggle>
+    <Icon name="theme" size={19} class="theme-icon-light" />
+    <Icon name="moon" size={19} class="theme-icon-dark" />
+  </button>
+</div>
+
+<script>
+  import { getTheme, handleToggleClick, setTheme } from "astro-theme-toggle/client";
+
+  const toggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  toggle?.addEventListener("click", (event) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setTheme(getTheme() === "light" ? "dark" : "light");
+      return;
+    }
+    const rect = toggle.getBoundingClientRect();
+    handleToggleClick({
+      clientX: event.detail === 0 ? rect.left + rect.width / 2 : event.clientX,
+      clientY: event.detail === 0 ? rect.top + rect.height / 2 : event.clientY,
+    });
+  });
+</script>

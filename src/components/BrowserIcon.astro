@@ -1,0 +1,24 @@
+---
+import { Image } from "astro:assets";
+import chrome from "../assets/browsers/chrome.png";
+import edge from "../assets/browsers/edge.png";
+import firefox from "../assets/browsers/firefox.png";
+
+interface Props { name: "chrome" | "edge" | "firefox"; }
+const { name } = Astro.props;
+const icons = {
+  chrome: { image: chrome, scale: "273%" },
+  edge: { image: edge, scale: "300%" },
+  firefox: { image: firefox, scale: "234%" },
+};
+const icon = icons[name];
+---
+
+<span class="browser-icon" style={`--browser-icon-scale: ${icon.scale}`} aria-hidden="true">
+  <Image src={icon.image} alt="" width={icon.image.width} format="webp" />
+</span>
+
+<style>
+  .browser-icon { position: relative; display: inline-block; width: var(--browser-icon-size, 42px); height: var(--browser-icon-size, 42px); flex-shrink: 0; vertical-align: middle; }
+  .browser-icon img { position: absolute; width: var(--browser-icon-scale); max-width: none; height: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+</style>

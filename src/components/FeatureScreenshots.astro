@@ -1,0 +1,42 @@
+---
+import { Image } from "astro:assets";
+import desktop from "../assets/media-controls-desktop.png";
+import Icon from "./Icon.astro";
+import { withBase } from "../data/site";
+---
+
+<div class="feature-screenshots">
+  <figure>
+    <a class="screenshot-crop palette-crop" href={withBase("preview/")} aria-label="View the full Command Palette screenshot">
+      <Image src={desktop} alt="Actual Command Palette screenshot showing playback commands, system volume, media sessions, and track details." width={desktop.width} format="webp" quality={100} />
+    </a>
+    <figcaption><span>Command Palette</span><a href={withBase("preview/")}>View full screenshot <Icon name="arrow" size={16} /></a></figcaption>
+  </figure>
+  <figure>
+    <div class="dock-stage">
+      <a class="screenshot-crop dock-crop" href={withBase("preview/")} aria-label="View the full screenshot with the Dock">
+        <Image src={desktop} alt="Actual PowerToys Dock screenshot showing the current track, previous, pause and next controls, and system volume." width={desktop.width} format="webp" quality={100} />
+      </a>
+    </div>
+    <figcaption><span>The Dock</span><span>Now playing, always in reach.</span></figcaption>
+  </figure>
+</div>
+
+<style>
+  .feature-screenshots { display: grid; gap: 32px; }
+  .screenshot-crop { position: relative; display: block; overflow: hidden; }
+  .screenshot-crop img { position: absolute; max-width: none; height: auto; }
+  .palette-crop { aspect-ratio: 618 / 410; border-radius: 8px; box-shadow: 0 18px 45px var(--media-shadow); }
+  .palette-crop img { width: 135.5987%; left: -15.534%; top: -53.4146%; }
+  .dock-stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 28px 20px; }
+  .dock-crop { aspect-ratio: 280 / 31; width: 100%; max-width: 440px; margin-inline: auto; }
+  .dock-crop img { width: 299.2857%; left: -94.6429%; top: 0; }
+  figcaption { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; color: var(--muted); font-size: 0.875rem; line-height: 1.6; }
+  figcaption > :first-child { color: var(--text-soft); }
+  figcaption a { display: inline-flex; align-items: center; gap: 6px; }
+  figcaption a:hover { color: var(--accent-text); }
+  @media (max-width: 760px) {
+    .feature-screenshots { gap: 26px; }
+    .dock-stage { padding: 22px 12px; }
+  }
+</style>
