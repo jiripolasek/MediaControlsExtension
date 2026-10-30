@@ -30,7 +30,9 @@ The default site origin and base path target GitHub Pages at
 `https://jiripolasek.github.io/MediaControlsExtension/`.
 
 The [Pages workflow](.github/workflows/pages.yml) checks and builds the site
-with Node.js 24, then publishes it on every push to `pages`.
+with Node.js 24, then publishes it on every push to `pages`. It reads the
+configured Pages host and base path for the build, including custom domains,
+and uses HTTPS for canonical URLs.
 
 For the first deployment, set the repository's **Settings > Pages > Build and
 deployment > Source** to **GitHub Actions**. If the `github-pages` environment

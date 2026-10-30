@@ -22,11 +22,17 @@ jobs:
     steps:
       - name: Check out the website
         uses: actions/checkout@v7
+      - name: Read GitHub Pages configuration
+        id: pages
+        uses: actions/configure-pages@v5
       - name: Check, build, and upload the website
         uses: withastro/action@v6
         with:
           node-version: "24"
           build-cmd: npm run check && npm run build
+        env:
+          SITE_URL: https://${{ steps.pages.outputs.host }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path || '/' }}
 
   deploy:
     needs: build
