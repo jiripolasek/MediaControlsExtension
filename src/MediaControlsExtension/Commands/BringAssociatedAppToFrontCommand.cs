@@ -6,12 +6,13 @@
 
 namespace JPSoftworks.MediaControlsExtension.Commands;
 
-internal sealed partial class BringAssociatedAppToFrontCommand : InvokableCommand
+internal sealed partial class BringAssociatedAppToFrontCommand : AsyncInvokableCommand
 {
     private readonly IMediaService _mediaService;
     private readonly MediaCommandTarget _target;
 
-    public BringAssociatedAppToFrontCommand(IMediaService mediaService, MediaSessionId? sessionId = null)
+    public BringAssociatedAppToFrontCommand(IMediaService mediaService, ILoggerFactory loggerFactory, MediaSessionId? sessionId = null)
+        : base(loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(mediaService);
         this._mediaService = mediaService;
@@ -20,9 +21,15 @@ internal sealed partial class BringAssociatedAppToFrontCommand : InvokableComman
         this.Name = Strings.Command_SwitchToApplication!;
     }
 
-    public override ICommandResult Invoke()
+    protected override async Task<ICommandResult> InvokeAsync(CancellationToken cancellationToken)
     {
-        this._mediaService.TrySubmit(new(this._target, MediaOperation.ActivateSource));
+        var submission = this._mediaService.TrySubmit(new(this._target, MediaOperation.ActivateSource));
+        // Keep the host invocation alive until the foreground handoff finishes.
+        if (submission.Completion is { } completion)
+        {
+            await completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         return CommandResult.Dismiss();
     }
 }

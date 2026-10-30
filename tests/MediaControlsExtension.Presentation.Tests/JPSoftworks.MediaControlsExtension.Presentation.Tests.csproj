@@ -30,6 +30,12 @@
   <ItemGroup>
     <Compile Include="..\..\src\MediaControlsExtension\Icons.cs" Link="Icons.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Commands\AsyncInvokableCommand.cs" Link="Commands\AsyncInvokableCommand.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\BrowserIntegrationCommand.cs" Link="Commands\BrowserIntegrationCommand.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Pages\BrowserCompanionPage.cs" Link="Pages\BrowserCompanionPage.cs" />
+    <Compile Include="..\..\src\BrowserCompanion\shared\InstalledBrowsers.cs" Link="Helpers\InstalledBrowsers.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Helpers\BrowserConnectionPresentation.cs" Link="Helpers\BrowserConnectionPresentation.cs" />
+    <Compile Include="..\..\src\BrowserCompanion\shared\PackagedBrowserIntegration.cs" Link="Helpers\PackagedBrowserIntegration.cs" />
+    <Compile Include="..\..\src\MediaControlsExtension\Commands\BringAssociatedAppToFrontCommand.cs" Link="Commands\BringAssociatedAppToFrontCommand.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\MediaSessionOp.cs" Link="Commands\MediaSessionOp.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Commands\MediaOps\PlayPauseMop.cs" Link="Commands\PlayPauseMop.cs" />
     <Compile Include="..\..\src\MediaControlsExtension\Commands\OptimisticPlaybackCommand.cs" Link="Commands\OptimisticPlaybackCommand.cs" />

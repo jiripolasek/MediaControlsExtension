@@ -940,4 +940,37 @@ Diagnoseprotokolle können Medientitel, Playernamen und technische Fehlerdetails
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Die Einstellungen wurden gespeichert, aber die Medienquelle konnte nicht aktiviert werden. Kehren Sie zu Medienquellen zurück und wählen Sie erneut Aktivieren.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Browser-Begleiter</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Steuern Sie einzelne Browser-Tabs. Erfordert die Erweiterung und Desktop-Einrichtung; Windows-Medien bleiben als automatische Ausweichlösung verfügbar.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Browserverbindungen</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Erkannte Browser und ihre aktuelle Medienquelle. Ein Browser ist möglicherweise geschlossen oder die Erweiterung ist nicht verfügbar.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Keine Browser erkannt. Verbundene Erweiterungen werden hier automatisch angezeigt.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Medienquelle</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Warten auf Wiederherstellung der Companion-Verbindung</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Installieren Sie Media Controls Companion in Firefox oder einem Chromium-basierten Browser wie Edge, Chrome oder Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Weitere Browser ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Keine Companion-Verbindungen.</value>
+  </data>
 </root>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Controls</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-brand">
+      <img class="app-icon" src="icons/icon-48.png" width="28" height="28" alt="">
+      <h1>Media Controls</h1>
+    </div>
+    <div class="connection-status">
+      <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+      <p id="status" role="status">Connecting...</p>
+    </div>
+  </header>
+  <section id="connection-warning" class="connection" aria-label="Desktop connection" hidden>
+    <div class="connection-row">
+      <h2 id="connection-title">Desktop disconnected</h2>
+      <button id="reconnect" type="button">Reconnect</button>
+    </div>
+    <p>Browser controls still work.</p>
+    <details id="connection-help" hidden>
+      <summary>Setup help</summary>
+      <p id="connection-guidance">Open Media Controls, then Media sources &gt; Browser companion &gt; Configure to enable browser integration.</p>
+      <details class="connection-diagnostics">
+        <summary>Diagnostics</summary>
+        <p id="connection-detail" class="connection-detail"></p>
+        <p>Extension ID: <code id="extension-id"></code></p>
+      </details>
+      <p><a href="https://mediacontrols.jiripolasek.com/companions/#setup" target="_blank" rel="noopener noreferrer">Setup and troubleshooting</a></p>
+    </details>
+  </section>
+  <main aria-label="Browser media">
+    <div id="section-heading" class="section-heading" hidden>
+      <h2>Media tabs</h2>
+    </div>
+    <div id="empty" class="empty-state" hidden>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="9" width="36" height="30" rx="5"/><path d="M6 17h36M21 23l10 5-10 5z"/></svg>
+      <h2>No media tabs yet</h2>
+      <p>Play audio or video in a tab to see it here.</p>
+      <details class="empty-hint">
+        <summary>Media missing?</summary>
+        <p>Reload the tab and check that this extension has access to the site.</p>
+      </details>
+    </div>
+    <div id="sessions"></div>
+  </main>
+  <footer class="app-footer">
+    <a id="open-desktop" class="desktop-link" href="x-cmdpal://commands/JiriPolasek.MediaControlsForCmdPal_15b1mzc2p8w76%21App%21ID/com.jpsoftworks.cmdpal.mediacontrols">
+      <span>Open Media Controls</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H5v14h14v-5"/></svg>
+    </a>
+    <a href="https://mediacontrols.jiripolasek.com/companions/#setup" target="_blank" rel="noopener noreferrer">Help</a>
+    <a href="https://mediacontrols.jiripolasek.com/privacy/" target="_blank" rel="noopener noreferrer">Privacy</a>
+  </footer>
+  <p id="result" class="result" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

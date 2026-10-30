@@ -53,6 +53,7 @@
 		<ProjectReference Include="..\MediaControlsExtension.MediaHost\JPSoftworks.MediaControlsExtension.MediaHost.csproj" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 		<ProjectReference Include="..\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
+		<ProjectReference Include="..\MediaControlsExtension.Media.Browser\JPSoftworks.MediaControlsExtension.Media.Browser.csproj" />
 	</ItemGroup>
 
 	<PropertyGroup>
@@ -93,6 +94,11 @@
 
 	<Import Project="..\..\eng\MediaMemory.props" />
 	<Import Project="..\..\eng\MediaWorker.targets" />
+	<Import Project="..\..\eng\BrowserCompanion.targets" />
+	<ItemGroup>
+		<Compile Include="..\BrowserCompanion\shared\PackagedBrowserIntegration.cs" Link="Helpers\PackagedBrowserIntegration.cs" />
+		<Compile Include="..\BrowserCompanion\shared\InstalledBrowsers.cs" Link="Helpers\InstalledBrowsers.cs" />
+	</ItemGroup>
 
 	<Target Name="UpdateVersionFromPackageManifest" BeforeTargets="BeforeBuild">
 		<XmlPeek XmlInputPath="$(PackageManifestPath)" Query="/appx:Package/appx:Identity/@Version" Namespaces="&lt;Namespace Prefix='appx' Uri='http://schemas.microsoft.com/appx/manifest/foundation/windows10'/&gt;">

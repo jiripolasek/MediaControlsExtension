@@ -4,6 +4,8 @@
 //
 // ------------------------------------------------------------
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 using JPSoftworks.MediaControlsExtension.Media.Tests.Infrastructure;
@@ -14,6 +16,144 @@ namespace JPSoftworks.MediaControlsExtension.Media.Tests;
 [TestClass]
 public sealed class MediaSourcePolicyTests
 {
+    [TestMethod]
+    [DataRow("gsmtc")]
+    [DataRow("gsmtc.worker")]
+    public async Task DisablingCompanionPreservesTheSelectedWindowsHostingMode(string selectedId)
+    {
+        var internalBackend = new FakeSourcePolicyBackend(NativeSnapshot());
+        var workerBackend = new FakeSourcePolicyBackend(NativeSnapshot());
+        var internalStarts = 0;
+        var workerStarts = 0;
+        var registry = new MediaBackendRegistry()
+            .Register(new("gsmtc", "Internal", "", _ => { internalStarts++; return internalBackend; }, selectedId == "gsmtc")
+            {
+                ExclusiveGroup = "windows"
+            })
+            .Register(new("gsmtc.worker", "Worker", "", _ => { workerStarts++; return workerBackend; }, selectedId == "gsmtc.worker")
+            {
+                ExclusiveGroup = "windows"
+            })
+            .Register(new("companion", "Companion", "", _ => new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Available)
+            {
+                ReplacesSources = [new("gsmtc", "browser.app"), new("gsmtc.worker", "browser.app")]
+            }), true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 1);
+
+        await composite.SetEnabledAsync("companion", false);
+
+        var restored = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 3);
+        Assert.IsTrue(restored.Backends.Single(backend => backend.Id == selectedId).IsEnabled);
+        Assert.IsFalse(restored.Backends.Single(backend => backend.Id == (selectedId == "gsmtc" ? "gsmtc.worker" : "gsmtc")).IsEnabled);
+        Assert.AreEqual(selectedId == "gsmtc" ? 1 : 0, internalStarts);
+        Assert.AreEqual(selectedId == "gsmtc.worker" ? 1 : 0, workerStarts);
+        Assert.IsEmpty((selectedId == "gsmtc" ? internalBackend : workerBackend).Policy.ExcludedApplicationIds);
+    }
+
+    private static readonly string[] CompanionTitles = ["Other", "Companion"];
+
+    [TestMethod]
+    public void SnapshotSerializationPreservesConfiguredEmptyAndDynamicClaimModes()
+    {
+        var configured = new MediaBackendSnapshot(1, [], [], MediaControlAvailability.Unavailable);
+        var empty = configured with { ReplacesSources = [] };
+        var claimed = configured with { ReplacesSources = [new("native", "browser.app")] };
+        var typeInfo = SourcePolicyTestJsonContext.Default.MediaBackendSnapshot;
+        var configuredJson = JsonSerializer.Serialize(configured, typeInfo);
+        Assert.IsFalse(configuredJson.Contains("replacesSources", StringComparison.Ordinal));
+        Assert.IsTrue(JsonSerializer.Deserialize(configuredJson, typeInfo)!.ReplacesSources.IsDefault);
+        var emptyRoundTrip = JsonSerializer.Deserialize(JsonSerializer.Serialize(empty, typeInfo), typeInfo)!;
+        Assert.IsFalse(emptyRoundTrip.ReplacesSources.IsDefault);
+        Assert.IsEmpty(emptyRoundTrip.ReplacesSources);
+        var claimedRoundTrip = JsonSerializer.Deserialize(JsonSerializer.Serialize(claimed, typeInfo), typeInfo)!;
+        Assert.HasCount(1, claimedRoundTrip.ReplacesSources);
+        Assert.AreEqual(new MediaBackendSourceClaim("native", "browser.app"), claimedRoundTrip.ReplacesSources[0]);
+    }
+    [TestMethod]
+    public async Task SnapshotClaimsSwitchCatalogAtomicallyAndFenceOldCommandsAndArtwork()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable) { ReplacesSources = [] });
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ => native, true))
+            .Register(new("companion", "Companion", "", _ => companion, true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        var initial = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 3);
+        var oldNative = initial.Sessions.Single(session => session.MediaProperties.Title == "Browser");
+        native.BlockPolicy = true;
+        companion.SetSnapshot(FakeMediaBackend.CreateSnapshot(2, "Companion") with { ReplacesSources = [new("native", "browser.app")] });
+        try
+        {
+            var active = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Any(session => session.MediaProperties.Title == "Companion"));
+            await native.PolicyStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            CollectionAssert.AreEquivalent(CompanionTitles, active.Sessions.Select(session => session.MediaProperties.Title).ToArray());
+            var oldCompanion = active.Sessions.Single(session => session.MediaProperties.Title == "Companion");
+            Assert.AreEqual(MediaBackendCommandStatus.SessionGone, (await composite.ExecuteAsync(
+                new(oldNative.Id, oldNative.BindingGeneration, MediaOperation.Play, []), default)).Status);
+            Assert.IsNull(await composite.GetArtworkAsync(oldNative.MediaProperties.Artwork!.Value, default));
+            companion.SetSnapshot(new(3, [], [], MediaControlAvailability.Unavailable) { ReplacesSources = [] });
+            var releasing = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.All(session => session.MediaProperties.Title != "Companion"));
+            Assert.IsFalse(releasing.Sessions.Any(session => session.Id == oldCompanion.Id));
+            native.ReleasePolicy();
+            var fallback = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 3);
+            Assert.AreNotEqual(oldNative.Id, fallback.Sessions.Single(session => session.MediaProperties.Title == "Browser").Id);
+            Assert.AreEqual(MediaBackendCommandStatus.SessionGone, (await composite.ExecuteAsync(
+                new(oldCompanion.Id, oldCompanion.BindingGeneration, MediaOperation.Play, []), default)).Status);
+            Assert.IsEmpty(native.Inner.Commands);
+            Assert.IsEmpty(companion.Commands);
+        }
+        finally { native.ReleasePolicy(); }
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task DynamicClaimsAreReleasedWhenOwnerDisablesOrTerminates(bool terminal)
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(FakeMediaBackend.CreateSnapshot(1, "Companion") with { ReplacesSources = [new("native", "browser.app")] });
+        var replacement = new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable) { ReplacesSources = [] });
+        var created = 0;
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ => native, true))
+            .Register(new("companion", "Companion", "", _ => ++created == 1 ? companion : replacement, true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 2);
+        if (terminal) companion.CompleteWatch(new IOException("Companion terminated."));
+        else await composite.SetEnabledAsync("companion", false);
+        var released = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Any(session => session.MediaProperties.Title == "Browser"));
+        Assert.IsTrue(released.Sessions.All(session => session.MediaProperties.Title != "Companion"));
+        Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+        await composite.SetEnabledAsync("companion", false);
+        await composite.SetEnabledAsync("companion", true);
+        var restarted = await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 3);
+        Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+        Assert.IsTrue(restarted.Sessions.All(session => session.MediaProperties.Title != "Companion"));
+        Assert.AreEqual(2, created);
+    }
+
+    [TestMethod]
+    public async Task InvalidDynamicClaimsCannotRetireUnrelatedWindowsRoutes()
+    {
+        var native = new FakeSourcePolicyBackend(NativeSnapshot());
+        var companion = new FakeMediaBackend(new(1, [], [], MediaControlAvailability.Unavailable));
+        var registry = new MediaBackendRegistry()
+            .Register(new("native", "Native", "", _ => native, true))
+            .Register(new("companion", "Companion", "", _ => companion, true));
+        await using var composite = new CompositeMediaBackend(registry);
+        await composite.StartAsync(default);
+        await WaitForSnapshotAsync(composite, snapshot => snapshot.Sessions.Length == 3);
+        companion.SetSnapshot(FakeMediaBackend.CreateSnapshot(2, "Invalid") with { ReplacesSources = [new("missing", "browser.app")] });
+        var rejected = await WaitForSnapshotAsync(composite, snapshot => snapshot.Backends.Any(backend => backend.Id == "companion" && backend.Status == MediaBackendLifecycleStatus.Faulted));
+        Assert.HasCount(3, rejected.Sessions);
+        Assert.IsEmpty(native.Policy.ExcludedApplicationIds);
+        Assert.IsFalse(rejected.Sessions.Any(session => session.MediaProperties.Title == "Invalid"));
+    }
+
     [TestMethod]
     public async Task RecoverableReadFailureStillAppliesPolicyAndRetainsTheRun()
     {
@@ -601,3 +741,7 @@ public sealed class MediaSourcePolicyTests
         }
     }
 }
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(MediaBackendSnapshot))]
+internal sealed partial class SourcePolicyTestJsonContext : JsonSerializerContext;

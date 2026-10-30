@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source_Browser" xml:space="preserve">
+    <value>브라우저</value>
+  </data>
+  <data name="Source_Tab" xml:space="preserve">
+    <value>탭</value>
+  </data>
+  <data name="Source_Page" xml:space="preserve">
+    <value>페이지</value>
+  </data>
+  <data name="Source_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Source_Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="State_Sleeping" xml:space="preserve">
+    <value>절전 상태의 탭입니다. 재생하거나 애플리케이션으로 전환하면 다시 활성화됩니다.</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>페이지를 기다리는 중입니다. 애플리케이션으로 전환하여 새로 고치세요.</value>
+  </data>
+  <data name="Fallback_Companion" xml:space="preserve">
+    <value>브라우저 도우미 사용 중</value>
+  </data>
+  <data name="Fallback_Recovery" xml:space="preserve">
+    <value>도우미가 다시 연결되는 동안 Windows 미디어 세션 사용 중</value>
+  </data>
+  <data name="Fallback_Reconnecting" xml:space="preserve">
+    <value>도우미를 사용할 수 없습니다. Windows 미디어 세션으로 전환하기 전에 다시 연결하는 중입니다.</value>
+  </data>
+  <data name="Fallback_Windows" xml:space="preserve">
+    <value>Windows 미디어 세션 사용 중 - 도우미를 사용할 수 없음</value>
+  </data>
+  <data name="Fallback_Partial" xml:space="preserve">
+    <value>브라우저 도우미 사용 중. 일부 프로필을 사용할 수 없습니다.</value>
+  </data>
+  <data name="Fallback_ProfileUnavailable" xml:space="preserve">
+    <value>프로필을 사용할 수 없습니다. 다른 프로필은 계속 브라우저 도우미를 사용합니다.</value>
+  </data>
+  <data name="Fallback_Unknown" xml:space="preserve">
+    <value>Windows 미디어 세션 사용 중 - 지원되지 않는 브라우저 식별 정보</value>
+  </data>
+</root>

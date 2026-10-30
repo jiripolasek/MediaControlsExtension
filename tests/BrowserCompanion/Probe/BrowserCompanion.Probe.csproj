@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/MediaControlsExtension.Media.Browser/JPSoftworks.MediaControlsExtension.Media.Browser.csproj" />
+    <ProjectReference Include="../../../src/MediaControlsExtension.Media.Gsmtc/JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
+  </ItemGroup>
+</Project>

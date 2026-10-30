@@ -1,0 +1,73 @@
+<Project>
+  <PropertyGroup>
+    <_BrowserCompanionProject>$(MSBuildThisFileDirectory)..\src\BrowserCompanion\host\JPSoftworks.MediaControlsExtension.BrowserCompanion.csproj</_BrowserCompanionProject>
+    <_BrowserCompanionPublishDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\obj\BrowserCompanion\$(Configuration)\$(RuntimeIdentifier)\$(PublishAot)\'))</_BrowserCompanionPublishDirectory>
+  </PropertyGroup>
+  <Target Name="PublishBrowserCompanion" Condition="'$(DesignTimeBuild)' != 'true'" Returns="@(_BrowserCompanionPayload)">
+    <PropertyGroup>
+      <_BrowserCompanionProperties>
+        Configuration=$(Configuration);
+        Platform=$(Platform);
+        RuntimeIdentifier=$(RuntimeIdentifier);
+        PublishAot=$(PublishAot);
+        PublishTrimmed=$(PublishTrimmed);
+        ForceManagedPublish=$(ForceManagedPublish);
+        SelfContained=true;BrowserCompanionPackaged=true;
+        PublishDir=$(_BrowserCompanionPublishDirectory);
+        BrowserCompanionBuildKey=$(Configuration)-$(RuntimeIdentifier)-$(PublishAot);
+        BuildingInsideVisualStudio=false;
+        BuildProjectReferences=true
+      </_BrowserCompanionProperties>
+      <_BrowserCompanionRemovedProperties>PublishProfile;OutputPath;IntermediateOutputPath;BaseIntermediateOutputPath;BaseOutputPath;MSBuildProjectExtensionsPath;OutDir</_BrowserCompanionRemovedProperties>
+    </PropertyGroup>
+    <Error Condition="!$(_BrowserCompanionPublishDirectory.StartsWith('$(MSBuildProjectDirectory)\obj\BrowserCompanion\'))" Text="The browser companion staging directory must remain under this project's obj/BrowserCompanion directory." />
+    <MSBuild Projects="$(_BrowserCompanionProject)" Targets="Restore"
+      RemoveProperties="$(_BrowserCompanionRemovedProperties)"
+      Properties="$(_BrowserCompanionProperties);BrowserCompanionRestore=true" />
+    <MSBuild Projects="$(_BrowserCompanionProject)" Targets="GetBrowserCompanionPublishPayload"
+      RemoveProperties="$(_BrowserCompanionRemovedProperties)"
+      Properties="$(_BrowserCompanionProperties)">
+      <Output TaskParameter="TargetOutputs" ItemName="_BrowserCompanionPayload" />
+    </MSBuild>
+    <ItemGroup>
+      <_BrowserCompanionObsolete Include="$(_BrowserCompanionPublishDirectory)**\*" Exclude="@(_BrowserCompanionPayload)" />
+    </ItemGroup>
+    <Delete Files="@(_BrowserCompanionObsolete)" />
+    <Error Condition="!Exists('$(_BrowserCompanionPublishDirectory)JPSoftworks.MediaControlsExtension.BrowserCompanion.exe')" Text="The browser companion publish did not produce its executable." />
+    <Error Condition="'$(PublishAot)' != 'true' and !Exists('$(_BrowserCompanionPublishDirectory)coreclr.dll')" Text="The managed browser companion is missing its self-contained runtime." />
+  </Target>
+  <Target Name="AddBrowserCompanionPublishPayload" AfterTargets="ComputeFilesToPublish" DependsOnTargets="PublishBrowserCompanion" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_BrowserCompanionPayload)">
+        <RelativePath>BrowserCompanion\%(_BrowserCompanionPayload.RelativePath)</RelativePath>
+        <CopyToPublishDirectory>IfDifferent</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyBrowserCompanionForBuild" AfterTargets="Build" DependsOnTargets="PublishBrowserCompanion" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_BrowserCompanionBuildDirectory>$([System.IO.Path]::GetFullPath('$(TargetDir)BrowserCompanion\'))</_BrowserCompanionBuildDirectory>
+    </PropertyGroup>
+    <Error Condition="!$(_BrowserCompanionBuildDirectory.StartsWith('$([System.IO.Path]::GetFullPath('$(TargetDir)'))'))" Text="The browser companion build payload must remain under the build output directory." />
+    <ItemGroup>
+      <_BrowserCompanionBuildFiles Include="@(_BrowserCompanionPayload->'$(_BrowserCompanionBuildDirectory)%(RelativePath)')" />
+      <_BrowserCompanionObsoleteBuildFiles Include="$(_BrowserCompanionBuildDirectory)**\*" Exclude="@(_BrowserCompanionBuildFiles)" />
+    </ItemGroup>
+    <Delete Files="@(_BrowserCompanionObsoleteBuildFiles)" />
+    <Copy SourceFiles="@(_BrowserCompanionPayload)" DestinationFiles="@(_BrowserCompanionBuildFiles)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="ValidatePublishedBrowserCompanion" AfterTargets="Publish" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_BrowserCompanionParentPublishDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)'))</_BrowserCompanionParentPublishDirectory>
+      <_BrowserCompanionFinalDirectory>$([MSBuild]::NormalizeDirectory('$(_BrowserCompanionParentPublishDirectory)', 'BrowserCompanion'))</_BrowserCompanionFinalDirectory>
+    </PropertyGroup>
+    <Error Condition="!$(_BrowserCompanionFinalDirectory.StartsWith('$(_BrowserCompanionParentPublishDirectory)'))" Text="The final browser companion payload must remain under the extension publish directory." />
+    <ItemGroup>
+      <_BrowserCompanionFinalFiles Include="@(_BrowserCompanionPayload->'$(_BrowserCompanionFinalDirectory)%(RelativePath)')" />
+      <_BrowserCompanionObsoleteFinalFiles Include="$(_BrowserCompanionFinalDirectory)**\*" Exclude="@(_BrowserCompanionFinalFiles)" />
+    </ItemGroup>
+    <Delete Files="@(_BrowserCompanionObsoleteFinalFiles)" />
+    <Error Condition="!Exists('$(PublishDir)BrowserCompanion\JPSoftworks.MediaControlsExtension.BrowserCompanion.exe')" Text="The published extension is missing its browser companion." />
+    <Error Condition="'$(PublishAot)' != 'true' and !Exists('$(PublishDir)BrowserCompanion\coreclr.dll')" Text="The published browser companion is missing its self-contained runtime." />
+  </Target>
+</Project>

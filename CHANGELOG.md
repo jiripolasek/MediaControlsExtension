@@ -6,6 +6,14 @@ All notable changes to Media Controls for Command Palette are documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 -->
 
+## [Unreleased]
+
+### Added
+
+- **Browser companion** - control individual Edge and Chrome media tabs, switch to the exact tab, and see site names, favicons, and track artwork in Command Palette and the Dock. The optional browser popup also works on its own.
+- Automatic Windows media fallback per browser after a sustained companion outage, with a recovery grace period. Separate tabs remain separate even when their track metadata matches.
+- A portable companion bundle with guided registration, automatic background relay startup, connection help, and privacy documentation. Browser-store installation is not available yet.
+
 ## [0.40.0] - 2026-10-22
 
 The new media-source system and isolated hosting provide the foundation for direct player integrations, starting with VLC and desktop iTunes.

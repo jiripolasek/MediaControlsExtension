@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Identical media tab</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<style>
+  :root { font: 16px system-ui, sans-serif; color-scheme: light dark; }
+  body { margin: 32px; max-width: 760px; }
+  audio { display: block; margin: 12px 0 24px; }
+  button { margin: 8px; padding: 8px; }
+  iframe { width: 100%; height: 220px; margin-top: 16px; }
+</style>
+<h1>Browser media fixture</h1>
+<p>Open this page in two windows. Each player should be independently controllable.</p>
+<audio id="first" controls loop src="/tone.wav" aria-label="First player"></audio>
+<audio id="second" controls loop src="/tone.wav" aria-label="Second player"></audio>
+<button id="remove">Remove second player</button>
+<button id="clear">Clear Media Session handlers and metadata</button>
+<div id="shadow"></div>
+<script>
+  const first = document.querySelector('#first');
+  let track = 1;
+  function metadata() {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: `Fixture track ${track}`, artist: 'Local test', album: 'Browser companion',
+      artwork: [{ src: `/cover-${Math.abs(track) % 2}.png`, sizes: '96x96', type: 'image/png' }] });
+  }
+  metadata();
+  navigator.mediaSession.setActionHandler('play', () => first.play());
+  navigator.mediaSession.setActionHandler('pause', () => first.pause());
+  navigator.mediaSession.setActionHandler('nexttrack', () => { track++; metadata(); });
+  navigator.mediaSession.setActionHandler('previoustrack', () => { track--; metadata(); });
+  first.addEventListener('play', () => navigator.mediaSession.playbackState = 'playing');
+  first.addEventListener('pause', () => navigator.mediaSession.playbackState = 'paused');
+  document.querySelector('#remove').onclick = () => { document.querySelector('#second')?.pause(); document.querySelector('#second')?.remove(); };
+  document.querySelector('#clear').onclick = () => {
+    for (const action of ['play', 'pause', 'nexttrack', 'previoustrack']) navigator.mediaSession.setActionHandler(action, null);
+    navigator.mediaSession.metadata = null;
+  };
+  if (window === window.top) {
+    const root = document.querySelector('#shadow').attachShadow({ mode: 'open' });
+    const audio = document.createElement('audio');
+    audio.src = '/tone.wav'; audio.controls = true; audio.setAttribute('aria-label', 'Shadow player');
+    root.append(audio);
+    const frame = document.createElement('iframe');
+    frame.src = '/?frame'; frame.title = 'Independent frame players'; document.body.append(frame);
+  }
+</script>
+</html>

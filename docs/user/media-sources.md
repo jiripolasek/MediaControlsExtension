@@ -16,6 +16,7 @@ order, with an icon for each action.
 | **Windows media**, under Recommended | Enabled by default. Discovers apps that support Windows media controls, including Apple Music, Spotify, and browsers. Start playback in the app; no extra setup is needed. |
 | **iTunes**, under Optional players | For classic desktop iTunes. Off by default. Open iTunes and choose **Enable**. The Apple Music app uses Windows media instead. See the [iTunes guide](itunes-backend.md). |
 | **VLC media player**, under Optional players | For a local or remote VLC 3 player. Off by default. Choose **Configure**, enter the Web interface URL and password, then choose **Save and enable**. See the [VLC setup guide](vlc-backend.md). |
+| **Browser companion**, under Optional players | For individual tabs in Edge and Chrome. Off by default. Requires the unpacked browser extension and local service. Keep Windows media enabled for delayed automatic fallback. See the [companion setup guide](browser-companion.md). |
 | **Windows media (compatibility)**, under Troubleshooting | An alternative for diagnosing Windows media problems. Enabling it replaces the recommended Windows media source. Enable the recommended source to switch back. See the [Windows media troubleshooting guide](GSMTC-Worker.md). |
 
 Actions are available in the details pane and the source's command menu. Enter

@@ -119,6 +119,7 @@ internal sealed partial class MediaSessionListItem : ListItemBase, IDisposable
             loggerFactory);
         this._switchToApplicationCommand = new(
             mediaService,
+            loggerFactory,
             viewModel.Session.Id);
         this._nextTrackCommand = new NextTrackInvokableSpecificMediaCommand(
             mediaService,

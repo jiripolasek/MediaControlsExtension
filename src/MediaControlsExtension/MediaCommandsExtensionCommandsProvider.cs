@@ -31,6 +31,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
     private readonly CommandItem _nowPlayingItem;
     private readonly MediaControlsExtensionPage _mediaControlsExtensionPage;
     private readonly MediaSourcesPage _mediaSourcesPage;
+    private readonly BrowserCompanionPage _browserCompanionPage;
     private readonly MediaControlsExtensionPage _mediaControlsBand;
     private readonly CommandItem _mediaControlsBandItem;
     private readonly VolumeDockBand _volumeDockBand;
@@ -60,12 +61,16 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
         var configurationPages = MediaBackendCatalog.CreateConfigurationPages(vlcSettings, settingsStore, loggerFactory,
             () => _ = this.UpdateVlcSourceClaimsAsync(vlcSettings),
             this.EnableVlcSource,
-            this.IsVlcSourceEnabled);
+            this.IsVlcSourceEnabled,
+            this.SetBrowserSourceEnabled,
+            this.IsBrowserSourceEnabled);
         var backendRegistry = MediaBackendCatalog.CreateRegistry(vlcSettings.GetOptions, workerOwner);
         this._settingsManager = new(settingsStore);
         this._backendSettings = new(backendRegistry, settingsStore, WindowsMediaBackendDefaults.Normalize, this._logger);
         this._mediaBackend = new(backendRegistry, this._backendSettings.EnabledIds, loggerFactory);
         this._mediaService = new MediaService(this._mediaBackend, loggerFactory);
+        this._browserCompanionPage = (BrowserCompanionPage)configurationPages["browser.companion"];
+        this._browserCompanionPage.Observe(this._mediaService);
         this._mediaSessionViewModels = new(this._mediaService, loggerFactory);
         this._systemVolumeService = new(loggerFactory);
         this._iconService = new IconService(this._settingsManager, loggerFactory);
@@ -241,6 +246,10 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
     private void EnableVlcSource() => this._backendSettings.SetEnabled("vlc", true);
 
+    private void SetBrowserSourceEnabled(bool enabled) => this._backendSettings.SetEnabled("browser.companion", enabled);
+
+    private bool IsBrowserSourceEnabled() => this._backendSettings.EnabledIds.Contains("browser.companion");
+
     private void EnableWindowsMediaSource() => this._backendSettings.SetEnabled("gsmtc.worker", true);
 
     private bool IsWindowsMediaEnabled() => this._backendSettings.EnabledIds.Any(static id => id is "gsmtc" or "gsmtc.worker");
@@ -392,6 +401,7 @@ public sealed partial class MediaControlsExtensionCommandsProvider : CommandProv
 
             this._resultFactory.Dispose();
             this._mediaSourcesPage.Dispose();
+            this._browserCompanionPage.Dispose();
             this._mediaControlsExtensionPage.Dispose();
             this._mediaControlsBand.Dispose();
             this._volumeDockBand.Dispose();

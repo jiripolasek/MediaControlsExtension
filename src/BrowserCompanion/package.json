@@ -1,0 +1,10 @@
+{
+  "name": "media-controls-browser-companion",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test ../../tests/BrowserCompanion/*.test.mjs",
+    "fixture": "node ../../tests/BrowserCompanion/fixture/server.mjs",
+    "preview": "node ../../tests/BrowserCompanion/preview/server.mjs"
+  }
+}

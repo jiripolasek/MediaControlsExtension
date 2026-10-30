@@ -940,4 +940,37 @@ Os logs de diagnóstico podem conter títulos de mídia, nomes de reprodutores e
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>As configurações foram salvas, mas não foi possível ativar a fonte de mídia. Volte a Fontes de mídia e escolha Ativar novamente.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Companheiro do navegador</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Controle abas individuais do navegador. Requer a extensão e a configuração no computador; a mídia do Windows continua disponível como alternativa automática.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Conexões dos navegadores</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Navegadores detectados e sua fonte de mídia atual. Um navegador pode estar fechado ou a extensão pode estar indisponível.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Nenhum navegador detectado. As extensões conectadas aparecerão aqui automaticamente.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Fonte de mídia</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Aguardando a recuperação da conexão do complemento</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Instale o Media Controls Companion no Firefox ou em um navegador baseado no Chromium, como Edge, Chrome ou Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Navegador</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Outros navegadores ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Nenhuma conexão do complemento.</value>
+  </data>
 </root>

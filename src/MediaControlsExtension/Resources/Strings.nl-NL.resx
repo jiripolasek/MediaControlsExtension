@@ -940,4 +940,37 @@ Diagnostische logboeken kunnen mediatitels, namen van mediaspelers en technische
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>De instellingen zijn opgeslagen, maar de mediabron kon niet worden ingeschakeld. Ga terug naar Mediabronnen en kies opnieuw Inschakelen.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Browsercompanion</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Bedien afzonderlijke browsertabbladen. Vereist de extensie en desktopconfiguratie; Windows-media blijft beschikbaar als automatische terugvaloptie.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Browserverbindingen</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Gedetecteerde browsers en hun huidige mediabron. Een browser kan gesloten zijn of de extensie is niet beschikbaar.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Geen browsers gevonden. Verbonden extensies verschijnen hier automatisch.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Mediabron</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Wachten op herstel van de companionverbinding</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Installeer Media Controls Companion in Firefox of een Chromium-browser, zoals Edge, Chrome of Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Andere browsers ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Geen companionverbindingen.</value>
+  </data>
 </root>

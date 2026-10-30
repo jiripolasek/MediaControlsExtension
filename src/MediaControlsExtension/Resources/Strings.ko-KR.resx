@@ -940,4 +940,37 @@ _저작권 © Jiří Polášek_
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>설정은 저장되었지만 미디어 소스를 켜지 못했습니다. 미디어 소스로 돌아가 켜기를 다시 선택하세요.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>브라우저 도우미</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>개별 브라우저 탭을 제어합니다. 확장 프로그램과 데스크톱 설정이 필요하며 Windows 미디어는 자동 대체 수단으로 계속 사용할 수 있습니다.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>브라우저 연결</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>감지된 브라우저와 현재 미디어 소스입니다. 브라우저가 닫혀 있거나 확장 기능을 사용할 수 없으면 연결되지 않을 수 있습니다.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>감지된 브라우저가 없습니다. 연결된 확장 기능이 여기에 자동으로 표시됩니다.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>미디어 소스</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>컴패니언 연결 복구 대기 중</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Firefox 또는 Edge, Chrome, Brave 등의 Chromium 기반 브라우저에 Media Controls Companion을 설치하세요.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>브라우저</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>다른 브라우저 ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>컴패니언 연결이 없습니다.</value>
+  </data>
 </root>

@@ -940,4 +940,37 @@ _Copyright © Jiří Polášek_
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>設定は保存されましたが、メディアソースを有効にできませんでした。メディアソースに戻り、もう一度「有効にする」を選択してください。</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>ブラウザーコンパニオン</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>ブラウザーの各タブを操作します。拡張機能とデスクトップの設定が必要です。Windows メディアは自動切り替え先として引き続き利用できます。</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>ブラウザーの接続</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>検出されたブラウザーと現在のメディアソースです。ブラウザーが閉じている場合や拡張機能が利用できない場合は、接続されないことがあります。</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>ブラウザーが検出されませんでした。接続された拡張機能はここに自動表示されます。</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>メディアソース</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>コンパニオンの接続復旧を待機中</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Media Controls Companion を Firefox、または Edge、Chrome、Brave などの Chromium ベースのブラウザーにインストールしてください。</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>ブラウザー</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>その他のブラウザー ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>コンパニオンの接続はありません。</value>
+  </data>
 </root>

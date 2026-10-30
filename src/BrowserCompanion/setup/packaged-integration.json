@@ -1,0 +1,9 @@
+{
+  "packageName": "JiriPolasek.MediaControlsForCmdPal",
+  "executionAlias": "MediaControlsBrowserBridge.exe",
+  "storeExtensionIds": [
+    "eghdfeljfohfeifgnphhhkcalphfnoek",
+    "ohigjglkifnlhjlejfbdmmjmhfbnhdin"
+  ],
+  "firefoxExtensionIds": ["media-controls-companion@jiripolasek.com"]
+}

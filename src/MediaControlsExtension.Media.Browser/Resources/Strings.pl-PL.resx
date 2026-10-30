@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source_Browser" xml:space="preserve">
+    <value>Przeglądarka</value>
+  </data>
+  <data name="Source_Tab" xml:space="preserve">
+    <value>Karta</value>
+  </data>
+  <data name="Source_Page" xml:space="preserve">
+    <value>Strona</value>
+  </data>
+  <data name="Source_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Source_Status" xml:space="preserve">
+    <value>Stan</value>
+  </data>
+  <data name="State_Sleeping" xml:space="preserve">
+    <value>Uśpiona karta. Odtwórz lub Przełącz do aplikacji ją wybudzi.</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>Oczekiwanie na stronę. Przełącz do aplikacji, aby ją odświeżyć.</value>
+  </data>
+  <data name="Fallback_Companion" xml:space="preserve">
+    <value>Używany jest dodatek przeglądarki</value>
+  </data>
+  <data name="Fallback_Recovery" xml:space="preserve">
+    <value>Podczas ponownego łączenia dodatku używane są sesje multimedialne Windows</value>
+  </data>
+  <data name="Fallback_Reconnecting" xml:space="preserve">
+    <value>Dodatek niedostępny. Ponowne łączenie przed przełączeniem na sesje multimedialne Windows.</value>
+  </data>
+  <data name="Fallback_Windows" xml:space="preserve">
+    <value>Używane są sesje multimedialne Windows - dodatek niedostępny</value>
+  </data>
+  <data name="Fallback_Partial" xml:space="preserve">
+    <value>Używany jest dodatek przeglądarki. Niektóre profile są niedostępne.</value>
+  </data>
+  <data name="Fallback_ProfileUnavailable" xml:space="preserve">
+    <value>Profil niedostępny. Inne profile nadal używają dodatku przeglądarki.</value>
+  </data>
+  <data name="Fallback_Unknown" xml:space="preserve">
+    <value>Używane są sesje multimedialne Windows - nieobsługiwana tożsamość przeglądarki</value>
+  </data>
+</root>
