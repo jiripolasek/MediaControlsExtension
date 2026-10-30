@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 
 namespace JPSoftworks.MediaControlsExtension.Media.Infrastructure;
 
@@ -104,6 +105,11 @@ public sealed record MediaBackendSnapshot(
     ImmutableArray<MediaBackendSessionId> CurrentSessionHints,
     MediaControlAvailability Availability)
 {
+    /// <summary>Gets effective source claims committed with this catalog; default uses the registration's claims.</summary>
+    /// <remarks>An initialized empty array releases claims. Dynamic claims expire when this provider run retires or faults terminally.</remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public ImmutableArray<MediaBackendSourceClaim> ReplacesSources { get; init; }
+
     /// <summary>Gets the applied source-policy revision; zero denotes the initial empty policy.</summary>
     public long SourcePolicyRevision { get; init; }
 

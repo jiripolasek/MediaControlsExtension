@@ -36,6 +36,19 @@ public enum MediaConnectionStatus
     Disconnected,
 }
 
+/// <summary>Identifies which source currently supplies a connection's media.</summary>
+public enum MediaConnectionSource
+{
+    /// <summary>The provider has not reported source ownership.</summary>
+    Unknown,
+    /// <summary>The connected provider supplies media.</summary>
+    Provider,
+    /// <summary>The fallback provider supplies media when enabled.</summary>
+    Fallback,
+    /// <summary>Fallback is withheld during the provider's recovery grace period.</summary>
+    Reconnecting,
+}
+
 /// <summary>Describes one provider-local connection, such as a browser profile.</summary>
 /// <param name="Id">Nonblank ordinal ID, unique within the provider; not a command target or connection epoch.</param>
 /// <param name="DisplayName">Nonblank localized connection label.</param>
@@ -45,7 +58,17 @@ public sealed record MediaConnectionState(
     string Id,
     string DisplayName,
     MediaConnectionStatus Status,
-    string? DiagnosticMessage = null);
+    string? DiagnosticMessage = null)
+{
+    /// <summary>Gets the native application identity, when verified by the provider.</summary>
+    public string? ApplicationId { get; init; }
+    /// <summary>Gets the application name without a profile suffix.</summary>
+    public string? ApplicationName { get; init; }
+    /// <summary>Gets the native executable path used to group installed and connected applications.</summary>
+    public string? ApplicationPath { get; init; }
+    /// <summary>Gets the effective source independently of transport readiness.</summary>
+    public MediaConnectionSource Source { get; init; }
+}
 
 /// <summary>Reports connection state independently of session count and control availability.</summary>
 /// <param name="Status">Provider-reported aggregate connection status.</param>

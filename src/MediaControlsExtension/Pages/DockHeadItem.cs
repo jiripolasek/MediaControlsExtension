@@ -61,7 +61,7 @@ internal sealed partial class DockHeadItem : ListItemBase, IDisposable
             this.UpdateCurrentSession,
             loggerFactory.CreateLogger<DockHeadItem>());
 
-        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(this._mediaService);
+        this._primaryMediaCommand = new BringAssociatedAppToFrontCommand(this._mediaService, loggerFactory);
         this._mediaContextCommands = [
 
             new Separator(),

@@ -940,4 +940,37 @@ _版权所有 © Jiří Polášek_
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>设置已保存，但无法启用媒体源。请返回媒体源并再次选择“启用”。</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>浏览器伴侣</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>控制各个浏览器标签页。需要安装扩展并完成桌面设置；Windows 媒体仍可用作自动回退方式。</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>浏览器连接</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>已检测到的浏览器及其当前媒体来源。浏览器关闭或扩展不可用时，可能没有伴侣连接。</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>未检测到浏览器。已连接的扩展会自动显示在此处。</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>媒体来源</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>正在等待伴侣恢复连接</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>在 Firefox 或基于 Chromium 的浏览器（如 Edge、Chrome 或 Brave）中安装 Media Controls Companion。</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>浏览器</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>其他浏览器（{0}）</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>没有伴侣连接。</value>
+  </data>
 </root>

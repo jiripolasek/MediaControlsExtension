@@ -940,4 +940,37 @@ Diagnostické protokoly mohou obsahovat názvy médií, názvy přehrávačů a 
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Nastavení bylo uloženo, ale zdroj médií se nepodařilo povolit. Vraťte se na stránku Zdroje médií a znovu zvolte Povolit.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Doplněk prohlížeče</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Ovládejte jednotlivé karty prohlížeče. Vyžaduje doplněk a nastavení počítače; média Windows zůstávají jako automatická záloha.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Připojení prohlížečů</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Zjištěné prohlížeče a jejich aktuální zdroj médií. Prohlížeč nemusí být připojen, pokud je zavřený nebo rozšíření není dostupné.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Nebyly zjištěny žádné prohlížeče. Připojená rozšíření se zde zobrazí automaticky.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Zdroj médií</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Čeká se na obnovení připojení rozšíření</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Nainstalujte Media Controls Companion do Firefoxu nebo prohlížeče založeného na Chromiu, například Edge, Chrome nebo Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Prohlížeč</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Ostatní prohlížeče ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Žádné připojení rozšíření.</value>
+  </data>
 </root>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source_Browser" xml:space="preserve">
+    <value>Navigateur</value>
+  </data>
+  <data name="Source_Tab" xml:space="preserve">
+    <value>Onglet</value>
+  </data>
+  <data name="Source_Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="Source_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Source_Status" xml:space="preserve">
+    <value>État</value>
+  </data>
+  <data name="State_Sleeping" xml:space="preserve">
+    <value>Onglet en veille. Lire ou Basculer vers l’application le réveille.</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>En attente de la page. Basculez vers l’application pour l’actualiser.</value>
+  </data>
+  <data name="Fallback_Companion" xml:space="preserve">
+    <value>Compagnon du navigateur utilisé</value>
+  </data>
+  <data name="Fallback_Recovery" xml:space="preserve">
+    <value>Sessions multimédias Windows utilisées pendant la reconnexion du compagnon</value>
+  </data>
+  <data name="Fallback_Reconnecting" xml:space="preserve">
+    <value>Compagnon indisponible. Tentative de reconnexion avant de passer aux sessions multimédias Windows.</value>
+  </data>
+  <data name="Fallback_Windows" xml:space="preserve">
+    <value>Sessions multimédias Windows utilisées - compagnon indisponible</value>
+  </data>
+  <data name="Fallback_Partial" xml:space="preserve">
+    <value>Compagnon du navigateur utilisé. Certains profils sont indisponibles.</value>
+  </data>
+  <data name="Fallback_ProfileUnavailable" xml:space="preserve">
+    <value>Profil indisponible. Les autres profils utilisent toujours le compagnon du navigateur.</value>
+  </data>
+  <data name="Fallback_Unknown" xml:space="preserve">
+    <value>Sessions multimédias Windows utilisées - identité du navigateur non prise en charge</value>
+  </data>
+</root>

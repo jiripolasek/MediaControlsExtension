@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media\JPSoftworks.MediaControlsExtension.Media.csproj" />
+		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Browser\JPSoftworks.MediaControlsExtension.Media.Browser.csproj" />
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Gsmtc\JPSoftworks.MediaControlsExtension.Media.Gsmtc.csproj" />
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.Vlc\JPSoftworks.MediaControlsExtension.Media.Vlc.csproj" />
 		<ProjectReference Include="..\..\src\MediaControlsExtension.Media.ITunes\JPSoftworks.MediaControlsExtension.Media.ITunes.csproj" />
@@ -20,5 +21,6 @@
 	<ItemGroup>
 		<Compile Include="..\..\src\MediaControlsExtension\ViewModels\MediaSourcePresentation.cs" Link="Presentation\MediaSourcePresentation.cs" />
 		<Compile Include="..\..\src\MediaControlsExtension\Helpers\ITunesSourceClaims.cs" Link="Helpers\ITunesSourceClaims.cs" />
+		<Compile Include="..\..\src\BrowserCompanion\host\BrowserIdentity.cs" Link="BrowserIdentity.cs" />
 	</ItemGroup>
 </Project>

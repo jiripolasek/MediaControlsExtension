@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\shared\PackagedBrowserIntegration.cs" Link="PackagedBrowserIntegration.cs" />
+    <Compile Include="..\shared\InstalledBrowsers.cs" Link="InstalledBrowsers.cs" />
+    <Content Include="..\setup\BrowserIntegration.ps1;..\setup\PackagedRegistration.psm1;..\setup\packaged-integration.json"
+      Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+      Condition="'$(BrowserCompanionPackaged)' == 'true'" />
+  </ItemGroup>
+  <Target Name="GetBrowserCompanionPublishPayload" DependsOnTargets="Publish" Returns="@(_BrowserCompanionPublishPayload)">
+    <ItemGroup>
+      <_BrowserCompanionPublishPayload Include="@(ResolvedFileToPublish->'$(PublishDir)%(RelativePath)')"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
+    </ItemGroup>
+  </Target>
+</Project>

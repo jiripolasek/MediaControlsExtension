@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Media Controls Companion",
+  "version": "0.2.0",
+  "minimum_chrome_version": "119",
+  "description": "Browser companion for Media Controls on Windows. Connect browser media tabs to the desktop app, Command Palette, and Dock.",
+  "homepage_url": "https://mediacontrols.jiripolasek.com/companions/",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png", "256": "icons/icon-256.png" },
+  "permissions": ["nativeMessaging", "storage", "alarms", "webNavigation"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "incognito": "not_allowed",
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_title": "Media Controls", "default_popup": "popup.html" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["page.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true,
+      "world": "ISOLATED"
+    }
+  ]
+}

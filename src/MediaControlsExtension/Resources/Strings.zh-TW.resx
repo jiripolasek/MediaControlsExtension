@@ -940,4 +940,37 @@ _版權所有 © Jiří Polášek_
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>設定已儲存，但無法啟用媒體來源。請返回媒體來源並再次選擇「啟用」。</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>瀏覽器伴侶</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>控制個別瀏覽器分頁。需要安裝擴充功能並完成桌面設定；Windows 媒體仍可作為自動備援方式。</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>瀏覽器連線</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>偵測到的瀏覽器及其目前的媒體來源。瀏覽器關閉或擴充功能無法使用時，可能沒有伴侶連線。</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>未偵測到瀏覽器。已連線的擴充功能會自動顯示於此處。</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>媒體來源</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>正在等待伴侶恢復連線</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>在 Firefox 或以 Chromium 為基礎的瀏覽器（如 Edge、Chrome 或 Brave）中安裝 Media Controls Companion。</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>瀏覽器</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>其他瀏覽器（{0}）</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>沒有伴侶連線。</value>
+  </data>
 </root>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source_Browser" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="Source_Tab" xml:space="preserve">
+    <value>Scheda</value>
+  </data>
+  <data name="Source_Page" xml:space="preserve">
+    <value>Pagina</value>
+  </data>
+  <data name="Source_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Source_Status" xml:space="preserve">
+    <value>Stato</value>
+  </data>
+  <data name="State_Sleeping" xml:space="preserve">
+    <value>Scheda sospesa. Riproduci o Passa all’applicazione la riattiva.</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>In attesa della pagina. Passa all’applicazione per aggiornarla.</value>
+  </data>
+  <data name="Fallback_Companion" xml:space="preserve">
+    <value>Companion del browser in uso</value>
+  </data>
+  <data name="Fallback_Recovery" xml:space="preserve">
+    <value>Sessioni multimediali di Windows in uso durante la riconnessione del companion</value>
+  </data>
+  <data name="Fallback_Reconnecting" xml:space="preserve">
+    <value>Companion non disponibile. Riconnessione in corso prima di passare alle sessioni multimediali di Windows.</value>
+  </data>
+  <data name="Fallback_Windows" xml:space="preserve">
+    <value>Sessioni multimediali di Windows in uso - companion non disponibile</value>
+  </data>
+  <data name="Fallback_Partial" xml:space="preserve">
+    <value>Companion del browser in uso. Alcuni profili non sono disponibili.</value>
+  </data>
+  <data name="Fallback_ProfileUnavailable" xml:space="preserve">
+    <value>Profilo non disponibile. Gli altri profili usano ancora il companion del browser.</value>
+  </data>
+  <data name="Fallback_Unknown" xml:space="preserve">
+    <value>Sessioni multimediali di Windows in uso - identità del browser non supportata</value>
+  </data>
+</root>

@@ -214,6 +214,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         MediaBackendRegistry.ValidateSelection([.. this._providers.Select(static entry => entry.Registration)], selection);
         this.ValidateSourceOwnersUnderLock(null, false, selection: selection);
         var affected = new HashSet<ProviderEntry>();
+        var requestedClaims = requested is null ? [] : EffectiveSourceClaims(requested);
         foreach (var entry in this._providers)
         {
             var enabled = selection.Contains(entry.Registration.Id);
@@ -234,7 +235,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
             if (!enabled && entry.Run is { Retired: false } run)
             {
-                this.RetireUnderLock(run);
+                this.RetireUnderLock(run, updatePolicies: false);
                 retired.Add(run);
                 this.SetLifecycleStateUnderLock(entry, MediaBackendLifecycleStatus.Stopping, entry.Error);
             }
@@ -252,7 +253,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
         if (requested is not null)
         {
             affected.Add(requested);
-            foreach (var claim in requested.SourceClaims)
+            foreach (var claim in requestedClaims)
             {
                 affected.Add(this._providers.Single(entry => entry.Registration.Id == claim.BackendId));
             }
@@ -673,7 +674,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 continue;
             }
 
-            foreach (var claim in entry == changedEntry && replacementClaims is { } replacements ? replacements : entry.SourceClaims)
+            foreach (var claim in entry == changedEntry && replacementClaims is { } replacements ? replacements : EffectiveSourceClaims(entry))
             {
                 if (!owners.Add(claim))
                 {
@@ -687,7 +688,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
     {
         var affected = new HashSet<ProviderEntry>();
         var claims = this._providers.Where(static entry => entry.Enabled)
-            .SelectMany(static entry => entry.SourceClaims).ToArray();
+            .SelectMany(static entry => EffectiveSourceClaims(entry)).ToArray();
         foreach (var entry in this._providers)
         {
             var excluded = claims.Where(claim => claim.BackendId == entry.Registration.Id)
@@ -724,6 +725,22 @@ public sealed class CompositeMediaBackend : IMediaBackend
         }
 
         return affected;
+    }
+
+    private static ImmutableArray<MediaBackendSourceClaim> EffectiveSourceClaims(ProviderEntry entry) =>
+        entry.Run is { Retired: false, TerminalFault: false, Snapshot: { } snapshot } && !snapshot.ReplacesSources.IsDefault
+            ? snapshot.ReplacesSources : entry.SourceClaims;
+
+    private void RefreshSourcePoliciesUnderLock()
+    {
+        var affected = this.UpdateSourcePoliciesUnderLock();
+        if (this._started && !this._disposed)
+        {
+            foreach (var group in affected.Select(static entry => entry.Group).Distinct())
+            {
+                this.QueueTransitionUnderLock(group.Members[0]);
+            }
+        }
     }
 
     private async Task ReconcileAsync(ProviderEntry entry)
@@ -987,6 +1004,16 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 }
 
                 ValidateConnectionState(snapshot.Connection);
+                if (!snapshot.ReplacesSources.IsDefault)
+                {
+                    MediaBackendRegistry.ValidateSourceClaims(run.Entry.Registration.Id, snapshot.ReplacesSources);
+                    if (snapshot.ReplacesSources.Any(claim => !this._providers.Any(entry => entry.Registration.Id == claim.BackendId)))
+                    {
+                        throw new InvalidOperationException("A source claim refers to an unregistered backend.");
+                    }
+                }
+                this.ValidateSourceOwnersUnderLock(run.Entry, run.Entry.Enabled,
+                    snapshot.ReplacesSources.IsDefault ? run.Entry.SourceClaims : snapshot.ReplacesSources);
                 foreach (var session in snapshot.Sessions)
                 {
                     ValidateSource(session.MediaProperties.Source);
@@ -1063,6 +1090,7 @@ public sealed class CompositeMediaBackend : IMediaBackend
                 run.Snapshot = snapshot;
                 run.PublishedPolicyRevision = policyRevision;
                 run.ReadFailed = false;
+                this.RefreshSourcePoliciesUnderLock();
                 this.SetLifecycleStateUnderLock(run.Entry, MediaBackendLifecycleStatus.Ready, null);
                 this._revision++;
             }
@@ -1119,15 +1147,22 @@ public sealed class CompositeMediaBackend : IMediaBackend
 
             run.TerminalFault |= terminal;
             run.ReadFailed = true;
+            if (terminal && run.Snapshot is { } snapshot && !snapshot.ReplacesSources.IsDefault)
+            {
+                foreach (var route in run.Routes.Values) this._routes.Remove(route.Id);
+                run.Routes.Clear();
+                run.Snapshot = snapshot with { Sessions = [], CurrentSessionHints = [] };
+            }
+            if (terminal) this.RefreshSourcePoliciesUnderLock();
             this.SetLifecycleStateUnderLock(run.Entry, MediaBackendLifecycleStatus.Faulted, exception.Message);
             this._revision++;
         }
 
         MediaBackendLog.ProviderFailed(this._logger, run.Entry.Registration.Id, operation, exception);
-        this.Signal(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
+        this.Signal(MediaBackendSignal.ObservationsChanged | MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);
     }
 
-    private void RetireUnderLock(ProviderRun run)
+    private void RetireUnderLock(ProviderRun run, bool updatePolicies = true)
     {
         if (run.Retired)
         {
@@ -1144,6 +1179,8 @@ public sealed class CompositeMediaBackend : IMediaBackend
         {
             run.Drained.TrySetResult();
         }
+
+        if (updatePolicies) this.RefreshSourcePoliciesUnderLock();
 
         this._revision++;
         this.Signal(MediaBackendSignal.SessionsChanged | MediaBackendSignal.CurrentSessionChanged | MediaBackendSignal.BackendsChanged);

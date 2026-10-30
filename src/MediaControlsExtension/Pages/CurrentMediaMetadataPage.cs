@@ -57,7 +57,7 @@ internal sealed partial class CurrentMediaMetadataPage : MediaMetadataPage
             {
                 Name = Strings.Command_ToggleRepeat!,
             },
-            new BringAssociatedAppToFrontCommand(mediaService),
+            new BringAssociatedAppToFrontCommand(mediaService, loggerFactory),
             loggerFactory)
     {
         this.Id = "com.jpsoftworks.cmdpal.mediacontrols.currentmetadata";

@@ -940,4 +940,37 @@ Les journaux de diagnostic peuvent contenir des titres de médias, des noms de l
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Les paramètres ont été enregistrés, mais la source multimédia n&apos;a pas pu être activée. Revenez à Sources multimédias et choisissez à nouveau Activer.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Compagnon du navigateur</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Contrôlez chaque onglet du navigateur. Nécessite l’extension et la configuration du bureau ; les médias Windows restent disponibles en relais automatique.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Connexions des navigateurs</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Navigateurs détectés et source multimédia actuelle. Un navigateur peut être fermé ou son extension indisponible.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Aucun navigateur détecté. Les extensions connectées apparaîtront ici automatiquement.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Source multimédia</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>En attente du rétablissement de la connexion du compagnon</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Installez Media Controls Companion dans Firefox ou un navigateur basé sur Chromium, comme Edge, Chrome ou Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Navigateur</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Autres navigateurs ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Aucune connexion au compagnon.</value>
+  </data>
 </root>

@@ -940,4 +940,37 @@ I log di diagnostica possono contenere titoli dei contenuti multimediali, nomi d
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Le impostazioni sono state salvate, ma non è stato possibile attivare la sorgente multimediale. Torna a Sorgenti multimediali e scegli di nuovo Attiva.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Companion del browser</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Controlla le singole schede del browser. Richiede l’estensione e la configurazione desktop; i contenuti multimediali di Windows restano disponibili come alternativa automatica.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Connessioni dei browser</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Browser rilevati e relativa sorgente multimediale attuale. Un browser potrebbe essere chiuso o la sua estensione non disponibile.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Nessun browser rilevato. Le estensioni connesse appariranno qui automaticamente.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Sorgente multimediale</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>In attesa del ripristino della connessione del componente</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Installa Media Controls Companion in Firefox o in un browser basato su Chromium, come Edge, Chrome o Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Altri browser ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Nessuna connessione al componente.</value>
+  </data>
 </root>

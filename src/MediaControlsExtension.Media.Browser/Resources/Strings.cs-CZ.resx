@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source_Browser" xml:space="preserve">
+    <value>Prohlížeč</value>
+  </data>
+  <data name="Source_Tab" xml:space="preserve">
+    <value>Karta</value>
+  </data>
+  <data name="Source_Page" xml:space="preserve">
+    <value>Stránka</value>
+  </data>
+  <data name="Source_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Source_Status" xml:space="preserve">
+    <value>Stav</value>
+  </data>
+  <data name="State_Sleeping" xml:space="preserve">
+    <value>Uspaná karta. Probudí ji Přehrát nebo Přepnout do aplikace.</value>
+  </data>
+  <data name="State_Unresponsive" xml:space="preserve">
+    <value>Čekání na stránku. Přepněte do aplikace a obnovte ji.</value>
+  </data>
+  <data name="Fallback_Companion" xml:space="preserve">
+    <value>Používá se doplněk prohlížeče</value>
+  </data>
+  <data name="Fallback_Recovery" xml:space="preserve">
+    <value>Během opětovného připojování doplňku se používají mediální relace Windows</value>
+  </data>
+  <data name="Fallback_Reconnecting" xml:space="preserve">
+    <value>Doplněk není dostupný. Před přepnutím na mediální relace Windows se zkouší opětovné připojení.</value>
+  </data>
+  <data name="Fallback_Windows" xml:space="preserve">
+    <value>Používají se mediální relace Windows - doplněk není dostupný</value>
+  </data>
+  <data name="Fallback_Partial" xml:space="preserve">
+    <value>Používá se doplněk prohlížeče. Některé profily nejsou dostupné.</value>
+  </data>
+  <data name="Fallback_ProfileUnavailable" xml:space="preserve">
+    <value>Profil není dostupný. Ostatní profily stále používají doplněk prohlížeče.</value>
+  </data>
+  <data name="Fallback_Unknown" xml:space="preserve">
+    <value>Používají se mediální relace Windows - identita prohlížeče není podporována</value>
+  </data>
+</root>

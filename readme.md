@@ -31,6 +31,8 @@ You can also enable direct support for [desktop iTunes](docs/user/itunes-backend
 
 See [Media sources setup](docs/user/media-sources.md) for configuration and troubleshooting, the [player compatibility guide](docs/user/GSMTC-Compatibility.md) for supported features, and the [changelog](CHANGELOG.md) for release notes.
 
+The next release also includes an optional [browser companion](docs/user/browser-companion.md) for individual Edge, Chrome, and Firefox tabs, exact tab switching, and site artwork. The desktop bridge is included in Media Controls, with setup and removal under Media sources and automatic Windows media fallback. Preview installation uses an unpacked extension in Chrome or Edge and a temporary add-on in Firefox. Listings in the Chrome Web Store, Microsoft Edge Add-ons, and Firefox Add-ons are planned.
+
 ## Installation
 
 > **Note:** This extension requires [Microsoft PowerToys](https://apps.microsoft.com/detail/xp89dcgq3k6vld) to be installed.

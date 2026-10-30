@@ -940,4 +940,37 @@ Dzienniki diagnostyczne mogą zawierać tytuły multimediów, nazwy odtwarzaczy 
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Ustawienia zostały zapisane, ale nie udało się włączyć źródła multimediów. Wróć do strony Źródła multimediów i ponownie wybierz Włącz.</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Dodatek przeglądarki</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Steruj poszczególnymi kartami przeglądarki. Wymaga rozszerzenia i konfiguracji na komputerze; multimedia Windows pozostają automatyczną opcją zapasową.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Połączenia przeglądarek</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Wykryte przeglądarki i ich bieżące źródło multimediów. Przeglądarka może być zamknięta lub rozszerzenie może być niedostępne.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>Nie wykryto przeglądarek. Połączone rozszerzenia pojawią się tutaj automatycznie.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Źródło multimediów</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Oczekiwanie na przywrócenie połączenia dodatku</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Zainstaluj Media Controls Companion w przeglądarce Firefox lub opartej na Chromium, takiej jak Edge, Chrome lub Brave.</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Przeglądarka</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Inne przeglądarki ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>Brak połączeń dodatku.</value>
+  </data>
 </root>

@@ -132,6 +132,7 @@ internal partial class MediaMetadataPage : VisibilityAwareContentPage
                 loggerFactory),
             new BringAssociatedAppToFrontCommand(
                 mediaService,
+                loggerFactory,
                 session.Id),
             loggerFactory);
     }

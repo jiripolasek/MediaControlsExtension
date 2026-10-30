@@ -12,6 +12,7 @@ work, use the focused guides:
 - [Worker hosting](media-backend-hosting.md): running a backend in another process,
   switching hosting modes, transport, and recovery.
 - [VLC setup](../user/vlc-backend.md) and [Dummy media](dummy-media.md): provider setup.
+- [Browser companion](browser-companion.md#media-controls-backend): optional browser extension, relay service, and exact tab activation.
 
 ## Where the code lives
 
@@ -21,6 +22,7 @@ work, use the focused guides:
 | [CompositeMediaBackend](../../src/MediaControlsExtension.Media/Infrastructure/CompositeMediaBackend.cs) | Provider lifetimes, public session IDs, routing, source exclusions, and cross-provider pauses. |
 | [GSMTC](../../src/MediaControlsExtension.Media.Gsmtc) | Windows media discovery, native objects, controls, and artwork. |
 | [Hosting](../../src/MediaControlsExtension.Media.Hosting) | Worker proxy, transport, process ownership, and recovery. |
+| [Browser companion](../../src/MediaControlsExtension.Media.Browser) | Optional tab sessions, relay reconnection, and captured browser command bindings. |
 | [MediaBackendCatalog](../../src/MediaControlsExtension/Helpers/MediaBackendCatalog.cs) | Application registrations, localized provider labels, configuration pages, and activation adapters. |
 
 Windows media uses the isolated GSMTC worker by default. In-process GSMTC is an
@@ -215,6 +217,17 @@ cause new notifications.
 These fields are for presentation. Commands use session IDs and generations;
 source exclusions use only `NativeApplication.ApplicationId`. Keep provider-specific
 routing IDs, such as browser tab or document IDs, inside the provider.
+
+The browser companion publishes dynamic `MediaBackendSnapshot.ReplacesSources`
+claims with its complete catalog. The composite validates and commits those
+claims and session routes under the same lock. An initialized empty claim array
+releases ownership; a default array uses configured registration claims. Dynamic
+claims end when the provider run retires or faults terminally. Static configured
+claims retain their existing failure behavior. Acquisition immediately retires
+excluded routes; release starts native rediscovery after companion withdrawal.
+Commands, selection, cycling, artwork, and secondary pauses share this catalog.
+There is no title, artist, album, duration, or position matching between providers.
+See the [heartbeat fallback policy](browser-companion.md#windows-media-session-fallback).
 
 "Switch to application" submits `ActivateSource`. Advertise it only when activation
 is implemented; it is independent of playback and can work without native app

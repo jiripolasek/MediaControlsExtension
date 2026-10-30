@@ -796,6 +796,12 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   <data name="MediaSources_Connection_Disconnected" xml:space="preserve">
     <value>Disconnected</value>
   </data>
+  <data name="Settings_Backend_Browser_Title" xml:space="preserve">
+    <value>Browser companion</value>
+  </data>
+  <data name="Settings_Backend_Browser_Description" xml:space="preserve">
+    <value>Control individual browser tabs. Requires the companion extension and desktop setup; Windows media remains available as automatic fallback.</value>
+  </data>
   <data name="Settings_Backend_Vlc_Title" xml:space="preserve">
     <value>VLC media player</value>
   </data>
@@ -968,5 +974,92 @@ Diagnostic logs can contain media titles, player names, and technical error deta
   </data>
   <data name="MediaSources_SavedButEnableFailed" xml:space="preserve">
     <value>Settings were saved, but the media source could not be enabled. Return to Media sources and try Enable again.</value>
+  </data>
+  <data name="BrowserIntegration_Title" xml:space="preserve">
+    <value>Browser companion setup</value>
+  </data>
+  <data name="BrowserIntegration_Help" xml:space="preserve">
+    <value>Control browser tabs from Command Palette.</value>
+  </data>
+  <data name="BrowserIntegration_GetStep" xml:space="preserve">
+    <value>1. Get the extension</value>
+  </data>
+  <data name="BrowserIntegration_GetHelp" xml:space="preserve">
+    <value>Install Media Controls Companion in Firefox or a Chromium-based browser, such as Edge, Chrome, or Brave.</value>
+  </data>
+  <data name="BrowserIntegration_EnableStep" xml:space="preserve">
+    <value>2. Enable browser integration</value>
+  </data>
+  <data name="BrowserIntegration_EnableHelp" xml:space="preserve">
+    <value>Once installed, connect the extension to Media Controls.</value>
+  </data>
+  <data name="BrowserIntegration_EnabledStatus" xml:space="preserve">
+    <value>Browser integration enabled</value>
+  </data>
+  <data name="BrowserIntegration_ReadyHelp" xml:space="preserve">
+    <value>Setup is complete. Open the companion in your browser to check its connection.</value>
+  </data>
+  <data name="BrowserIntegration_Ids" xml:space="preserve">
+    <value>Extension IDs (separate multiple IDs with commas)</value>
+  </data>
+  <data name="BrowserIntegration_Enable" xml:space="preserve">
+    <value>Enable browser integration</value>
+  </data>
+  <data name="BrowserIntegration_Remove" xml:space="preserve">
+    <value>Remove browser integration</value>
+  </data>
+  <data name="BrowserIntegration_Guide" xml:space="preserve">
+    <value>Get the extension</value>
+  </data>
+  <data name="BrowserIntegration_Advanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="BrowserIntegration_Developer" xml:space="preserve">
+    <value>Developer setup</value>
+  </data>
+  <data name="BrowserIntegration_DeveloperHelp" xml:space="preserve">
+    <value>Only needed for unpacked extensions. Copy the ID from chrome://extensions or edge://extensions.</value>
+  </data>
+  <data name="BrowserIntegration_SaveDeveloper" xml:space="preserve">
+    <value>Save developer setup</value>
+  </data>
+  <data name="BrowserIntegration_RemovalHelp" xml:space="preserve">
+    <value>Disconnect the companion and remove browser integration before uninstalling Media Controls. Windows media controls remain available.</value>
+  </data>
+  <data name="BrowserIntegration_Enabled" xml:space="preserve">
+    <value>Browser integration enabled. Reconnect the companion in your browser.</value>
+  </data>
+  <data name="BrowserIntegration_Removed" xml:space="preserve">
+    <value>Browser integration removed.</value>
+  </data>
+  <data name="BrowserIntegration_Failed" xml:space="preserve">
+    <value>Could not update browser integration:</value>
+  </data>
+  <data name="BrowserIntegration_Timeout" xml:space="preserve">
+    <value>Browser integration setup timed out. Try again.</value>
+  </data>
+  <data name="BrowserIntegration_Connections" xml:space="preserve">
+    <value>Browser connections</value>
+  </data>
+  <data name="BrowserIntegration_ConnectionsHelp" xml:space="preserve">
+    <value>Detected browsers and their current media source. A browser may have no companion connection because it is closed or the extension is unavailable.</value>
+  </data>
+  <data name="BrowserIntegration_NoBrowsers" xml:space="preserve">
+    <value>No browsers detected. Connected companions appear here automatically.</value>
+  </data>
+  <data name="BrowserIntegration_MediaSource" xml:space="preserve">
+    <value>Media source</value>
+  </data>
+  <data name="BrowserIntegration_Waiting" xml:space="preserve">
+    <value>Waiting for companion recovery</value>
+  </data>
+  <data name="BrowserIntegration_Browser" xml:space="preserve">
+    <value>Browser</value>
+  </data>
+  <data name="BrowserIntegration_OtherBrowsers" xml:space="preserve">
+    <value>Other browsers ({0})</value>
+  </data>
+  <data name="BrowserIntegration_NoConnections" xml:space="preserve">
+    <value>No companion connections.</value>
   </data>
 </root>

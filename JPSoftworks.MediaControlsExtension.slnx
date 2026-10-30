@@ -4,6 +4,10 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Apps/">
+    <Project Path="src/BrowserCompanion/host/JPSoftworks.MediaControlsExtension.BrowserCompanion.csproj">
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="src/MediaControlsExtension.MediaHost/JPSoftworks.MediaControlsExtension.MediaHost.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
@@ -14,6 +18,10 @@
     </Project>
   </Folder>
   <Folder Name="/Libs/">
+    <Project Path="src/MediaControlsExtension.Media.Browser/JPSoftworks.MediaControlsExtension.Media.Browser.csproj">
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="src/MediaControlsExtension.Media.Dummy/JPSoftworks.MediaControlsExtension.Media.Dummy.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />

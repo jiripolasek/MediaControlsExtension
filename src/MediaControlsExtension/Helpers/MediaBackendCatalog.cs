@@ -5,6 +5,7 @@
 // ------------------------------------------------------------
 
 using System.Collections.Immutable;
+using JPSoftworks.MediaControlsExtension.Media.Browser;
 using JPSoftworks.MediaControlsExtension.Media.Gsmtc;
 using JPSoftworks.MediaControlsExtension.Media.Hosting;
 using JPSoftworks.MediaControlsExtension.Media.Infrastructure;
@@ -20,7 +21,9 @@ internal static class MediaBackendCatalog
         ILoggerFactory loggerFactory,
         Action configurationChanged,
         Action enableVlc,
-        Func<bool> isVlcEnabled)
+        Func<bool> isVlcEnabled,
+        Action<bool> setBrowserEnabled,
+        Func<bool> isBrowserEnabled)
     {
         var settings = new Settings();
         vlcSettings.AddTo(settings);
@@ -47,7 +50,8 @@ internal static class MediaBackendCatalog
 
         return new Dictionary<string, ICommand>(StringComparer.Ordinal)
         {
-            ["vlc"] = page
+            ["vlc"] = page,
+            ["browser.companion"] = new BrowserCompanionPage(setBrowserEnabled, isBrowserEnabled, loggerFactory),
         };
     }
 
@@ -107,6 +111,12 @@ internal static class MediaBackendCatalog
         {
             ReplacesSources = ITunesSourceClaims.ReplacesGsmtcSources,
         });
+        mediaBackendRegistry.Register(new(
+            "browser.companion",
+            Strings.ResourceManager.GetString("Settings_Backend_Browser_Title", Strings.Culture)!,
+            Strings.ResourceManager.GetString("Settings_Backend_Browser_Description", Strings.Culture)!,
+            _ => new BrowserBackend(Path.Combine(AppContext.BaseDirectory, "Assets", "Providers", "Browser.svg"), null),
+            EnabledByDefault: false));
 #if DEBUG || FF_ENABLE_DUMMY_BACKEND
     mediaBackendRegistry.Register(new(
         "dummy.worker",
