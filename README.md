@@ -27,8 +27,14 @@ The production output is in `dist/`. No server runtime is needed.
 ## Hosting
 
 The default site origin and base path target GitHub Pages at
-`https://jiripolasek.github.io/MediaControlsExtension/`. This does not enable
-hosting, push a branch, or publish anything by itself.
+`https://jiripolasek.github.io/MediaControlsExtension/`.
+
+The [Pages workflow](.github/workflows/pages.yml) checks and builds the site
+with Node.js 24, then publishes it on every push to `pages`.
+
+For the first deployment, set the repository's **Settings > Pages > Build and
+deployment > Source** to **GitHub Actions**. If the `github-pages` environment
+restricts deployment branches, allow `pages` under **Settings > Environments**.
 
 For a different host, set `SITE_URL` to its origin and `BASE_PATH` to its path
 before building. For example, a dedicated subdomain uses `BASE_PATH=/`.
