@@ -99,11 +99,11 @@ Firefox's `browser/VisualElements/VisualElements_150.png`. The component account
 for transparent tile padding and preserves shadows without redrawing the marks.
 Browser names and icons belong to their respective owners.
 
-Browser companions are marked as developer previews because store listings are
-not available in the supplied source. Add their verified URLs to
-`src/data/site.ts` and update the preview copy when they are published. Preview
-setup needs a companion-enabled application build; it is not promised by the
-current Store release.
+The Edge companion is available from Microsoft Edge Add-ons; its verified URL is
+in `src/data/site.ts`. Chrome and Firefox remain developer previews. Add their
+verified store URLs and update the preview copy when they are published.
+Desktop integration needs a companion-enabled application build; popup controls
+work independently of the desktop connection.
 
 The original graphics are enough for this first version. A current clean
 Command Palette screenshot and a browser popup screenshot would be useful

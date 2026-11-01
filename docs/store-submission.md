@@ -60,13 +60,16 @@ editing submission content.
 
 ## What remains outside this website
 
+The Edge companion is published on Microsoft Edge Add-ons, and its installation
+link is configured in `src/data/site.ts`.
+
 - Publish the website and verify all four URLs without signing in. Keep
   `publicPrivacyUrlVerified` false until then.
 - Provide a desktop release containing the browser bridge and set
   `desktopReleaseForReviewUrl` in all three listings.
-- Obtain Chrome and Edge store IDs and installation links. Add the IDs to the
-  desktop application's allowlist and the links to `src/data/site.ts`; update the
-  preview installation copy when store releases become available.
+- Obtain the Chrome store installation link, add it to `src/data/site.ts`, and
+  update the preview copy when it is published. Confirm that published store IDs
+  are included in the shipped desktop application's allowlist.
 - Complete Firefox review and signing, then test the signed add-on.
 - Test each final store-installed companion with the final desktop package.
 - Complete the publisher account, store dashboard disclosures, and submission.

@@ -271,6 +271,7 @@ details[open] .faq-plus::after { transform: rotate(0); }
 .browser-jump-links > a { display: flex; align-items: center; gap: 15px; padding: 15px; border: 1px solid var(--line); border-radius: 5px; font-size: 0.875rem; }
 .browser-jump-links > a:hover { background: var(--hover); }
 .browser-jump-links .browser-icon { --browser-icon-size: 26px; }
+.browser-install { --browser-icon-size: 22px; margin-top: 22px; }
 .setup-section { border-bottom: 1px solid var(--line); padding-block: 44px; }
 .setup-section .eyebrow { margin-bottom: 18px; }
 .setup-section :is(ul, ol) { padding-left: 20px; margin-bottom: 0; }

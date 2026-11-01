@@ -20,7 +20,7 @@ const features = [
 const questions = [
   { question: "What do I need to get started?", answer: "A Windows PC with Microsoft PowerToys and Command Palette enabled. Install Media Controls, open Command Palette, and search for Media Controls." },
   { question: "Which music and video players work?", answer: "Apps and browser tabs that support Windows media controls, including Spotify, Apple Music, Media Player, and many websites. Optional integrations support desktop iTunes and local or remote VLC 3. Available controls and metadata depend on the player.", link: { href: withBase("players/"), label: "See supported players" } },
-  { question: "Do I need a browser companion?", answer: "Many sites already work through Windows media controls. The optional companions give you individual media tabs, direct tab activation, and controls in the browser popup. They are currently available as a developer preview." },
+  { question: "Do I need a browser companion?", answer: "Many sites already work through Windows media controls. The optional companions give you individual media tabs, direct tab activation, and controls in the browser popup. The Edge companion is available from Microsoft Edge Add-ons. Chrome and Firefox are available as developer previews." },
   { question: "Is it free?", answer: "Yes. Media Controls is free and open source under the Apache 2.0 license. You can explore the source, report an issue, or contribute on GitHub." },
 ];
 ---
@@ -83,12 +83,12 @@ const questions = [
         {browsers.map((browser) => (
           <a class="browser-link" href={browser.storeUrl ?? withBase(`companions/#${browser.id}`)}>
             <BrowserIcon name={browser.id} />
-            <div><h3>{browser.name}</h3><span>Developer preview</span></div>
+            <div><h3>{browser.name}</h3><span>{browser.storeUrl ? "Install companion" : "Developer preview"}</span></div>
             <Icon name="arrow" size={20} />
           </a>
         ))}
       </div>
-      <p class="companion-note">Store listings are on the way. Preview setup is available for Chrome, Edge, and Firefox.</p>
+      <p class="companion-note">Available from Microsoft Edge Add-ons. Chrome and Firefox are available as developer previews.</p>
     </div>
   </section>
 

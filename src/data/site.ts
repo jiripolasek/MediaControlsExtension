@@ -12,7 +12,12 @@ export const site = {
 };
 
 export const browsers = [
-  { id: "edge", name: "Microsoft Edge", engine: "Chromium", storeUrl: null },
+  {
+    id: "edge",
+    name: "Microsoft Edge",
+    engine: "Chromium",
+    storeUrl: "https://microsoftedge.microsoft.com/addons/detail/media-controls-companion/ohigjglkifnlhjlejfbdmmjmhfbnhdin",
+  },
   { id: "chrome", name: "Google Chrome", engine: "Chromium", storeUrl: null },
   { id: "firefox", name: "Mozilla Firefox", engine: "Firefox", storeUrl: null },
 ] as const;
