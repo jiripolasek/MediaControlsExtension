@@ -19,7 +19,12 @@ export const browsers = [
     storeUrl: "https://microsoftedge.microsoft.com/addons/detail/media-controls-companion/ohigjglkifnlhjlejfbdmmjmhfbnhdin",
   },
   { id: "chrome", name: "Google Chrome", engine: "Chromium", storeUrl: null },
-  { id: "firefox", name: "Mozilla Firefox", engine: "Firefox", storeUrl: null },
+  {
+    id: "firefox",
+    name: "Mozilla Firefox",
+    engine: "Firefox",
+    storeUrl: "https://addons.mozilla.org/en-US/firefox/addon/media-controls-companion/",
+  },
 ] as const;
 
 export function withBase(path = "") {

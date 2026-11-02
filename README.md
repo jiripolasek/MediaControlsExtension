@@ -53,7 +53,7 @@ choose a base path such as `/media-controls`.
 ## Content and artwork
 
 - `src/pages/index.astro`: the landing page.
-- `src/pages/companions.astro`: companion preview and setup.
+- `src/pages/companions.astro`: companion installation and setup.
 - `src/pages/players.astro`: supported players, feature tables, and connection help.
 - `src/data/players.ts`: compatibility rows adapted from the application's
   `docs/user/GSMTC-Compatibility.md`; keep the two guides aligned when updating support.
@@ -99,9 +99,10 @@ Firefox's `browser/VisualElements/VisualElements_150.png`. The component account
 for transparent tile padding and preserves shadows without redrawing the marks.
 Browser names and icons belong to their respective owners.
 
-The Edge companion is available from Microsoft Edge Add-ons; its verified URL is
-in `src/data/site.ts`. Chrome and Firefox remain developer previews. Add their
-verified store URLs and update the preview copy when they are published.
+The Edge and Firefox companions are available from Microsoft Edge Add-ons and
+Firefox Add-ons; their verified URLs are in `src/data/site.ts`. Chrome remains a
+developer preview. Add its verified store URL and update the preview copy when it
+is published.
 Desktop integration needs a companion-enabled application build; popup controls
 work independently of the desktop connection.
 
